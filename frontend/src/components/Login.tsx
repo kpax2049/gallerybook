@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { Dispatch, SetStateAction, useState } from 'react'
 import {
   Button,
   ControlGroup,
@@ -9,12 +9,18 @@ import {
 } from '@blueprintjs/core'
 import './Login.css'
 
-const Login: React.FC = () => {
+export interface LoginProps {
+  // authencated: boolean
+  setAuthencated?: Dispatch<SetStateAction<boolean>>
+}
+
+const Login: React.FC<LoginProps> = ({ setAuthencated }) => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
+    setAuthencated(true)
     // Simulate a login process
     if (username && password) {
       Toaster.create({ position: Position.TOP }).show({
