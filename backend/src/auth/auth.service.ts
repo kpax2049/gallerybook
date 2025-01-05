@@ -1,14 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
+import * as argon from 'argon2';
+import { AuthDto } from 'src/dto';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
-  private readonly secretKey = 'J7RKx6EAkTC7lLPiSR92cd9Q/uVCUXAJ'; // Replace with a strong secret key
+  constructor(private prisma: PrismaService) {}
 
-  signToken(userId: number, username: string) {
-    const payload = { userId, username };
-    return {
-      access_token: jwt.sign(payload, this.secretKey, { expiresIn: '1h' }),
-    };
+  async signup(dto: AuthDto) {
+    // generate the password
+    const hash = await argon.hash(dto.password);
+    // save the new user in db
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        hash,
+      },
+    });
+
+    // strip out hash from return object
+    // TODO: come up with better solution
+    delete user.hash;
+    // return saved user
+    return user;
   }
+  signin() {}
 }

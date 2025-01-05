@@ -14,10 +14,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any): Promise<any> {
-    const user = await this.usersService.findOneByUsername(payload.username);
-    if (user) {
-      return { userId: payload.sub, username: payload.username };
-    }
-    throw new Error('Invalid token');
+    // const user = await this.usersService.findOneByUsername(payload.username);
+    // if (user) {
+    //   return { userId: payload.sub, username: payload.username };
+    // }
+    // throw new Error('Invalid token');
   }
 }

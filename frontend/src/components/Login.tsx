@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction, useState } from 'react'
+import React, { useState } from 'react'
 import {
   Button,
   ControlGroup,
@@ -11,7 +11,7 @@ import './Login.css'
 
 export interface LoginProps {
   // authencated: boolean
-  setAuthencated?: Dispatch<SetStateAction<boolean>>
+  setAuthencated: (value: boolean | ((prevVar: boolean) => boolean)) => void
 }
 
 const Login: React.FC<LoginProps> = ({ setAuthencated }) => {

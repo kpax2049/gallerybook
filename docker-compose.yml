@@ -4,13 +4,17 @@ services:
   backend:
     build: ./backend
     ports:
-      - "4000:4000"
+      - 4000:4000
     depends_on:
       - postgres_db
+    networks:
+      - gallerybook
   frontend:
     build: ./frontend
     ports:
-      - "80:80"
+      - 80:80
+    networks:
+      - gallerybook
   postgres_db:
     image: postgres:13-alpine
     environment:
@@ -19,6 +23,12 @@ services:
       POSTGRES_PASSWORD: secret
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports: 
+      - 5434:5432
+    networks:
+      - gallerybook
 
 volumes:
   postgres_data:
+networks:
+  gallerybook:
