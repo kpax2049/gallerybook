@@ -13,15 +13,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
+
 model User {
   id Int @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  role Role @default(USER)
   email String @unique
   hash String
   firstName String?
   lastName String?
+  galleries Gallery[]
 
   @@map("users")
 }
@@ -31,7 +38,42 @@ model Gallery {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // TODO: need to define model
+  userId Int
+  createdBy User @relation(fields:[userId], references: [id])
+
+  title String
+  description String?
+  images Image[]
 
   @@map("galleries")
+}
+
+model Image {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  galleryId Int
+  gallery Gallery @relation(fields: [galleryId], references: [id])
+
+  File File[]
+
+  @@map("images")
+}
+
+model File {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  docHash String
+  mimeType String
+  contentSize BigInt
+  version Int
+  content Bytes
+  tags String?
+  keywords String?
+  
+  imageId Int
+  image Image @relation(fields: [imageId], references: [id])
+  @@map("files")
 }
