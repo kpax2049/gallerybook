@@ -5,12 +5,11 @@ import * as bcrypt from 'bcryptjs';
 import { User } from '@prisma/client';
 
 @Injectable()
-export class UsersService {
+export class UserService {
   // constructor(
   //   @InjectRepository(User)
   //   private usersRepository: Repository<User>,
   // ) {}
-
   // async create(username: string, password: string): Promise<User> {
   //   const hashedPassword = await bcrypt.hash(password, 10);
   //   const user = this.usersRepository.create({
@@ -19,7 +18,6 @@ export class UsersService {
   //   });
   //   return this.usersRepository.save(user);
   // }
-
   // async findOneByUsername(username: string): Promise<User | undefined> {
   //   return this.usersRepository.findOneBy({ username });
   // }
