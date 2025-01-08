@@ -1,24 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import * as bcrypt from 'bcryptjs';
-import { User } from '@prisma/client';
+import { PrismaService } from '../../src/prisma/prisma.service';
+import { EditUserDto } from './dto';
 
 @Injectable()
 export class UserService {
-  // constructor(
-  //   @InjectRepository(User)
-  //   private usersRepository: Repository<User>,
-  // ) {}
-  // async create(username: string, password: string): Promise<User> {
-  //   const hashedPassword = await bcrypt.hash(password, 10);
-  //   const user = this.usersRepository.create({
-  //     email,
-  //     password: hashedPassword,
-  //   });
-  //   return this.usersRepository.save(user);
-  // }
-  // async findOneByUsername(username: string): Promise<User | undefined> {
-  //   return this.usersRepository.findOneBy({ username });
-  // }
+  constructor(private prisma: PrismaService) {}
+
+  async editUser(userId: number, dto: EditUserDto) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...dto,
+      },
+    });
+
+    delete user.hash;
+    return user;
+  }
 }
