@@ -39,7 +39,7 @@ model Gallery {
   updatedAt DateTime @updatedAt
 
   userId Int
-  createdBy User @relation(fields:[userId], references: [id])
+  createdBy User @relation(fields:[userId], references: [id], onDelete: Cascade)
 
   title String
   description String?
@@ -54,7 +54,7 @@ model Image {
   updatedAt DateTime @updatedAt
 
   galleryId Int
-  gallery Gallery @relation(fields: [galleryId], references: [id])
+  gallery Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
 
   File File[]
 
@@ -74,6 +74,6 @@ model File {
   keywords String?
   
   imageId Int
-  image Image @relation(fields: [imageId], references: [id])
+  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
   @@map("files")
 }
