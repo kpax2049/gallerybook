@@ -5,6 +5,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { AuthDto } from 'src/dto';
 import { EditUserDto } from 'src/users/dto';
+import { CreateGalleryDto, EditGalleryDto } from 'src/gallery/dto';
 
 describe('App e2e', () => {
   let app: INestApplication;
@@ -127,10 +128,86 @@ describe('App e2e', () => {
     });
   });
   describe('Gallery', () => {
-    describe('Create Gallery', () => {});
-    describe('Get Galleries', () => {});
-    describe('Get Gallery By Id', () => {});
-    describe('Edit Gallery By Id', () => {});
-    describe('Delete Gallery By Id', () => {});
+    describe('Get Empty Galleries', () => {
+      it('Should Get Empty Galleries ', () => {
+        return pactum
+          .spec()
+          .get('/galleries')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .expectStatus(200)
+          .expectBody([]);
+      });
+    });
+    describe('Create Gallery', () => {
+      it('Should Create New Gallery', () => {
+        const dto: CreateGalleryDto = {
+          title: 'My first gallery',
+          description: '123',
+        };
+        return pactum
+          .spec()
+          .post('/galleries')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .withBody(dto)
+          .expectStatus(201)
+          .stores('galleryId', 'id');
+      });
+    });
+    describe('Get Galleries', () => {
+      it('Should Get Galleries ', () => {
+        return pactum
+          .spec()
+          .get('/galleries')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .expectStatus(200)
+          .expectJsonLength(1);
+      });
+    });
+    describe('Get Gallery By Id', () => {
+      it('Should Get Gallery by Id ', () => {
+        return pactum
+          .spec()
+          .get('/galleries/{id}')
+          .withPathParams('id', '$S{galleryId}')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .expectStatus(200)
+          .expectBodyContains('$S{galleryId}');
+      });
+    });
+    describe('Edit Gallery By Id', () => {
+      it('Should Edit Gallery by Id ', () => {
+        const dto: EditGalleryDto = {
+          title: 'My first edited gallery',
+          description: 'Humpty',
+        };
+        return pactum
+          .spec()
+          .patch('/galleries/{id}')
+          .withPathParams('id', '$S{galleryId}')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .withBody(dto)
+          .expectStatus(200)
+          .expectBodyContains(dto.title)
+          .expectBodyContains(dto.description);
+      });
+    });
+    describe('Delete Gallery By Id', () => {
+      it('Should Delete Gallery by Id ', () => {
+        return pactum
+          .spec()
+          .delete('/galleries/{id}')
+          .withPathParams('id', '$S{galleryId}')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .expectStatus(204);
+      });
+      it('Should Get Empty Galleries ', () => {
+        return pactum
+          .spec()
+          .get('/galleries')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .expectStatus(200)
+          .expectJsonLength(0);
+      });
+    });
   });
 });
