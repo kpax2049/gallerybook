@@ -1,14 +1,11 @@
-import { useState } from 'react'
 import './App.css'
-import Login from './components/Login'
+import Login from './components/login/Login'
 
 function App() {
-  const [authenticated, setAuthenticated] = useState(false)
-
   return (
-    <div className="App">
-      {!authenticated && <Login setAuthencated={setAuthenticated} />}
-    </div>
+    <>
+      <Login />
+    </>
   )
 }
 
