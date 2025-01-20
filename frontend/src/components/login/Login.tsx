@@ -1,6 +1,10 @@
-import { Images } from 'lucide-react'
-import { LoginForm } from './LoginForm'
-export default function LoginPage() {
+import { Images } from 'lucide-react';
+
+type Props = {
+  children?: React.ReactNode;
+};
+
+export default function LoginPage({ children }: Props) {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
       <div className="flex w-full max-w-sm flex-col gap-6">
@@ -10,8 +14,8 @@ export default function LoginPage() {
           </div>
           Gallery Book
         </a>
-        <LoginForm />
+        {children}
       </div>
     </div>
-  )
+  );
 }
