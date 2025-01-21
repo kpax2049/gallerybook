@@ -24,17 +24,12 @@ import {
 } from '../ui/card';
 import { cn } from '@/lib/utils';
 import LoginPage from '../login/Login';
+import { PasswordInput } from '../ui/password-input';
 
 const formSchema = z
   .object({
-    username: z
-      .string()
-      .min(1, {
-        message: 'This field is required.',
-      })
-      .min(2, {
-        message: 'Username must be at least 2 characters.',
-      }),
+    firstName: z.string(),
+    lastName: z.string(),
     email: z
       .string()
       .min(2, {
@@ -66,7 +61,8 @@ export function SignupForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
-      username: '',
+      firstName: '',
+      lastName: '',
       password: '',
       confirmPassword: '',
     },
@@ -84,9 +80,7 @@ export function SignupForm({
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-xl">Welcome to Gallery Book</CardTitle>
-            <CardDescription>
-              Fill out the form below for the new user account
-            </CardDescription>
+            <CardDescription>Create new user account</CardDescription>
           </CardHeader>
           <CardContent>
             {' '}
@@ -110,12 +104,28 @@ export function SignupForm({
                 />
                 <FormField
                   control={form.control}
-                  name="username"
+                  name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Username</FormLabel>
+                      <FormLabel>First Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="username" {...field} />
+                        <Input placeholder="first name" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        This is your public display name.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="last name" {...field} />
                       </FormControl>
                       <FormDescription>
                         This is your public display name.
@@ -131,7 +141,7 @@ export function SignupForm({
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input placeholder="password" {...field} />
+                        <PasswordInput placeholder="password" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -144,7 +154,7 @@ export function SignupForm({
                     <FormItem>
                       <FormLabel>Confirm Password</FormLabel>
                       <FormControl>
-                        <Input placeholder="enter again" {...field} />
+                        <PasswordInput placeholder="enter again" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

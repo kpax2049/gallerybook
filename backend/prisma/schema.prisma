@@ -18,62 +18,82 @@ enum Role {
   ADMIN
 }
 
+enum UserStatus {
+  active
+  inactive
+}
 
 model User {
-  id Int @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  role Role @default(USER)
-  email String @unique
-  hash String
+  id        Int        @id @default(autoincrement())
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  role      Role       @default(USER)
+  email     String     @unique
+  hash      String
   firstName String?
-  lastName String?
+  lastName  String?
+  settings  Json
+  status    UserStatus @default(active)
+
+  profile Profile?
+
   galleries Gallery[]
 
   @@map("users")
 }
 
+model Profile {
+  id            Int  @id @default(autoincrement())
+  configuration Json
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
 model Gallery {
-  id Int @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userId Int
-  createdBy User @relation(fields:[userId], references: [id], onDelete: Cascade)
+  userId    Int
+  createdBy User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  title String
+  title       String
   description String?
-  images Image[]
+  images      Image[]
 
   @@map("galleries")
 }
 
 model Image {
-  id Int @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   galleryId Int
-  gallery Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  gallery   Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
 
-  File File[]
+  file File?
 
   @@map("images")
 }
 
 model File {
-  id Int @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  docHash String
-  mimeType String
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  docHash     String
+  mimeType    String
   contentSize BigInt
-  version Int
-  content Bytes
-  tags String?
-  keywords String?
-  
-  imageId Int
-  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  version     Int
+  content     Bytes
+  tags        String?
+  keywords    String?
+
+  imageId Int   @unique
+  image   Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
   @@map("files")
 }
