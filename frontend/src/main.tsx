@@ -6,6 +6,8 @@ import App from './App';
 import { LoginForm } from './components/login/LoginForm';
 import { SignupForm } from './components/signup/SignupForm';
 import NotFoundPage from './components/notfound/NotFoundPage';
+import GalleryList from './components/gallery/GalleryList';
+import UserList from './components/admin/user/UserList';
 
 const router = createBrowserRouter([
   {
@@ -22,8 +24,12 @@ const router = createBrowserRouter([
     element: <SignupForm />,
   },
   {
+    path: '/admin/users',
+    element: <UserList />,
+  },
+  {
     path: '/galleries',
-    // element: <GalleriesView />,
+    element: <GalleryList />,
   },
   {
     path: '/galleries/:galleryId',

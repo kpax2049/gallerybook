@@ -17,4 +17,9 @@ export class UserService {
     delete user.hash;
     return user;
   }
+
+  async getUsers() {
+    const users = await this.prisma.user.findMany();
+    return users;
+  }
 }
