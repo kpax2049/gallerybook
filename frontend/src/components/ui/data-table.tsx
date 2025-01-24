@@ -18,21 +18,39 @@ import {
   TableHeader,
   TableRow,
 } from './table';
+import { Skeleton } from './skeleton';
 
 interface DataTableProps<TData, TValue> {
+  loading: boolean;
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
 }
 
 export function DataTable<TData, TValue>({
+  loading,
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
+  const tableData = React.useMemo(
+    () => (loading ? Array(20).fill({}) : data),
+    [loading, data]
+  );
+  const tableColumns = React.useMemo(
+    () =>
+      loading
+        ? columns.map((column) => ({
+            ...column,
+            cell: () => <Skeleton className="w-[100px] h-[20px] rounded-xl" />,
+          }))
+        : columns,
+    [loading, columns]
+  );
+
   const table = useReactTable({
-    data,
-    columns,
+    data: tableData,
+    columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
