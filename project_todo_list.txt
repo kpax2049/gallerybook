@@ -1,0 +1,28 @@
+TODO for 01-21-2025
+
+X 1) Make Interfaces for Prisma models
+X 2) Create a User List components
+X 3) Create mock users and seed to DB
+X 4) Fetch Users on frontend
+
+TODO for 01-24-2025
+X 1) Add Axios instance, configure for Backend
+X 2) Instantiate Axios client
+X 3) Add API interfaces
+
+TODO for 01-27-2025
+X 1) Add logic to login
+X 2) Handle login
+X 3) Enable Bearer headers
+X 4) Add logic to signup
+X 5) Handle signup
+X 6) Add Spinner to Button's loading state
+X 7) Add Theme provider
+
+TODO for 01-28-2025
+1) Navigate to Main screen after successful login
+
+
+Future TODOs
+Imlement User Profiles with preferences
+Implement themeing (saved as profile config)

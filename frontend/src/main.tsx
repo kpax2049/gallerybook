@@ -8,6 +8,8 @@ import { SignupForm } from './components/signup/SignupForm';
 import NotFoundPage from './components/notfound/NotFoundPage';
 import GalleryList from './components/gallery/GalleryList';
 import UserList from './components/admin/user/UserList';
+import { Toaster } from './components/ui/toaster';
+import { ThemeProvider } from './components/theme-provider';
 
 const router = createBrowserRouter([
   {
@@ -39,6 +41,9 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+      <Toaster />
+      <RouterProvider router={router} />
+    </ThemeProvider>
   </StrictMode>
 );

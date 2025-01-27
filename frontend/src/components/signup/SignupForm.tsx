@@ -25,6 +25,11 @@ import {
 import { cn } from '@/lib/utils';
 import LoginPage from '../login/Login';
 import { PasswordInput } from '../ui/password-input';
+import { useToast } from '@/hooks/use-toast';
+import axiosClient from '@/lib/apiClient';
+import { ToastAction } from '@radix-ui/react-toast';
+import qs from 'qs';
+import { useState } from 'react';
 
 const formSchema = z
   .object({
@@ -57,6 +62,9 @@ export function SignupForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<'div'>) {
+  const client = axiosClient();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState<boolean>(false);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -69,9 +77,30 @@ export function SignupForm({
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values);
+    setLoading(true);
+    client
+      .post(
+        '/auth/signup',
+        qs.stringify({
+          email: values.email,
+          password: values.password,
+          firstName: values.firstName,
+          lastName: values.lastName,
+        })
+      )
+      .then((response) => {
+        if (response.status === 201) {
+          setLoading(false);
+        }
+      })
+      .catch((error) => {
+        toast({
+          variant: 'destructive',
+          title: 'Uh oh! Something went wrong.',
+          description: 'There was a problem with your request: ' + error,
+          action: <ToastAction altText="Try again">Try again</ToastAction>,
+        });
+      });
   }
 
   return (
@@ -160,7 +189,9 @@ export function SignupForm({
                     </FormItem>
                   )}
                 />
-                <Button type="submit">Submit</Button>
+                <Button type="submit" className="w-full" loading={loading}>
+                  {loading ? 'Signing Up...' : 'Signup'}
+                </Button>
               </form>
             </Form>
           </CardContent>

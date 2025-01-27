@@ -7,7 +7,7 @@ const axiosClient = (token: string | null = null): AxiosInstance => {
         'Content-Type': 'multipart/form-data',
       }
     : {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': 'application/x-www-form-urlencoded',
       };
 
   const client = axios.create({
