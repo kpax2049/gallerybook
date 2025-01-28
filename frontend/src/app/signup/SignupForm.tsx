@@ -1,5 +1,3 @@
-'use client';
-
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -21,15 +19,14 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '../ui/card';
+} from '../../components/ui/card';
 import { cn } from '@/lib/utils';
 import LoginPage from '../login/Login';
-import { PasswordInput } from '../ui/password-input';
+import { PasswordInput } from '../../components/ui/password-input';
 import { useToast } from '@/hooks/use-toast';
-import axiosClient from '@/lib/apiClient';
 import { ToastAction } from '@radix-ui/react-toast';
-import qs from 'qs';
 import { useState } from 'react';
+import { signupUser } from '@/api/signup';
 
 const formSchema = z
   .object({
@@ -62,7 +59,6 @@ export function SignupForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<'div'>) {
-  const client = axiosClient();
   const { toast } = useToast();
   const [loading, setLoading] = useState<boolean>(false);
   const form = useForm<z.infer<typeof formSchema>>({
@@ -78,20 +74,15 @@ export function SignupForm({
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    client
-      .post(
-        '/auth/signup',
-        qs.stringify({
-          email: values.email,
-          password: values.password,
-          firstName: values.firstName,
-          lastName: values.lastName,
-        })
-      )
+    signupUser({
+      email: values.email,
+      password: values.password,
+      firstName: values.firstName,
+      lastName: values.lastName,
+    })
       .then((response) => {
-        if (response.status === 201) {
-          setLoading(false);
-        }
+        localStorage.setItem('ACCESS_TOKEN', response.access_token);
+        setLoading(false);
       })
       .catch((error) => {
         toast({

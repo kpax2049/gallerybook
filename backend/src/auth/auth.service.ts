@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import * as argon from 'argon2';
-import { AuthDto } from '../../src/dto';
+import { AuthDto, SignupDto } from '../../src/dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -14,7 +14,7 @@ export class AuthService {
     private config: ConfigService,
   ) {}
 
-  async signup(dto: AuthDto) {
+  async signup(dto: SignupDto) {
     // generate the password
     const hash = await argon.hash(dto.password);
     // save the new user in db

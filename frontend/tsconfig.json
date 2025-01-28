@@ -13,7 +13,6 @@
     "strictPropertyInitialization": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
-    "maxLineLength": 50,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]

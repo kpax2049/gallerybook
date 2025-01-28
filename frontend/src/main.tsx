@@ -3,13 +3,14 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import App from './App';
-import { LoginForm } from './components/login/LoginForm';
-import { SignupForm } from './components/signup/SignupForm';
-import NotFoundPage from './components/notfound/NotFoundPage';
-import GalleryList from './components/gallery/GalleryList';
-import UserList from './components/admin/user/UserList';
+import { LoginForm } from './app/login/LoginForm';
+import { SignupForm } from './app/signup/SignupForm';
+import NotFoundPage from './app/notfound/NotFoundPage';
+import GalleryList from './app/gallery/GalleryList';
+import UserList from './app/user/UserList';
 import { Toaster } from './components/ui/toaster';
 import { ThemeProvider } from './components/theme-provider';
+import Page from './app/dashboard/page';
 
 const router = createBrowserRouter([
   {
@@ -28,6 +29,10 @@ const router = createBrowserRouter([
   {
     path: '/admin/users',
     element: <UserList />,
+  },
+  {
+    path: '/user/profile',
+    element: <Page />,
   },
   {
     path: '/galleries',

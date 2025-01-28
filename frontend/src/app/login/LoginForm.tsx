@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import qs from 'qs';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import LoginPage from './Login';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -23,11 +22,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../ui/form';
-import { PasswordInput } from '../ui/password-input';
-import axiosClient from '@/lib/apiClient';
+} from '../../components/ui/form';
+import { PasswordInput } from '../../components/ui/password-input';
 import { useToast } from '@/hooks/use-toast';
-import { ToastAction } from '../ui/toast';
+import { ToastAction } from '../../components/ui/toast';
+import { authUser } from '@/api/auth';
 
 const formSchema = z.object({
   email: z
@@ -45,8 +44,8 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<'div'>) {
-  const client = axiosClient();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -58,14 +57,11 @@ export function LoginForm({
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    client
-      .post(
-        '/auth/signin',
-        qs.stringify({ email: values.email, password: values.password })
-      )
+    authUser({ email: values.email, password: values.password })
       .then((response) => {
-        localStorage.setItem('ACCESS_TOKEN', response.data.access_token);
+        localStorage.setItem('ACCESS_TOKEN', response.access_token);
         setLoading(false);
+        navigate('/user/profile');
       })
       .catch((error) => {
         toast({
