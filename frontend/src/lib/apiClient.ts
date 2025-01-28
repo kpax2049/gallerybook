@@ -1,5 +1,5 @@
+import { toast } from '@/hooks/use-toast';
 import axios, { AxiosError, AxiosResponse } from 'axios';
-
 const token = localStorage.getItem('ACCESS_TOKEN');
 const headers = token
   ? {
@@ -9,6 +9,28 @@ const headers = token
   : {
       'Content-Type': 'application/x-www-form-urlencoded',
     };
+
+const errorHandler = (error: AxiosError | undefined) => {
+  if (error?.status === 401) {
+    localStorage.removeItem('ACCESS_TOKEN');
+    //TODO: redirect back to root/login page
+    toast({
+      variant: 'destructive',
+      title: 'Uh oh! Something went wrong.',
+      description: `You are unauthorized to access this Page. Please Login again.`,
+    });
+  } else {
+    const responseData = error?.response?.data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const message = (responseData as any).message || error?.message;
+    toast({
+      variant: 'destructive',
+      title: 'Uh oh! Something went wrong.',
+      description: `There was a problem with your request: 
+      ${message}`,
+    });
+  }
+};
 
 const client = axios.create({
   baseURL: 'http://localhost:3333/',
@@ -33,11 +55,7 @@ client.interceptors.response.use(
   },
   (error: AxiosError) => {
     try {
-      const { response } = error;
-      if (response?.status === 401) {
-        localStorage.removeItem('ACCESS_TOKEN');
-        //TODO: redirect back to root/login page
-      }
+      errorHandler(error);
     } catch (e) {
       console.error(e);
     }

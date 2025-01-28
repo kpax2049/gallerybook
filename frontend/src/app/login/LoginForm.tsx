@@ -24,8 +24,6 @@ import {
   FormMessage,
 } from '../../components/ui/form';
 import { PasswordInput } from '../../components/ui/password-input';
-import { useToast } from '@/hooks/use-toast';
-import { ToastAction } from '../../components/ui/toast';
 import { authUser } from '@/api/auth';
 
 const formSchema = z.object({
@@ -44,7 +42,6 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<'div'>) {
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const form = useForm<z.infer<typeof formSchema>>({
@@ -57,20 +54,13 @@ export function LoginForm({
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    authUser({ email: values.email, password: values.password })
-      .then((response) => {
+    authUser({ email: values.email, password: values.password }).then(
+      (response) => {
         localStorage.setItem('ACCESS_TOKEN', response.access_token);
         setLoading(false);
         navigate('/user/profile');
-      })
-      .catch((error) => {
-        toast({
-          variant: 'destructive',
-          title: 'Uh oh! Something went wrong.',
-          description: 'There was a problem with your request: ' + error,
-          action: <ToastAction altText="Try again">Try again</ToastAction>,
-        });
-      });
+      }
+    );
   }
 
   return (

@@ -23,8 +23,6 @@ import {
 import { cn } from '@/lib/utils';
 import LoginPage from '../login/Login';
 import { PasswordInput } from '../../components/ui/password-input';
-import { useToast } from '@/hooks/use-toast';
-import { ToastAction } from '@radix-ui/react-toast';
 import { useState } from 'react';
 import { signupUser } from '@/api/signup';
 
@@ -59,7 +57,6 @@ export function SignupForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<'div'>) {
-  const { toast } = useToast();
   const [loading, setLoading] = useState<boolean>(false);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -79,19 +76,10 @@ export function SignupForm({
       password: values.password,
       firstName: values.firstName,
       lastName: values.lastName,
-    })
-      .then((response) => {
-        localStorage.setItem('ACCESS_TOKEN', response.access_token);
-        setLoading(false);
-      })
-      .catch((error) => {
-        toast({
-          variant: 'destructive',
-          title: 'Uh oh! Something went wrong.',
-          description: 'There was a problem with your request: ' + error,
-          action: <ToastAction altText="Try again">Try again</ToastAction>,
-        });
-      });
+    }).then((response) => {
+      localStorage.setItem('ACCESS_TOKEN', response.access_token);
+      setLoading(false);
+    });
   }
 
   return (
