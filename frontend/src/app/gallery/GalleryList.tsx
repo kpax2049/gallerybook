@@ -1,4 +1,4 @@
-import { Gallery } from '@/common/types';
+import { Gallery } from '@/api/gallery';
 import { useEffect, useState } from 'react';
 
 async function fetchGalleries(): Promise<Gallery[]> {

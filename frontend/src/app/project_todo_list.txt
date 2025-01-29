@@ -20,11 +20,25 @@ X 6) Add Spinner to Button's loading state
 X 7) Add Theme provider
 
 TODO for 01-28-2025
-1) Navigate to Main screen after successful login
-Define Main (Dashboard) screen that contains navigation
+X 1) Navigate to Main screen after successful login
+X 2) Update Signup service to use SignupDto
+X 3) Update Axios client to use apiRequest
+X 4) Add separate api definitions for each interface
+X 5) Use api definitions to make api requests
+X 6) Add Dashboard component
+X 7) Define Main (Dashboard) screen that contains navigation
 
 
 Future TODOs
+MOBX
+Animate transitions between routes
+
+Admin panel for users with ADMIN role
 Authenticated routes
+Make Nav panel always visible, routes should only change what's on right side
 Imlement User Profiles with preferences
 Implement themeing (saved as profile config)
+
+
+Dashboard
+1) Turn top panel to carousel of gallery thumbnails

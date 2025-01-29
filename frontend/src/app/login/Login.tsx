@@ -1,5 +1,4 @@
-import { Images } from 'lucide-react';
-
+import logo from '../../assets/GB-logo.png';
 type Props = {
   children?: React.ReactNode;
 };
@@ -10,7 +9,7 @@ export default function LoginPage({ children }: Props) {
       <div className="flex w-full max-w-sm flex-col gap-6">
         <a href="#" className="flex items-center gap-2 self-center font-medium">
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Images className="size-4 bg-primary" />
+            <img className="bg-secondary" src={logo} alt="Logo" />
           </div>
           Gallery Book
         </a>

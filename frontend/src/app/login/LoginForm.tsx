@@ -54,13 +54,15 @@ export function LoginForm({
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    authUser({ email: values.email, password: values.password }).then(
-      (response) => {
+    authUser({ email: values.email, password: values.password })
+      .then((response) => {
         localStorage.setItem('ACCESS_TOKEN', response.access_token);
         setLoading(false);
-        navigate('/user/profile');
-      }
-    );
+        navigate('/user/profile', { viewTransition: true });
+      })
+      .catch(() => {
+        setLoading(false);
+      });
   }
 
   return (
@@ -159,7 +161,7 @@ export function LoginForm({
                   <div className="text-center text-sm">
                     Don&apos;t have an account?{' '}
                     {/* <a href="#" className="underline underline-offset-4"> */}
-                    <Link className="link-as-a-tag" to="/signup">
+                    <Link className="link-as-a-tag" to="/signup" viewTransition>
                       Sign up
                     </Link>
                     {/* </a> */}
