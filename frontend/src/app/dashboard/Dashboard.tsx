@@ -1,3 +1,4 @@
+// import { User } from '@/api/user';
 import { AppSidebar } from '@/components/app-sidebar';
 import {
   Breadcrumb,
@@ -13,12 +14,19 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import { Outlet } from 'react-router-dom';
 
-export default function Page() {
+interface DashboardProps {
+  // user: User | null;
+  handleLogout: () => void;
+  // handleLogin: (u: User) => void;
+}
+export default function Dashboard({ handleLogout }: DashboardProps) {
+  //props: DashboardProps
   return (
     <>
       <SidebarProvider>
-        <AppSidebar />
+        <AppSidebar handleLogout={handleLogout} />
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
             <div className="flex items-center gap-2 px-4">
@@ -39,15 +47,23 @@ export default function Page() {
               </Breadcrumb>
             </div>
           </header>
-
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-              <div className="aspect-video rounded-xl bg-muted/50" />
-              <div className="aspect-video rounded-xl bg-muted/50" />
-              <div className="aspect-video rounded-xl bg-muted/50" />
+          <main>
+            <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+              {/* {props.user ? (
+                <button onClick={props.handleLogout}>Sign Out</button>
+              ) : (
+                <button onClick={props.handleLogin}>Sign In</button>
+              )} */}
+              {/* <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+                <div className="aspect-video rounded-xl bg-muted/50" />
+                <div className="aspect-video rounded-xl bg-muted/50" />
+                <div className="aspect-video rounded-xl bg-muted/50" />
+              </div> */}
+              <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min">
+                <Outlet /> {/* Nested routes render here */}
+              </div>
             </div>
-            <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min"></div>
-          </div>
+          </main>
         </SidebarInset>
       </SidebarProvider>
     </>

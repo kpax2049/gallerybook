@@ -1,24 +1,29 @@
-import { Role, UserStatus } from '@/common/enums';
+import { UserStatus, UserRole } from '@/common/enums';
 import { apiRequest } from '@/lib/apiClient';
 import { Gallery } from './gallery';
 
 // Define the shape of data for a user
 export interface User {
   id: number;
-  createdAt: Date;
-  updatedAt: Date;
-  role: Role;
+  createdAt?: Date;
+  updatedAt?: Date;
+  role: UserRole;
   email: string;
-  hash: string;
+  hash?: string;
   firstName?: string;
   lastName?: string;
-  settings: { [key: string]: unknown }[];
-  status: UserStatus;
+  settings?: { [key: string]: unknown }[];
+  status?: UserStatus;
   //   profile?: Profile,
-  galleries: Gallery[];
+  galleries?: Gallery[];
 }
 
-// Fetching users with our API client
+// Fetching users
 export const getUsers = async (): Promise<User[]> => {
   return await apiRequest<User[]>('/users', 'GET');
+};
+
+// Fetching current user
+export const getUser = async (): Promise<User> => {
+  return await apiRequest<User>('/users/me', 'GET');
 };

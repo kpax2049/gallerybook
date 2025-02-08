@@ -17,7 +17,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
-import { useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
 interface ItemProps {
   items: {
@@ -34,7 +34,6 @@ interface ItemProps {
 }
 
 export function NavMain({ items }: ItemProps) {
-  const navigate = useNavigate();
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
@@ -58,20 +57,23 @@ export function NavMain({ items }: ItemProps) {
                 <SidebarMenuSub>
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton
-                        asChild
-                        size="sm"
-                        isActive={subItem.isActive}
-                        onClick={() =>
-                          navigate(subItem.url, {
-                            viewTransition: true,
-                          })
-                        }
-                      >
-                        <a href={subItem.url}>
+                      <NavLink viewTransition to={subItem.url}>
+                        <SidebarMenuSubButton
+                          asChild
+                          size="sm"
+                          isActive={subItem.isActive}
+                          // onClick={() =>
+                          //   navigate(subItem.url, {
+                          //     viewTransition: true,
+                          //   })
+                          // }
+                        >
                           <span>{subItem.title}</span>
-                        </a>
-                      </SidebarMenuSubButton>
+                          {/* <a href={subItem.url}>
+                            <span>{subItem.title}</span>
+                          </a> */}
+                        </SidebarMenuSubButton>
+                      </NavLink>
                     </SidebarMenuSubItem>
                   ))}
                 </SidebarMenuSub>

@@ -38,15 +38,15 @@ const data = {
       items: [
         {
           title: 'Galleries',
-          url: '/admin/users',
+          url: '/home', //'/admin/users',
         },
         {
           title: 'New Gallery',
-          url: '/galleries',
+          url: '/analytics', //'/galleries',
         },
         {
           title: 'Edit Gallery',
-          url: '/galleries',
+          url: '/admin/users',
         },
       ],
     },
@@ -135,11 +135,16 @@ const data = {
   ],
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps {
+  props?: React.ComponentProps<typeof Sidebar>;
+  handleLogout: () => void;
+}
+
+export function AppSidebar({ handleLogout, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <NavUser user={data.user} />
+        <NavUser user={data.user} handleLogout={handleLogout} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

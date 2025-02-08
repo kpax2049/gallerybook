@@ -17,7 +17,7 @@ const errorHandler = (error: AxiosError | undefined) => {
     toast({
       variant: 'destructive',
       title: 'Uh oh! Something went wrong.',
-      description: `You are unauthorized to access this Page. Please Login again.`,
+      description: `You are unauthorized to access this Page. Please login again.`,
     });
   } else {
     const responseData = error?.response?.data;

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { Dispatch, SetStateAction, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +26,7 @@ import {
 } from '../../components/ui/form';
 import { PasswordInput } from '../../components/ui/password-input';
 import { authUser } from '@/api/auth';
+import { getUser, User } from '@/api/user';
 
 const formSchema = z.object({
   email: z
@@ -38,10 +40,18 @@ const formSchema = z.object({
   }),
 });
 
+type LoginFormProps = {
+  // setUser: Dispatch<SetStateAction<User | null>>;
+  className?: string;
+  handleLogin: (u: User) => void;
+  props?: React.ComponentPropsWithoutRef<'div'>;
+};
+
 export function LoginForm({
   className,
+  handleLogin,
   ...props
-}: React.ComponentPropsWithoutRef<'div'>) {
+}: LoginFormProps) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const form = useForm<z.infer<typeof formSchema>>({
@@ -57,9 +67,15 @@ export function LoginForm({
     authUser({ email: values.email, password: values.password })
       .then((response) => {
         localStorage.setItem('ACCESS_TOKEN', response.access_token);
-        setLoading(false);
-        navigate('/user/profile', { viewTransition: true });
+        getUser().then((user: User) => {
+          // setUser(user);
+          handleLogin(user);
+          console.log('setUser ' + user);
+          setLoading(false);
+          navigate('/', { viewTransition: true });
+        });
       })
+
       .catch(() => {
         setLoading(false);
       });

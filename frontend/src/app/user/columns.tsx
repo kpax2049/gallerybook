@@ -1,7 +1,7 @@
 'use client';
 
+import { User } from '@/api/user';
 import { ReadableRoles } from '@/common/enums';
-import { User } from '@/common/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { convertISOtoReadableDate } from '@/lib/utils';

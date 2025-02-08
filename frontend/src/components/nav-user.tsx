@@ -20,17 +20,18 @@ import {
 } from '@/components/ui/sidebar';
 import logo from '../assets/GB-logo.png';
 import { ModeToggle } from './mode-toggle';
-export function NavUser({
-  user,
-}: {
-  //TODO: switch to actual User interface
-  user: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    avatar: string;
-  };
-}) {
+
+interface NavUserAccountProps {
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatar: string;
+}
+interface NavUserProps {
+  user: NavUserAccountProps;
+  handleLogout: () => void;
+}
+export function NavUser({ user, handleLogout }: NavUserProps) {
   const { isMobile } = useSidebar();
   const firstInitial = user.firstName && user.firstName.substring(0, 1);
   const lastInitial = user.lastName && user.lastName.substring(0, 1);
@@ -89,7 +90,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               Log out
             </DropdownMenuItem>
