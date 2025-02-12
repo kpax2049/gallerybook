@@ -28,6 +28,11 @@ X 5) Use api definitions to make api requests
 X 6) Add Dashboard component
 X 7) Define Main (Dashboard) screen that contains navigation
 
+TODO for 02-12-2025
+X 1) Update NavUser to use User interface
+X 2) Show sign in button instead of User profile (unless signed in)
+ 3) Gallery page editor layout 
+ 4) Gallery page editor components
 
 Future TODOs
 MOBX
@@ -38,6 +43,7 @@ Authenticated routes
 Make Nav panel always visible, routes should only change what's on right side
 Imlement User Profiles with preferences
 Implement themeing (saved as profile config)
+Bread crumbs
 
 
 Dashboard

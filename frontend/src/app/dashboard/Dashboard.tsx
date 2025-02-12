@@ -1,4 +1,5 @@
 // import { User } from '@/api/user';
+import { User } from '@/api/user';
 import { AppSidebar } from '@/components/app-sidebar';
 import {
   Breadcrumb,
@@ -17,16 +18,16 @@ import {
 import { Outlet } from 'react-router-dom';
 
 interface DashboardProps {
-  // user: User | null;
+  user: User | null;
   handleLogout: () => void;
   // handleLogin: (u: User) => void;
 }
-export default function Dashboard({ handleLogout }: DashboardProps) {
+export default function Dashboard({ user, handleLogout }: DashboardProps) {
   //props: DashboardProps
   return (
     <>
       <SidebarProvider>
-        <AppSidebar handleLogout={handleLogout} />
+        <AppSidebar user={user} handleLogout={handleLogout} />
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
             <div className="flex items-center gap-2 px-4">

@@ -6,6 +6,7 @@ import { UserRole } from './common/enums';
 import Dashboard from './app/dashboard/Dashboard';
 import UserList from './app/user/UserList';
 import { LoginForm } from './app/login/LoginForm';
+import { SignupForm } from './app/signup/SignupForm';
 
 const Landing = () => {
   return <h2>Landing (Public: anyone can access this page)</h2>;
@@ -71,7 +72,10 @@ const App = () => {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Dashboard handleLogout={handleLogout} />}>
+        <Route
+          path="/"
+          element={<Dashboard user={user} handleLogout={handleLogout} />}
+        >
           <Route index element={<Landing />} />
 
           <Route
@@ -110,6 +114,7 @@ const App = () => {
           path="/login"
           element={<LoginForm handleLogin={handleLogin} />}
         />
+        <Route path="/signup" element={<SignupForm />} />
 
         <Route path="*" element={<p>There's nothing here: 404!</p>} />
       </Routes>

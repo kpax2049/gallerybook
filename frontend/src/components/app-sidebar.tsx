@@ -19,6 +19,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar';
+import { User } from '@/api/user';
 
 // This is sample data.
 const data = {
@@ -138,13 +139,14 @@ const data = {
 interface AppSidebarProps {
   props?: React.ComponentProps<typeof Sidebar>;
   handleLogout: () => void;
+  user: User | null;
 }
 
-export function AppSidebar({ handleLogout, ...props }: AppSidebarProps) {
+export function AppSidebar({ handleLogout, user, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <NavUser user={data.user} handleLogout={handleLogout} />
+        <NavUser user={user} handleLogout={handleLogout} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
