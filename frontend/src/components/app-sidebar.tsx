@@ -43,7 +43,7 @@ const data = {
         },
         {
           title: 'New Gallery',
-          url: '/analytics', //'/galleries',
+          url: '/gallery/new', //'/galleries',
         },
         {
           title: 'Edit Gallery',

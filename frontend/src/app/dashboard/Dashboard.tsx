@@ -48,8 +48,8 @@ export default function Dashboard({ user, handleLogout }: DashboardProps) {
               </Breadcrumb>
             </div>
           </header>
-          <main>
-            <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <main className="h-full">
+            <div className="flex flex-1 flex-col gap-4 p-4 pt-0 h-full">
               {/* {props.user ? (
                 <button onClick={props.handleLogout}>Sign Out</button>
               ) : (
