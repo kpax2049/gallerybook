@@ -6,6 +6,7 @@ import { StrictMode } from 'react';
 import { ThemeProvider } from './components/theme-provider';
 import { Toaster } from './components/ui/toaster';
 import { BrowserRouter } from 'react-router-dom';
+import { TooltipProvider } from './components/ui/tooltip';
 
 // const router = createBrowserRouter([
 //   {
@@ -49,8 +50,10 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <BrowserRouter>
-        <Toaster />
-        <App />
+        <TooltipProvider>
+          <Toaster />
+          <App />
+        </TooltipProvider>
       </BrowserRouter>
     </ThemeProvider>
   </StrictMode>

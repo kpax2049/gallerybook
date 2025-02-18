@@ -8,6 +8,7 @@ import UserList from './app/user/UserList';
 import { LoginForm } from './app/login/LoginForm';
 import { SignupForm } from './app/signup/SignupForm';
 import { GalleryEditor } from './app/gallery/GalleryEditor';
+import GalleryList from './app/gallery/GalleryList';
 
 const Landing = () => {
   return <h2>Landing (Public: anyone can access this page)</h2>;
@@ -87,6 +88,7 @@ const App = () => {
             <Route path="home" element={<Home />} />
             <Route path="dashboard" element={<Dashboard1 />} />
             <Route path="admin/users" element={<UserList />} />
+            <Route path="galleries" element={<GalleryList />} />
             <Route path="gallery/new" element={<GalleryEditor />} />
           </Route>
           <Route

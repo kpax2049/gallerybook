@@ -39,7 +39,7 @@ const data = {
       items: [
         {
           title: 'Galleries',
-          url: '/home', //'/admin/users',
+          url: '/galleries', //'/admin/users',
         },
         {
           title: 'New Gallery',
