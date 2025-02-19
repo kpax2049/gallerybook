@@ -1,8 +1,8 @@
 import { createGallery } from '@/api/gallery';
 import { MinimalTiptapEditor } from '@/components/minimal-tiptap';
-import { Button } from '@/components/ui/button';
 import { Content } from '@tiptap/react';
-import { useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
+import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
 // interface ItemProps {
 
 // }
@@ -40,35 +40,27 @@ export function GalleryEditor() {
   const [value, setValue] = useState<Content>('');
   const [loading, setLoading] = useState<boolean>(false);
 
-  const onSave = () => {
+  const onSave = (
+    data: FormDataProps,
+    setOpen: Dispatch<SetStateAction<boolean>>
+  ) => {
     console.info('saving content ', value);
     setLoading(true);
     createGallery({
-      title: 'Title',
-      description: 'Description',
+      title: data.title,
+      description: data.description,
       content: value,
     })
       .then((response) => {
         console.info('response ', response);
         setLoading(false);
+        setOpen(false);
       })
       .catch(() => {
         setLoading(false);
       });
   };
-  console.info(value);
-  const SaveButtton = (): React.ReactNode => {
-    return (
-      <Button
-        type="submit"
-        className="w-full"
-        loading={loading}
-        onClick={onSave}
-      >
-        {loading ? 'Saving...' : 'Save'}
-      </Button>
-    );
-  };
+
   return (
     <div className="container mx-auto p-5 flex justify-center">
       {/* <NewGalleryMenu /> */}
@@ -82,7 +74,7 @@ export function GalleryEditor() {
         autofocus={true}
         editable={true}
         editorClassName="focus:outline-none"
-        customComponent={SaveButtton()}
+        customComponent={<GallerySaveDialog onSubmit={onSave} />}
       />
     </div>
   );
