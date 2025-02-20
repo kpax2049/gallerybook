@@ -1,7 +1,8 @@
 import { apiRequest } from '@/lib/apiClient';
 import { User } from './user';
 import qs from 'qs';
-import { Content } from '@tiptap/react';
+// import { TipTapNode } from '@troop.com/tiptap-react-render';
+// import { Content } from '@tiptap/react';
 
 export interface Gallery {
   id: number;
@@ -11,14 +12,14 @@ export interface Gallery {
   createdBy: User;
   title?: string;
   description?: string;
-  content?: Content;
+  content?: string;
   //   images: Image[];
 }
 
 interface CreateGalleryRequest {
   title?: string;
   description?: string;
-  content?: Content;
+  content?: string;
 }
 // Function to create new gallery
 export const createGallery = async (
@@ -34,4 +35,11 @@ export const createGallery = async (
 // Fetching galleries
 export const getGalleries = async (): Promise<Gallery[]> => {
   return await apiRequest<Gallery[]>('/galleries', 'GET');
+};
+
+// Fetch single gallery
+export const getGallery = async (
+  galleryId: string | undefined
+): Promise<Gallery> => {
+  return await apiRequest<Gallery>(`/galleries/${galleryId}`, 'GET');
 };

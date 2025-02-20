@@ -32,7 +32,7 @@ model User {
   hash      String
   firstName String?
   lastName  String?
-  settings  Json
+  settings  Json?
   status    UserStatus @default(active)
 
   profile Profile?

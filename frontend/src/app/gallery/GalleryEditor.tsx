@@ -46,10 +46,11 @@ export function GalleryEditor() {
   ) => {
     console.info('saving content ', value);
     setLoading(true);
+
     createGallery({
       title: data.title,
       description: data.description,
-      content: value,
+      content: JSON.stringify(value),
     })
       .then((response) => {
         console.info('response ', response);

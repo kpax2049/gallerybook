@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsJSON, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateGalleryDto {
   @IsString()
@@ -8,6 +8,10 @@ export class CreateGalleryDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsJSON()
+  @IsOptional()
+  content?: string;
 
   // TODO: define Image field
   // images: Image[]

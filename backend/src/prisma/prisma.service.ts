@@ -15,8 +15,6 @@ export class PrismaService extends PrismaClient {
   }
   cleanDb() {
     return this.$transaction([
-      this.file.deleteMany(),
-      this.image.deleteMany(),
       this.gallery.deleteMany(),
       this.user.deleteMany(),
     ]);

@@ -1,15 +1,37 @@
-import { Textarea } from '@/components/ui/textarea';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Gallery, getGallery } from '@/api/gallery';
+import { TipTapRenderer } from '@/components/ui/TiptapRender';
 
-interface GalleryProps {
-  children?: string | JSX.Element | JSX.Element[] | (() => JSX.Element);
-}
-export function Gallery({ ...props }: GalleryProps) {
+// type GalleryProps = {
+//   children?: ReactNode;
+// };
+
+export default function GalleryPage() {
+  // { children }: GalleryProps
+  const [gallery, setGallery] = useState<Gallery>();
+  const [content, setContent] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const { galleryId } = useParams();
+  useEffect(() => {
+    setLoading(true);
+    getGallery(galleryId).then((data) => {
+      setGallery(data);
+      if (data.content) {
+        setContent(data.content);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  // const emptyNode = { type: '' };
+
   return (
-    <div>
-      <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight p-2">
-        New Gallery
-      </h3>
-      <Textarea className="p-2" />
+    <div className="grid auto-rows-min gap-4 p-4 justify-between h-screen">
+      <h3>Gallery Item: {galleryId}</h3>
+      {content && content.length > 0 && (
+        <TipTapRenderer {...{ content: content }} />
+      )}
     </div>
   );
 }

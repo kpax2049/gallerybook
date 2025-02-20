@@ -72,6 +72,7 @@ const Toolbar = ({
         activeActions={['codeBlock', 'blockquote', 'horizontalRule']}
         mainActionCount={0}
       />
+      <Separator orientation="vertical" className="mx-2 h-7" />
       {customComponent && customComponent}
     </div>
   </div>
