@@ -13,6 +13,7 @@ export interface Gallery {
   title?: string;
   description?: string;
   content?: string;
+  thumbnail?: string;
   //   images: Image[];
 }
 
@@ -20,6 +21,8 @@ interface CreateGalleryRequest {
   title?: string;
   description?: string;
   content?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  thumbnail?: any;
 }
 // Function to create new gallery
 export const createGallery = async (

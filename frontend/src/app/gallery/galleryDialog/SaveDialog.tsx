@@ -23,20 +23,35 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import useMediaQuery from '@/hooks/useMediaQuery';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from '@/components/ui/carousel';
+import { Content } from '@tiptap/react';
 
 export interface FormDataProps {
   title: string;
   description: string;
+  thumbnail: string;
 }
 
 interface GallerySaveDialogProps {
+  content: Content;
   onSubmit: (
     formData: FormDataProps,
     setOpen: Dispatch<SetStateAction<boolean>>
   ) => void;
 }
 
-export function GallerySaveDialog({ onSubmit }: GallerySaveDialogProps) {
+export function GallerySaveDialog({
+  content,
+  onSubmit,
+}: GallerySaveDialogProps) {
   const [open, setOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
@@ -46,14 +61,18 @@ export function GallerySaveDialog({ onSubmit }: GallerySaveDialogProps) {
         <DialogTrigger asChild>
           <Button variant="outline">Save</Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[465px]">
           <DialogHeader>
             <DialogTitle>Edit Gallery</DialogTitle>
             <DialogDescription>
               Make changes to your gallery here. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
-          <GallerySaveForm onSubmit={onSubmit} setOpen={setOpen} />
+          <GallerySaveForm
+            content={content}
+            onSubmit={onSubmit}
+            setOpen={setOpen}
+          />
         </DialogContent>
       </Dialog>
     );
@@ -72,6 +91,7 @@ export function GallerySaveDialog({ onSubmit }: GallerySaveDialogProps) {
           </DrawerDescription>
         </DrawerHeader>
         <GallerySaveForm
+          content={content}
           className="px-4"
           onSubmit={onSubmit}
           setOpen={setOpen}
@@ -87,6 +107,7 @@ export function GallerySaveDialog({ onSubmit }: GallerySaveDialogProps) {
 }
 
 interface GallerySaveFormProps {
+  content: Content;
   className?: string;
   setOpen: Dispatch<SetStateAction<boolean>>;
   onSubmit: (
@@ -96,6 +117,7 @@ interface GallerySaveFormProps {
 }
 
 function GallerySaveForm({
+  content,
   className,
   onSubmit,
   setOpen,
@@ -103,7 +125,29 @@ function GallerySaveForm({
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    thumbnail: '',
   });
+
+  function getImages(): string[] {
+    console.info('getImages');
+    if (!content) return [];
+    function traverse(obj) {
+      let images: string[] = [];
+      for (const prop in obj) {
+        if (typeof obj[prop] == 'object' && obj[prop]) {
+          if (obj[prop].type === 'image') {
+            images.push(obj[prop].attrs?.src);
+          }
+          images = images.concat(traverse(obj[prop]));
+        }
+      }
+      return images;
+    }
+    const images = traverse(content);
+    return images;
+  }
+  // getImages();
+  const imageArray: string[] = getImages();
 
   const handleSubmit = (event: React.SyntheticEvent) => {
     event.preventDefault();
@@ -128,7 +172,20 @@ function GallerySaveForm({
       </div>
       <div className="grid gap-2">
         <Label htmlFor="description">Description</Label>
-        <Input
+        <Textarea
+          name="description"
+          id="description"
+          // defaultValue=""
+          value={formData.description}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              description: e.target.value,
+              thumbnail: imageArray[0],
+            })
+          }
+        />
+        {/* <Input
           type="text"
           name="description"
           id="description"
@@ -137,7 +194,30 @@ function GallerySaveForm({
           onChange={(e) =>
             setFormData({ ...formData, description: e.target.value })
           }
-        />
+        /> */}
+      </div>
+      <Label htmlFor="description">Gallery Thumbnail</Label>
+      <div className="grid gap-2">
+        <Carousel className="w-full max-w-xs flex-col mx-auto">
+          <CarouselContent>
+            {imageArray.map((_, index) => (
+              <CarouselItem key={index}>
+                <div className="p-1">
+                  <Card>
+                    <CardContent className="relative aspect-square w-full basis-1/4 p-0">
+                      <img
+                        src={imageArray[index]}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious type="button" />
+          <CarouselNext type="button" />
+        </Carousel>
       </div>
       <Button type="submit">Save changes</Button>
     </form>

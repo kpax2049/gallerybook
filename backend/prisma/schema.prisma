@@ -63,6 +63,7 @@ model Gallery {
   title       String?
   description String?
   content     Json?
+  thumbnail   String?
 
   @@map("galleries")
 }

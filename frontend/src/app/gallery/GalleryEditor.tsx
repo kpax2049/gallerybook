@@ -44,13 +44,12 @@ export function GalleryEditor() {
     data: FormDataProps,
     setOpen: Dispatch<SetStateAction<boolean>>
   ) => {
-    console.info('saving content ', value);
     setLoading(true);
-
     createGallery({
       title: data.title,
       description: data.description,
       content: JSON.stringify(value),
+      thumbnail: data.thumbnail,
     })
       .then((response) => {
         console.info('response ', response);
@@ -75,7 +74,9 @@ export function GalleryEditor() {
         autofocus={true}
         editable={true}
         editorClassName="focus:outline-none"
-        customComponent={<GallerySaveDialog onSubmit={onSave} />}
+        customComponent={
+          <GallerySaveDialog onSubmit={onSave} content={value} />
+        }
       />
     </div>
   );

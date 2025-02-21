@@ -10,7 +10,7 @@ interface Card2Props {
 
 const Card2 = React.forwardRef<HTMLDivElement, Card2Props>(
   ({ ...props }, ref) => {
-    const { title, description } = props.gallery;
+    const { title, description, thumbnail } = props.gallery;
     const { onClick } = props;
     return (
       <Card
@@ -24,12 +24,8 @@ const Card2 = React.forwardRef<HTMLDivElement, Card2Props>(
       >
         {/* {...props} */}
         <img
-          src="/placeholder.svg"
-          alt="Card Image"
-          width="300"
-          height="200"
-          className="rounded-t-lg object-cover w-full"
-          style={{ aspectRatio: '300/200', objectFit: 'cover' }}
+          src={thumbnail}
+          className="w-full h-full object-cover rounded-lg"
         />
         <CardContent className="p-6 space-y-4">
           <CardTitle className="text-xl font-semibold">{title}</CardTitle>

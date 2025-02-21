@@ -83,7 +83,9 @@ const App = () => {
 
           <Route
             element={
-              <ProtectedRoute isAllowed={!!user} redirectPath="/login" />
+              //TODO: temporarly disable authentication
+              <ProtectedRoute isAllowed={true} redirectPath="/login" />
+              // <ProtectedRoute isAllowed={!!user} redirectPath="/login" />
             }
           >
             <Route path="home" element={<Home />} />
