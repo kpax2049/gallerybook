@@ -3,38 +3,6 @@ import { createGallery } from '@/api/gallery';
 // import { MinimalTiptapEditor } from '@/components/minimal-tiptap';
 import { Dispatch, SetStateAction, useState } from 'react';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
-// interface ItemProps {
-
-// }
-// const NewGalleryMenu = () => {
-//   return (
-//     <DropdownMenu>
-//       <DropdownMenuTrigger asChild>
-//         <Button variant="ghost" size="exLgIcon">
-//           <CirclePlus
-//             className="w-128 h-128"
-//             style={{ width: '100px', height: '100px' }}
-//           />
-//         </Button>
-//       </DropdownMenuTrigger>
-//       <DropdownMenuContent align="end">
-//         <DropdownMenuItem onClick={() => {}}>
-//           <LetterText />
-//           Caption
-//         </DropdownMenuItem>
-//         <DropdownMenuItem onClick={() => {}}>
-//           <ImagePlus />
-//           Picture
-//         </DropdownMenuItem>
-
-//         <DropdownMenuItem onClick={() => {}}>
-//           <MessageSquarePlus />
-//           Paragraph
-//         </DropdownMenuItem>
-//       </DropdownMenuContent>
-//     </DropdownMenu>
-//   );
-// };
 import RichTextEditor from 'reactjs-tiptap-editor';
 import {
   BaseKit,
@@ -53,6 +21,7 @@ import {
 import 'reactjs-tiptap-editor/style.css';
 import { useTheme } from '@/components/theme-provider';
 import { fileToBase64 } from '@/components/minimal-tiptap/utils';
+import { enrich } from '@/lib/utils';
 
 const extensions = [
   BaseKit.configure({
@@ -94,9 +63,6 @@ export function GalleryEditor() {
   const [loading, setLoading] = useState<boolean>(false);
   const isDarkMode = useTheme();
 
-  // eslint-disable-next-line no-debugger
-  // debugger;
-  // console.info('value ', value);
   const onSave = (
     data: FormDataProps,
     setOpen: Dispatch<SetStateAction<boolean>>
@@ -108,8 +74,7 @@ export function GalleryEditor() {
       content: JSON.stringify(value),
       thumbnail: data.thumbnail,
     })
-      .then((response) => {
-        console.info('response ', response);
+      .then(() => {
         setLoading(false);
         setOpen(false);
       })
@@ -117,20 +82,10 @@ export function GalleryEditor() {
         setLoading(false);
       });
   };
-  // const [content, setContent] = useState(DEFAULT);
 
-  const onChangeContent = (value1: any) => {
-    setValue(value1);
+  const onChangeContent = (val: any) => {
+    setValue(val);
   };
-
-  function enrich<P extends IntrinsicAttributes & P>(
-    WrappedComponent: React.ComponentType<P>
-  ) {
-    function Enrich(props: P) {
-      return <WrappedComponent {...props} />;
-    }
-    return Enrich;
-  }
 
   const SaveButton = enrich(() => (
     <GallerySaveDialog onSubmit={onSave} content={value} />
