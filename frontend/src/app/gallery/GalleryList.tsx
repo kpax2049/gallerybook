@@ -32,7 +32,7 @@ export default function GalleryList() {
   };
 
   return (
-    <div className="grid auto-rows-min gap-4 gap-4 p-4 md:grid-cols-3 justify-between">
+    <div className="grid auto-rows-min gap-4 p-4 md:grid-cols-3 justify-between">
       {!loading ? (
         galleries.map((gallery) => (
           <div key={gallery.id}>

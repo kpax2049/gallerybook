@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createGallery } from '@/api/gallery';
-import { MinimalTiptapEditor } from '@/components/minimal-tiptap';
-import { Content } from '@tiptap/react';
+// import { MinimalTiptapEditor } from '@/components/minimal-tiptap';
 import { Dispatch, SetStateAction, useState } from 'react';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
 // interface ItemProps {
@@ -35,11 +35,68 @@ import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
 //     </DropdownMenu>
 //   );
 // };
+import RichTextEditor from 'reactjs-tiptap-editor';
+import {
+  BaseKit,
+  Bold,
+  Color,
+  FontFamily,
+  FontSize,
+  Heading,
+  History,
+  Highlight,
+  Image,
+  Italic,
+  TextAlign,
+} from 'reactjs-tiptap-editor/extension-bundle';
+// Import CSS
+import 'reactjs-tiptap-editor/style.css';
+import { useTheme } from '@/components/theme-provider';
+import { fileToBase64 } from '@/components/minimal-tiptap/utils';
+
+const extensions = [
+  BaseKit.configure({
+    // Show placeholder
+    placeholder: {
+      showOnlyCurrent: true,
+    },
+
+    // Character count
+    characterCount: {
+      limit: 50_000,
+    },
+  }),
+
+  // Import Extensions Here
+  Image.configure({
+    upload: (files: File) => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          // resolve(URL.createObjectURL(files));
+          resolve(fileToBase64(files));
+        }, 500);
+      });
+    },
+  }),
+  Bold,
+  Italic,
+  TextAlign,
+  Color,
+  FontFamily,
+  FontSize,
+  Heading,
+  Highlight,
+  History,
+];
 
 export function GalleryEditor() {
-  const [value, setValue] = useState<Content>('');
+  const [value, setValue] = useState('');
   const [loading, setLoading] = useState<boolean>(false);
+  const isDarkMode = useTheme();
 
+  // eslint-disable-next-line no-debugger
+  // debugger;
+  // console.info('value ', value);
   const onSave = (
     data: FormDataProps,
     setOpen: Dispatch<SetStateAction<boolean>>
@@ -60,11 +117,71 @@ export function GalleryEditor() {
         setLoading(false);
       });
   };
+  // const [content, setContent] = useState(DEFAULT);
+
+  const onChangeContent = (value1: any) => {
+    setValue(value1);
+  };
+
+  function enrich<P extends IntrinsicAttributes & P>(
+    WrappedComponent: React.ComponentType<P>
+  ) {
+    function Enrich(props: P) {
+      return <WrappedComponent {...props} />;
+    }
+    return Enrich;
+  }
+
+  const SaveButton = enrich(() => (
+    <GallerySaveDialog onSubmit={onSave} content={value} />
+  ));
 
   return (
     <div className="container mx-auto p-5 flex justify-center">
+      <GallerySaveDialog onSubmit={onSave} content={value} />
+      <div className="h-full w-full richtext-outline-none">
+        <RichTextEditor
+          toolbar={{
+            render: (props, toolbarItems, dom, containerDom) => {
+              //
+              const isSaveBtnExists = (toolbarItem: any) =>
+                toolbarItem.name === 'SaveButton';
+              const saveBtn = {
+                button: {
+                  component: SaveButton,
+                  componentProps: {},
+                },
+                divider: true,
+                spacer: true,
+                name: 'SaveButton',
+                type: 'Custom',
+              };
+              const saveBtnIdx = toolbarItems.findIndex(isSaveBtnExists);
+              if (saveBtnIdx < 0) {
+                toolbarItems.push(saveBtn);
+              } else {
+                toolbarItems.splice(saveBtnIdx, 1, saveBtn);
+              }
+
+              return containerDom(dom);
+            },
+          }}
+          output="json"
+          content={value}
+          onChangeContent={onChangeContent}
+          extensions={extensions}
+          dark={isDarkMode.theme === 'dark'}
+          bubbleMenu={{
+            floatingMenuConfig: {
+              hidden: false,
+            },
+          }}
+          // disableBubble
+          // hideBubble
+        />
+      </div>
       {/* <NewGalleryMenu /> */}
-      <MinimalTiptapEditor
+      {/* <MinimalTiptapEditor
         value={value}
         onChange={setValue}
         className="h-full w-full"
@@ -77,7 +194,7 @@ export function GalleryEditor() {
         customComponent={
           <GallerySaveDialog onSubmit={onSave} content={value} />
         }
-      />
+      /> */}
     </div>
   );
 }

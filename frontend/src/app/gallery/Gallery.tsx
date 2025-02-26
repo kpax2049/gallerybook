@@ -23,11 +23,10 @@ export default function GalleryPage() {
       setLoading(false);
     });
   }, []);
-
   // const emptyNode = { type: '' };
 
   return (
-    <div className="grid auto-rows-min gap-4 p-4 justify-between h-screen">
+    <div className="grid auto-rows-min gap-4 p-4 justify-between">
       <h3>Gallery Item: {galleryId}</h3>
       {content && content.length > 0 && (
         <TipTapRenderer {...{ content: content }} />
