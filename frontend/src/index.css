@@ -156,3 +156,15 @@ button:focus-visible {
     @apply underline text-blue-600 hover:text-blue-800 visited:text-purple-600;
   }
 }
+
+/* Override reactjs-titap-editor style */
+.richtext-outline {
+  outline-style: none !important;
+}
+
+.bubble-menu-hidden
+  .reactjs-tiptap-editor.reactjs-tiptap-editor
+  .ProseMirror.ProseMirror.ProseMirror {
+  min-height: 380px !important;
+  padding: 20px 20px !important;
+}

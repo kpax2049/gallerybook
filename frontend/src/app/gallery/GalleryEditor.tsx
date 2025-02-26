@@ -21,7 +21,7 @@ import {
 import 'reactjs-tiptap-editor/style.css';
 import { useTheme } from '@/components/theme-provider';
 import { fileToBase64 } from '@/components/minimal-tiptap/utils';
-import { enrich } from '@/lib/utils';
+import { enrich } from '@/lib/galleryUtils';
 
 const extensions = [
   BaseKit.configure({
@@ -61,6 +61,7 @@ const extensions = [
 export function GalleryEditor() {
   const [value, setValue] = useState('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [showBubbleMenu, setShowBubbleMenu] = useState<boolean>(false);
   const isDarkMode = useTheme();
 
   const onSave = (
@@ -93,12 +94,16 @@ export function GalleryEditor() {
 
   return (
     <div className="container mx-auto p-5 flex justify-center">
-      <GallerySaveDialog onSubmit={onSave} content={value} />
-      <div className="h-full w-full richtext-outline-none">
+      <div
+        // className="h-full w-full"
+        className={'h-full w-full ' + (!showBubbleMenu && 'bubble-menu-hidden')}
+      >
         <RichTextEditor
           toolbar={{
             render: (props, toolbarItems, dom, containerDom) => {
-              //
+              // Workaround using render function to pass a custom component to
+              // an array of toolbar items from the extensions. Making sure it's appeneded to
+              // end and updated with latest props on each re-render
               const isSaveBtnExists = (toolbarItem: any) =>
                 toolbarItem.name === 'SaveButton';
               const saveBtn = {
@@ -131,8 +136,8 @@ export function GalleryEditor() {
               hidden: false,
             },
           }}
-          // disableBubble
-          // hideBubble
+          disableBubble={!showBubbleMenu}
+          hideBubble={!showBubbleMenu}
         />
       </div>
       {/* <NewGalleryMenu /> */}

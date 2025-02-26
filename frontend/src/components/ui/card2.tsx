@@ -3,12 +3,12 @@ import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import React from 'react';
 
-interface Card2Props {
+interface GalleryListCardProps {
   gallery: Gallery;
   onClick: (gallery: Gallery) => void;
 }
 
-const Card2 = React.forwardRef<HTMLDivElement, Card2Props>(
+const GalleryListCard = React.forwardRef<HTMLDivElement, GalleryListCardProps>(
   ({ ...props }, ref) => {
     const { title, description, thumbnail } = props.gallery;
     const { onClick } = props;
@@ -25,7 +25,7 @@ const Card2 = React.forwardRef<HTMLDivElement, Card2Props>(
         {/* {...props} */}
         <img
           src={thumbnail}
-          className="w-full h-full object-cover rounded-lg"
+          className="w-full h-full object-cover p-2 rounded-3xl"
         />
         <CardContent className="p-6 space-y-4">
           <CardTitle className="text-xl font-semibold">{title}</CardTitle>
@@ -36,7 +36,7 @@ const Card2 = React.forwardRef<HTMLDivElement, Card2Props>(
   }
 );
 
-export default Card2;
+export default GalleryListCard;
 
 // const Card1 = React.forwardRef<
 //   HTMLDivElement,

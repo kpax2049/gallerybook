@@ -1,5 +1,5 @@
 import { Gallery, getGalleries } from '@/api/gallery';
-import Card2 from '@/components/ui/card2';
+import GalleryListCard from '@/components/ui/card2';
 import { Skeleton } from '@/components/ui/skeleton';
 // import { Images } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -20,7 +20,7 @@ export default function GalleryList() {
     const skeletons = [];
     for (let step = 0; step < 6; step++) {
       skeletons.push(
-        <div className="flex flex-col space-y-3">
+        <div key={step} className="flex flex-col space-y-3">
           <Skeleton className="flex items-center flex-col p-4 gap-2 aspect-video rounded-xl bg-muted" />
         </div>
       );
@@ -37,7 +37,7 @@ export default function GalleryList() {
         galleries.map((gallery) => (
           <div key={gallery.id}>
             <NavLink viewTransition to={gallery.id.toString()}>
-              <Card2 {...{ gallery, onClick }} />
+              <GalleryListCard {...{ gallery, onClick }} />
             </NavLink>
           </div>
           // <div
