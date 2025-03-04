@@ -55,19 +55,33 @@ const getUserProfile = (user: User | null) => {
   return userProfile;
 };
 
-const signUpOrIn = () => {
+function SignUpOrInButton() {
   return (
-    <div className="flex h-5 items-center space-x-4 text-sm">
-      <NavLink viewTransition to={'/signup'}>
-        <Button variant="link">Register</Button>
+    <SidebarMenuButton
+      size="lg"
+      className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+    >
+      <NavLink viewTransition to="/">
+        <Button variant="ghost" size="icon">
+          <img
+            src={logo}
+            alt="GB Logo"
+            className="group-data-[state=collapsed]:w-[28px] group-data-[state=collapsed]:h-[28px]"
+          />
+        </Button>
       </NavLink>
-      <Separator orientation="vertical" />
-      <NavLink viewTransition to={'/login'}>
-        <Button variant="link">Sign in</Button>
-      </NavLink>
-    </div>
+      <div className="flex h-5 items-center space-x-4 text-sm data-[state=collapsed]:hidden">
+        <NavLink viewTransition to={'/signup'}>
+          <Button variant="link">Register</Button>
+        </NavLink>
+        <Separator orientation="vertical" />
+        <NavLink viewTransition to={'/login'}>
+          <Button variant="link">Sign in</Button>
+        </NavLink>
+      </div>
+    </SidebarMenuButton>
   );
-};
+}
 
 export function NavUser({ user, handleLogout }: NavUserProps) {
   const { isMobile } = useSidebar();
@@ -139,7 +153,7 @@ export function NavUser({ user, handleLogout }: NavUserProps) {
           </DropdownMenu>
         </SidebarMenuItem>
       ) : (
-        signUpOrIn()
+        <SignUpOrInButton />
       )}
     </SidebarMenu>
   );

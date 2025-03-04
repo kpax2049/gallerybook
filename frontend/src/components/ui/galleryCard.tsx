@@ -25,7 +25,7 @@ const GalleryListCard = React.forwardRef<HTMLDivElement, GalleryListCardProps>(
         {/* {...props} */}
         <img
           src={thumbnail}
-          className="w-full h-full object-cover p-2 rounded-3xl"
+          className="w-full h-full object-cover p-2 rounded-2xl"
         />
         <CardContent className="p-6 space-y-4">
           <CardTitle className="text-xl font-semibold">{title}</CardTitle>

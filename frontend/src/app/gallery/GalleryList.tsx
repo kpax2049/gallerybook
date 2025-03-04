@@ -1,5 +1,5 @@
 import { Gallery, getGalleries } from '@/api/gallery';
-import GalleryListCard from '@/components/ui/card2';
+import GalleryListCard from '@/components/ui/galleryCard';
 import { Skeleton } from '@/components/ui/skeleton';
 // import { Images } from 'lucide-react';
 import { useEffect, useState } from 'react';

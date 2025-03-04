@@ -31,9 +31,7 @@ const extensions = [
     },
 
     // Character count
-    characterCount: {
-      limit: 50_000,
-    },
+    characterCount: false,
   }),
 
   // Import Extensions Here

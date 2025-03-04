@@ -23,7 +23,6 @@ export default function GalleryPage() {
       setLoading(false);
     });
   }, []);
-  // const emptyNode = { type: '' };
 
   return (
     <div className="grid auto-rows-min gap-4 p-4 justify-between">

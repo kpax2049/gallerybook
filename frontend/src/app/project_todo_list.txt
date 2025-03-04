@@ -46,9 +46,24 @@ Implement themeing (saved as profile config)
 Bread crumbs
 
 
+
+Architecture
+Batch/paginated loading of images
+    Separate images to a separate table?
+        To allow paginated loadaing
+
 Dashboard
 1) Turn top panel to carousel of gallery thumbnails
 
 Main UI
-1) When User s not signed in the component with Register / Sing in buttons doesn't collapse when collapse side drawer button is clicked
+X 1) When User is not signed in the component with Register / Sing in buttons doesn't collapse when collapse side drawer button is clicked
+X 2) Make Logo image into a link to home
 
+
+Gallery Editor
+
+
+Gallery Viewer
+1) Make Gallery editable
+2) Add rating system
+3) Add comments
