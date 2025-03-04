@@ -65,7 +65,7 @@ client.interceptors.response.use(
 
 export const apiRequest = async <T>(
   url: string,
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: any
 ): Promise<T> => {

@@ -6,10 +6,10 @@ import qs from 'qs';
 
 export interface Gallery {
   id: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   userId: number;
-  createdBy: User;
+  createdBy?: User;
   title?: string;
   description?: string;
   content?: string;
@@ -31,6 +31,15 @@ export const createGallery = async (
   return await apiRequest<Gallery>(
     '/galleries',
     'POST',
+    qs.stringify(galleryData)
+  );
+};
+
+// Function to edit new gallery
+export const editGallery = async (galleryData: Gallery): Promise<Gallery> => {
+  return await apiRequest<Gallery>(
+    `/galleries/${galleryData.id}`,
+    'PATCH',
     qs.stringify(galleryData)
   );
 };

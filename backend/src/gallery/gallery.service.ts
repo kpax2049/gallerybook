@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { CreateGalleryDto, EditGalleryDto } from './dto';
+import { CreateGalleryDto } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -35,7 +35,7 @@ export class GalleryService {
   async editGalleryById(
     userId: number,
     galleryId: number,
-    dto: EditGalleryDto,
+    dto: CreateGalleryDto,
   ) {
     // get gallery by id
     const gallery = await this.prisma.gallery.findUnique({

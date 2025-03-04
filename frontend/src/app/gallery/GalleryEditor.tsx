@@ -67,6 +67,7 @@ export function GalleryEditor() {
     setOpen: Dispatch<SetStateAction<boolean>>
   ) => {
     setLoading(true);
+
     createGallery({
       title: data.title,
       description: data.description,
@@ -93,7 +94,6 @@ export function GalleryEditor() {
   return (
     <div className="container mx-auto p-5 flex justify-center">
       <div
-        // className="h-full w-full"
         className={'h-full w-full ' + (!showBubbleMenu && 'bubble-menu-hidden')}
       >
         <RichTextEditor
@@ -138,7 +138,6 @@ export function GalleryEditor() {
           hideBubble={!showBubbleMenu}
         />
       </div>
-      {/* <NewGalleryMenu /> */}
       {/* <MinimalTiptapEditor
         value={value}
         onChange={setValue}

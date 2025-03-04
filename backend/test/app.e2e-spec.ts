@@ -5,7 +5,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { AuthDto } from 'src/dto';
 import { EditUserDto } from 'src/users/dto';
-import { CreateGalleryDto, EditGalleryDto } from 'src/gallery/dto';
+import { CreateGalleryDto } from 'src/gallery/dto';
 
 describe('App e2e', () => {
   let app: INestApplication;
@@ -176,7 +176,7 @@ describe('App e2e', () => {
     });
     describe('Edit Gallery By Id', () => {
       it('Should Edit Gallery by Id ', () => {
-        const dto: EditGalleryDto = {
+        const dto: CreateGalleryDto = {
           title: 'My first edited gallery',
           description: 'Humpty',
         };

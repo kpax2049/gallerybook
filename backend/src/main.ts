@@ -6,7 +6,7 @@ import { json, urlencoded } from 'express';
 async function bootstrap() {
   const corsOptions = {
     origin: 'http://localhost:5173', // Match your frontend's address
-    methods: ['GET', 'POST'], // Specify the allowed HTTP methods
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], // Specify the allowed HTTP methods
   };
   const app = await NestFactory.create(AppModule);
   app.enableCors(corsOptions);

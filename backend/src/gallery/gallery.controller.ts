@@ -14,7 +14,7 @@ import {
 import { JwtGuard } from '../auth/guard';
 import { GalleryService } from './gallery.service';
 import { GetUser } from 'src/auth/decorator';
-import { CreateGalleryDto, EditGalleryDto } from './dto';
+import { CreateGalleryDto } from './dto';
 
 @UseGuards(JwtGuard)
 @Controller('galleries')
@@ -44,7 +44,7 @@ export class GalleryController {
   editGalleryById(
     @GetUser('id') userId: number,
     @Param('id', ParseIntPipe) galleryId: number,
-    @Body() dto: EditGalleryDto,
+    @Body() dto: CreateGalleryDto,
   ) {
     return this.galleryService.editGalleryById(userId, galleryId, dto);
   }

@@ -61,9 +61,9 @@ X 2) Make Logo image into a link to home
 
 
 Gallery Editor
-
+X 1) Make Gallery editable
 
 Gallery Viewer
-1) Make Gallery editable
+X 1) Add Edit button to Gallery List viewer
 2) Add rating system
 3) Add comments
