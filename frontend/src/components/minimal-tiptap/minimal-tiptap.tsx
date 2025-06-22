@@ -25,7 +25,7 @@ export interface MinimalTiptapProps
   customComponent?: React.ReactNode;
 }
 
-const Toolbar = ({
+export const Toolbar = ({
   editor,
   // onSave,
   customComponent,

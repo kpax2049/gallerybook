@@ -1,8 +1,31 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Gallery, getGallery } from '@/api/gallery';
-import { TipTapRenderer } from '@/components/ui/TiptapRender';
+// import { TipTapRenderer } from '@/components/ui/TiptapRender';
 import CommentPanel from './galleryComment/Comment';
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
+import ImageResize from 'tiptap-extension-resize-image';
+import Highlight from '@tiptap/extension-highlight';
+import TextStyle from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import { FontFamily } from '@tiptap/extension-font-family';
+import { FontSize } from 'reactjs-tiptap-editor/lib/FontSize.js';
+import { TextAlign } from 'reactjs-tiptap-editor/lib/TextAlign.js';
+
+const extensions = [
+  StarterKit,
+  Image,
+  ImageResize,
+  TextAlign,
+  Color,
+  FontFamily,
+  FontSize,
+  TextStyle,
+  Highlight,
+];
 
 export default function GalleryPage() {
   // { children }: GalleryProps
@@ -10,12 +33,23 @@ export default function GalleryPage() {
   const [content, setContent] = useState<string>();
   const [loading, setLoading] = useState<boolean>(false);
   const { galleryId } = useParams();
+
+  const editor = useEditor({
+    editorProps: {
+      attributes: {
+        class: 'focus:outline-none border-[#C7C7C7]',
+      },
+    },
+    editable: false,
+    extensions,
+    content,
+  });
   useEffect(() => {
     setLoading(true);
     getGallery(galleryId).then((data) => {
       setGallery(data);
       if (data.content) {
-        setContent(data.content);
+        editor?.commands.setContent(JSON.parse(data.content));
       }
       setLoading(false);
     });
@@ -24,12 +58,14 @@ export default function GalleryPage() {
   return (
     <div className="grid auto-rows-min gap-4 p-4 justify-between">
       <h3>Gallery Item: {galleryId}</h3>
-      {content && content.length > 0 && (
-        <div>
-          <TipTapRenderer {...{ content: content }} />
-          <CommentPanel />
-        </div>
-      )}
+      {/* {content && content.length > 0 && ( */}
+      <div>
+        <EditorContent editor={editor} />
+
+        {/* <TipTapRenderer {...{ content: content }} /> */}
+        <CommentPanel />
+      </div>
+      {/* )} */}
     </div>
   );
 }

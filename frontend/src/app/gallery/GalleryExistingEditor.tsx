@@ -1,31 +1,32 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { editGallery, Gallery, getGallery } from '@/api/gallery';
 // import { MinimalTiptapEditor } from '@/components/minimal-tiptap';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
 import RichTextEditor from 'reactjs-tiptap-editor';
-import {
-  BaseKit,
-  Bold,
-  Color,
-  FontFamily,
-  FontSize,
-  Heading,
-  History,
-  Highlight,
-  Image,
-  Italic,
-  TextAlign,
-} from 'reactjs-tiptap-editor/extension-bundle';
+import { BaseKit } from 'reactjs-tiptap-editor';
+import { Bold } from 'reactjs-tiptap-editor/bold';
+import { Image } from 'reactjs-tiptap-editor/image';
+import 'react-image-crop/dist/ReactCrop.css';
 // Import CSS
 import 'reactjs-tiptap-editor/style.css';
+import { TextAlign } from 'reactjs-tiptap-editor/textalign';
+import { Color } from 'reactjs-tiptap-editor/color';
+import { Italic } from 'reactjs-tiptap-editor/italic';
+import { FontFamily } from 'reactjs-tiptap-editor/fontfamily';
+import { FontSize } from 'reactjs-tiptap-editor/fontsize';
+import { Heading } from 'reactjs-tiptap-editor/heading';
+import { Highlight } from 'reactjs-tiptap-editor/highlight';
+import { History } from 'reactjs-tiptap-editor/history';
 import { useTheme } from '@/components/theme-provider';
 import { fileToBase64 } from '@/components/minimal-tiptap/utils';
 import { enrich } from '@/lib/galleryUtils';
 import { useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AnyExtension } from '@tiptap/react';
 
-const extensions = [
+const extensions: AnyExtension[] = [
   BaseKit.configure({
     // Show placeholder
     placeholder: {

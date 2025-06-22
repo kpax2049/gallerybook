@@ -11,6 +11,7 @@ import { GalleryEditor } from './app/gallery/GalleryEditor';
 import GalleryList from './app/gallery/GalleryList';
 import GalleryPage from './app/gallery/Gallery';
 import { GalleryExistingEditor } from './app/gallery/GalleryExistingEditor';
+import { GalleryMinimalTiptapEditor } from './app/gallery/GalleryMinimalTiptapEditor';
 
 const Landing = () => {
   return <h2>Landing (Public: anyone can access this page)</h2>;
@@ -95,6 +96,10 @@ const App = () => {
             <Route path="galleries" element={<GalleryList />} />
             <Route path="galleries/:galleryId" element={<GalleryPage />} />
             <Route path="gallery/new" element={<GalleryEditor />} />
+            <Route
+              path="gallery/minimal-tiptap"
+              element={<GalleryMinimalTiptapEditor />}
+            />
             <Route
               path="gallery/edit/:galleryId"
               element={<GalleryExistingEditor />}

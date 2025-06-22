@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build: ./backend
@@ -21,8 +19,8 @@ services:
       POSTGRES_DB: nest_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
-    # volumes:
-    #   - postgres_data:/var/lib/postgresql/data
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     ports: 
       - 5434:5432
     networks:
@@ -33,8 +31,8 @@ services:
       POSTGRES_DB: nest_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
-    # volumes:
-    #   - postgres_data:/var/lib/postgresql/data
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
     ports: 
       - 5435:5432
     networks:
@@ -42,5 +40,6 @@ services:
 
 volumes:
   postgres_data:
+  postgres_test_data:
 networks:
   gallerybook:
