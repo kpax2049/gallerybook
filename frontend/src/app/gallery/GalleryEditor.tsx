@@ -5,21 +5,31 @@ import { createGallery } from '@/api/gallery';
 import { Dispatch, SetStateAction, useState } from 'react';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
 import RichTextEditor from 'reactjs-tiptap-editor';
-import { BaseKit } from 'reactjs-tiptap-editor';
-import { Bold } from 'reactjs-tiptap-editor/bold';
+
 import { Image } from 'reactjs-tiptap-editor/image';
 import 'react-image-crop/dist/ReactCrop.css';
 // Import CSS
 import 'reactjs-tiptap-editor/style.css';
+import { BaseKit } from 'reactjs-tiptap-editor';
+import { Bold } from 'reactjs-tiptap-editor/bold';
 import { TextAlign } from 'reactjs-tiptap-editor/textalign';
 import { Color } from 'reactjs-tiptap-editor/color';
-
 import { Italic } from 'reactjs-tiptap-editor/italic';
 import { FontFamily } from 'reactjs-tiptap-editor/fontfamily';
 import { FontSize } from 'reactjs-tiptap-editor/fontsize';
 import { Heading } from 'reactjs-tiptap-editor/heading';
 import { Highlight } from 'reactjs-tiptap-editor/highlight';
 import { History } from 'reactjs-tiptap-editor/history';
+import { BulletList } from 'reactjs-tiptap-editor/bulletlist';
+import { ColumnActionButton } from 'reactjs-tiptap-editor/multicolumn';
+import { Emoji } from 'reactjs-tiptap-editor/emoji';
+import { HorizontalRule } from 'reactjs-tiptap-editor/horizontalrule';
+import { Indent } from 'reactjs-tiptap-editor/indent';
+import { OrderedList } from 'reactjs-tiptap-editor/orderedlist';
+import { Strike } from 'reactjs-tiptap-editor/strike';
+import { Table } from 'reactjs-tiptap-editor/table';
+import { TextUnderline } from 'reactjs-tiptap-editor/textunderline';
+
 import { useTheme } from '@/components/theme-provider';
 import { fileToBase64 } from '@/components/minimal-tiptap/utils';
 import { enrich } from '@/lib/galleryUtils';
@@ -35,7 +45,7 @@ const extensions: AnyExtension[] = [
     // Character count
     characterCount: false,
   }),
-
+  History,
   // Import Extensions Here
   Image.configure({
     upload: (files: File) => {
@@ -47,15 +57,23 @@ const extensions: AnyExtension[] = [
       });
     },
   }),
+  FontFamily,
+  Heading,
+  FontSize,
   Bold,
   Italic,
-  TextAlign,
+  TextUnderline,
+  Strike,
   Color,
-  FontFamily,
-  FontSize,
-  Heading,
   Highlight,
-  History,
+  BulletList,
+  OrderedList,
+  TextAlign,
+  Indent,
+  HorizontalRule,
+  ColumnActionButton,
+  Table,
+  Emoji,
 ];
 
 export function GalleryEditor() {
