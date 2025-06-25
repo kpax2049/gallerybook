@@ -29,11 +29,11 @@ import { Strike } from 'reactjs-tiptap-editor/strike';
 import { Table } from 'reactjs-tiptap-editor/table';
 import { TextUnderline } from 'reactjs-tiptap-editor/textunderline';
 import { useTheme } from '@/components/theme-provider';
-import { fileToBase64 } from '@/components/minimal-tiptap/utils';
 import { enrich } from '@/lib/galleryUtils';
 import { useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AnyExtension } from '@tiptap/react';
+import { fileToBase64 } from '@/lib/fileUtils';
 
 const extensions: AnyExtension[] = [
   BaseKit.configure({

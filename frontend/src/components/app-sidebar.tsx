@@ -46,12 +46,8 @@ const data = {
           url: '/gallery/new', //'/galleries',
         },
         {
-          title: 'Edit Gallery',
+          title: 'Users',
           url: '/admin/users',
-        },
-        {
-          title: 'Minimal TipTap',
-          url: '/gallery/minimal-tiptap',
         },
       ],
     },

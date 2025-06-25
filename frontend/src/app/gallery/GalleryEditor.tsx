@@ -31,9 +31,9 @@ import { Table } from 'reactjs-tiptap-editor/table';
 import { TextUnderline } from 'reactjs-tiptap-editor/textunderline';
 
 import { useTheme } from '@/components/theme-provider';
-import { fileToBase64 } from '@/components/minimal-tiptap/utils';
 import { enrich } from '@/lib/galleryUtils';
 import { AnyExtension } from '@tiptap/react';
+import { fileToBase64 } from '@/lib/fileUtils';
 
 const extensions: AnyExtension[] = [
   BaseKit.configure({
