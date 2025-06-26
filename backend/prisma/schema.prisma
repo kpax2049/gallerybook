@@ -23,6 +23,18 @@ enum UserStatus {
   inactive
 }
 
+enum ActionType {
+  THUMB_UP
+  THUMB_DOWN
+  LAUGH
+  HOORAY
+  CONFUSED
+  HEART
+  ROCKET
+  EYE
+  UPVOTE
+}
+
 model User {
   id        Int        @id @default(autoincrement())
   createdAt DateTime   @default(now())
@@ -38,6 +50,7 @@ model User {
   profile Profile?
 
   galleries Gallery[]
+  comments  Comment[]
 
   @@map("users")
 }
@@ -64,8 +77,50 @@ model Gallery {
   description String?
   content     Json?
   thumbnail   String?
+  comments    Comment[]
 
   @@map("galleries")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  text      String
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  galleryId Int
+  gallery   Gallery @relation(fields: [galleryId], references: [id])
+
+  parentId Int?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentReplies")
+
+  selectedActions Reaction[]   @relation("CommentSelectedActions")
+  actions         ActionCount? @relation("CommentActionCount")
+}
+
+model Reaction {
+  id        Int        @id @default(autoincrement())
+  type      ActionType
+  commentId Int
+  comment   Comment    @relation("CommentSelectedActions", fields: [commentId], references: [id])
+}
+
+model ActionCount {
+  commentId Int     @id
+  upvote    Int
+  rocket    Int
+  heart     Int
+  thumbUp   Int
+  thumbDown Int
+  laugh     Int
+  hooray    Int
+  confused  Int
+  eye       Int
+  comment   Comment @relation("CommentActionCount", fields: [commentId], references: [id])
 }
 
 // model Image {
