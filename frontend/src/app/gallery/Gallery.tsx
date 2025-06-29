@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Gallery, getGallery } from '@/api/gallery';
 // import { TipTapRenderer } from '@/components/ui/TiptapRender';
-import CommentPanel from './galleryComment/Comment';
+import CommentPanel from './galleryComment/Comment_old';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -14,6 +14,7 @@ import { Color } from '@tiptap/extension-color';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { FontSize } from 'reactjs-tiptap-editor/lib/FontSize.js';
 import { TextAlign } from 'reactjs-tiptap-editor/lib/TextAlign.js';
+import DemoComment from './galleryComment/Comment';
 
 const extensions = [
   StarterKit,
@@ -63,7 +64,8 @@ export default function GalleryPage() {
         <EditorContent editor={editor} />
 
         {/* <TipTapRenderer {...{ content: content }} /> */}
-        <CommentPanel />
+        {/* <CommentPanel /> */}
+        <DemoComment />
       </div>
       {/* )} */}
     </div>
