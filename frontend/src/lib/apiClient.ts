@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { toast } from '@/hooks/use-toast';
 import axios, { AxiosError, AxiosResponse } from 'axios';
 const token = localStorage.getItem('ACCESS_TOKEN');
@@ -21,7 +22,6 @@ const errorHandler = (error: AxiosError | undefined) => {
     });
   } else {
     const responseData = error?.response?.data;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const message = (responseData as any).message || error?.message;
     toast({
       variant: 'destructive',
@@ -39,7 +39,6 @@ const client = axios.create({
   withCredentials: false,
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 client.interceptors.request.use((config: any) => {
   const token = localStorage.getItem('ACCESS_TOKEN');
   config.headers = config.headers || {};
@@ -66,13 +65,14 @@ client.interceptors.response.use(
 export const apiRequest = async <T>(
   url: string,
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data?: any
+  data?: any,
+  params?: any
 ): Promise<T> => {
   const response: AxiosResponse<T> = await client.request({
     method,
     url,
     data,
+    params,
   });
 
   return response.data;

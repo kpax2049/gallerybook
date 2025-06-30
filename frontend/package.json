@@ -41,7 +41,7 @@
     "@tiptap/extension-typography": "^2.11.5",
     "@tiptap/extension-underline": "^2.11.5",
     "@tiptap/pm": "^2.11.5",
-    "@tiptap/react": "^2.11.5",
+    "@tiptap/react": "^2.23.0",
     "@tiptap/starter-kit": "^2.11.5",
     "@wokaylabs/tiptap-react-render": "^0.0.1",
     "axios": "^1.7.9",
