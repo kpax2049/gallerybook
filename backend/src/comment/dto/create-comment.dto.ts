@@ -15,6 +15,7 @@ export class CreateCommentDto {
   galleryId: number;
 
   @IsNumber()
+  @Type(() => Number)
   @IsOptional()
   parentId?: number;
 }

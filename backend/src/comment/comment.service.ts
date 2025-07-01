@@ -16,6 +16,7 @@ export class CommentService {
         user: true,
         replies: {
           include: {
+            user: true,
             replies: true,
           },
         },
