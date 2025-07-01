@@ -65,7 +65,7 @@ export default function GalleryPage() {
 
         {/* <TipTapRenderer {...{ content: content }} /> */}
         {/* <CommentPanel /> */}
-        <Comment galleryId={galleryId} />
+        <Comment galleryId={Number(galleryId)} />
       </div>
       {/* )} */}
     </div>

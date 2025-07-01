@@ -5,6 +5,7 @@ import qs from 'qs';
 
 // import { TipTapNode } from '@troop.com/tiptap-react-render';
 // import { Content } from '@tiptap/react';
+export const LIST_EMOJI = ['👍', '👎', '😄', '🎉', '😕', '❤️', '🚀', '👀'];
 export enum ACTIONS_TYPE {
   THUMB_UP = 'THUMB_UP',
   THUMB_DOWN = 'THUMB_DOWN',
@@ -16,6 +17,41 @@ export enum ACTIONS_TYPE {
   EYE = 'EYE',
   UPVOTE = 'UPVOTE',
 }
+
+export const ACTIONS = [
+  {
+    id: ACTIONS_TYPE.THUMB_UP,
+    emoji: LIST_EMOJI[0],
+  },
+  {
+    id: ACTIONS_TYPE.THUMB_DOWN,
+    emoji: LIST_EMOJI[1],
+  },
+  {
+    id: ACTIONS_TYPE.LAUGH,
+    emoji: LIST_EMOJI[2],
+  },
+  {
+    id: ACTIONS_TYPE.HOORAY,
+    emoji: LIST_EMOJI[3],
+  },
+  {
+    id: ACTIONS_TYPE.CONFUSED,
+    emoji: LIST_EMOJI[4],
+  },
+  {
+    id: ACTIONS_TYPE.HEART,
+    emoji: LIST_EMOJI[5],
+  },
+  {
+    id: ACTIONS_TYPE.ROCKET,
+    emoji: LIST_EMOJI[6],
+  },
+  {
+    id: ACTIONS_TYPE.EYE,
+    emoji: LIST_EMOJI[7],
+  },
+];
 
 export interface Reaction {
   id: number;
@@ -50,14 +86,14 @@ export interface Comment {
   text: string;
   galleryId: number;
   gallery?: Gallery;
-  selectedActions: Reaction[];
-  actions: ActionCount;
+  selectedActions?: ACTIONS_TYPE[];
+  actions: { [key in ACTIONS_TYPE]: number };
 }
 
-interface CreateCommentRequest {
+export interface CreateCommentRequest {
   text: string;
   userId: number;
-  galleryId?: string;
+  galleryId: number;
   parentId?: number;
 }
 // Function to create new comment
@@ -81,9 +117,7 @@ export const editComment = async (commentData: Comment): Promise<Comment> => {
 };
 
 // Fetching comments
-export const getComments = async (
-  galleryId: string | undefined
-): Promise<Comment[]> => {
+export const getComments = async (galleryId: number): Promise<Comment[]> => {
   return await apiRequest<Comment[]>('/comments', 'GET', undefined, {
     galleryId: galleryId,
   });

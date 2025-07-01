@@ -4,7 +4,7 @@ export default {
   content: [
     './index.html',
     './src/**/*.{ts,tsx,js,jsx}',
-    './node_modules/shadcn-comments/**/*.{ts,tsx,js,jsx}',
+    './local_modules/shadcn-comments/dist/**/*.{ts,tsx,js,jsx}',
   ],
   theme: {
     extend: {

@@ -59,7 +59,6 @@
     "react-medium-image-zoom": "^5.2.13",
     "react-router-dom": "^7.1.2",
     "reactjs-tiptap-editor": "^0.3.5",
-    "shadcn-comments": "^1.0.5",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
@@ -68,7 +67,8 @@
     "tiptap-extension-resize-image": "^1.2.1",
     "vaul": "^1.1.2",
     "zod": "^3.24.1",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.3",
+    "shadcn-comments": "file:./local_modules/shadcn-comments"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

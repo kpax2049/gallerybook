@@ -1,4 +1,4 @@
-import { UserStatus, UserRole } from '@/common/enums';
+import { UserStatus, UserRole } from '../common/enums';
 import { apiRequest } from '@/lib/apiClient';
 import { Gallery } from './gallery';
 
