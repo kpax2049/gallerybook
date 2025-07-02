@@ -9,7 +9,7 @@ interface CommentEditorProps {
   onChange?: (val: string) => void;
   placeholder?: string;
   theme: 'light' | 'dark' | 'system';
-  currentUser: User;
+  currentUser?: User;
 }
 
 export const CommentEditor = ({

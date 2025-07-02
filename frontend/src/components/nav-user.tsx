@@ -24,6 +24,7 @@ import { User } from '@/api/user';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { NavLink } from 'react-router-dom';
+import { useUserStore } from '@/stores/userStore';
 
 // interface NavUserAccountProps {
 //   firstName: string;
@@ -83,12 +84,13 @@ function SignUpOrInButton() {
   );
 }
 
-export function NavUser({ user, handleLogout }: NavUserProps) {
+export function NavUser({ handleLogout }: NavUserProps) {
   const { isMobile } = useSidebar();
-  const userProfile = getUserProfile(user);
+  const currentUser = useUserStore((state) => state.user);
+  const userProfile = currentUser && getUserProfile(currentUser);
   return (
     <SidebarMenu>
-      {user ? (
+      {currentUser ? (
         <SidebarMenuItem>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -99,9 +101,9 @@ export function NavUser({ user, handleLogout }: NavUserProps) {
                 <img src={logo} alt="Logo" />
                 <div className="grid flex-1 text-center text-sm leading-tight">
                   <span className="truncate font-semibold">
-                    {userProfile.firstLast}
+                    {userProfile?.firstLast}
                   </span>
-                  <span className="truncate text-xs">{user?.email}</span>
+                  <span className="truncate text-xs">{currentUser?.email}</span>
                 </div>
                 <ChevronsUpDown className="ml-auto size-4" />
               </SidebarMenuButton>
@@ -117,17 +119,19 @@ export function NavUser({ user, handleLogout }: NavUserProps) {
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage
                       // src={user.avatar}
-                      alt={userProfile.firstLast}
+                      alt={userProfile?.firstLast}
                     />
                     <AvatarFallback className="rounded-lg">
-                      {userProfile.initials}
+                      {userProfile?.initials}
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
-                      {userProfile.firstLast}
+                      {userProfile?.firstLast}
                     </span>
-                    <span className="truncate text-xs">{user?.email}</span>
+                    <span className="truncate text-xs">
+                      {currentUser?.email}
+                    </span>
                   </div>
                   <ModeToggle />
                 </div>

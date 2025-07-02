@@ -1,7 +1,7 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router';
+import { Navigate, Outlet, Route, Routes, useNavigate } from 'react-router';
 import './App.css';
-import { useState } from 'react';
-import { User } from './api/user';
+import { useEffect, useState } from 'react';
+import { getUser, User } from './api/user';
 import { UserRole } from './common/enums';
 import Dashboard from './app/dashboard/Dashboard';
 import UserList from './app/user/UserList';
@@ -11,6 +11,7 @@ import { GalleryEditor } from './app/gallery/GalleryEditor';
 import GalleryList from './app/gallery/GalleryList';
 import GalleryPage from './app/gallery/Gallery';
 import { GalleryExistingEditor } from './app/gallery/GalleryExistingEditor';
+import { useUserStore } from '@/stores/userStore';
 
 const Landing = () => {
   return <h2>Landing (Public: anyone can access this page)</h2>;
@@ -65,13 +66,26 @@ const App = () => {
 
   //   return localStorageToken ? <Dashboard /> : <Navigate to="/login" replace />;
   // };
+  const setGlobalUser = useUserStore((state) => state.setUser);
   const [user, setUser] = useState<User | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    getUser().then((user: User) => {
+      setGlobalUser(user);
+    });
+  }, [setGlobalUser]);
 
   const handleLogin = (user: User) => {
     setUser(user);
   };
 
-  const handleLogout = () => setUser(null);
+  const handleLogout = () => {
+    setUser(null);
+    // Clear user in Zustand store
+    useUserStore.getState().clearUser();
+    navigate('/login');
+  };
 
   return (
     <>
