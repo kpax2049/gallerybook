@@ -139,7 +139,7 @@ const data = {
 interface AppSidebarProps {
   props?: React.ComponentProps<typeof Sidebar>;
   handleLogout: () => void;
-  user: User | null;
+  user: User | undefined;
 }
 
 export function AppSidebar({ handleLogout, user, ...props }: AppSidebarProps) {

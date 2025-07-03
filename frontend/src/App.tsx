@@ -1,6 +1,6 @@
 import { Navigate, Outlet, Route, Routes, useNavigate } from 'react-router';
 import './App.css';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { getUser, User } from './api/user';
 import { UserRole } from './common/enums';
 import Dashboard from './app/dashboard/Dashboard';
@@ -59,7 +59,6 @@ const ProtectedRoute = ({
 };
 
 const App = () => {
-  // const [user, setUser] = useState<User | null>(null);
   // const ProtectedRoutes = () => {
   //   // TODO: Use authentication token
   //   const localStorageToken = localStorage.getItem('ACCESS_TOKEN');
@@ -67,7 +66,7 @@ const App = () => {
   //   return localStorageToken ? <Dashboard /> : <Navigate to="/login" replace />;
   // };
   const setGlobalUser = useUserStore((state) => state.setUser);
-  const [user, setUser] = useState<User | null>(null);
+  const user = useUserStore((state) => state.user);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -77,13 +76,13 @@ const App = () => {
   }, [setGlobalUser]);
 
   const handleLogin = (user: User) => {
-    setUser(user);
+    setGlobalUser(user);
   };
 
   const handleLogout = () => {
-    setUser(null);
-    // Clear user in Zustand store
+    // Clear user in Zustand store and reset local storage
     useUserStore.getState().clearUser();
+    localStorage.removeItem('ACCESS_TOKEN');
     navigate('/login');
   };
 

@@ -18,7 +18,7 @@ import {
 import { Outlet } from 'react-router-dom';
 
 interface DashboardProps {
-  user: User | null;
+  user: User | undefined;
   handleLogout: () => void;
   // handleLogin: (u: User) => void;
 }

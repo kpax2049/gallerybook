@@ -33,7 +33,7 @@ import { useUserStore } from '@/stores/userStore';
 //   avatar: string;
 // }
 interface NavUserProps {
-  user: User | null;
+  user: User | undefined;
   handleLogout: () => void;
 }
 

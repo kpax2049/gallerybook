@@ -41,7 +41,6 @@ const formSchema = z.object({
 });
 
 type LoginFormProps = {
-  // setUser: Dispatch<SetStateAction<User | null>>;
   className?: string;
   handleLogin: (u: User) => void;
   props?: React.ComponentPropsWithoutRef<'div'>;
@@ -68,9 +67,7 @@ export function LoginForm({
       .then((response) => {
         localStorage.setItem('ACCESS_TOKEN', response.access_token);
         getUser().then((user: User) => {
-          // setUser(user);
           handleLogin(user);
-          console.log('setUser ' + user);
           setLoading(false);
           navigate('/', { viewTransition: true });
         });
