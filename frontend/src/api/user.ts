@@ -27,3 +27,11 @@ export const getUsers = async (): Promise<User[]> => {
 export const getUser = async (): Promise<User> => {
   return await apiRequest<User>('/users/me', 'GET');
 };
+
+export const getUserInitials = (user: User | undefined): string => {
+  return `${user?.firstName?.substring(0, 1)} ${user?.lastName?.substring(0, 1)}`;
+};
+
+export const getUserFullName = (user: User | undefined): string => {
+  return `${user?.firstName} ${user?.lastName}`;
+};

@@ -1,6 +1,6 @@
 'use client';
 
-import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from 'lucide-react';
+import { Bell, ChevronsUpDown, LogOut } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -20,41 +20,16 @@ import {
 } from '@/components/ui/sidebar';
 import logo from '../assets/GB-logo.png';
 import { ModeToggle } from './mode-toggle';
-import { User } from '@/api/user';
+import { getUserFullName, getUserInitials, User } from '@/api/user';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { NavLink } from 'react-router-dom';
 import { useUserStore } from '@/stores/userStore';
-
-// interface NavUserAccountProps {
-//   firstName: string;
-//   lastName: string;
-//   email: string;
-//   avatar: string;
-// }
+import { UserProfileDialog } from '@/app/userProfile/UserProfileDialog';
 interface NavUserProps {
-  user: User | undefined;
+  user: User | undefined; // TODO: cleanup user prop
   handleLogout: () => void;
 }
-
-// TODO: make a computed function in the User class
-const getUserProfile = (user: User | null) => {
-  if (!user) return { initials: '', firstLast: '' };
-  const userProfile: {
-    initials: string;
-    firstLast: string;
-  } = { initials: '', firstLast: '' };
-  const defaultFirstName =
-    user?.firstName && user?.firstName?.length > 0 ? user?.firstName : '';
-  const defaultLastName =
-    user?.lastName && user?.lastName?.length > 0 ? user?.lastName : '';
-  const firstInitial = defaultFirstName && defaultFirstName.substring(0, 1);
-  const lastInitial = defaultLastName && defaultLastName.substring(0, 1);
-  userProfile.initials = `${firstInitial} ${lastInitial}`;
-  userProfile.firstLast = `${defaultFirstName} ${defaultLastName}`;
-
-  return userProfile;
-};
 
 function SignUpOrInButton() {
   return (
@@ -87,7 +62,7 @@ function SignUpOrInButton() {
 export function NavUser({ handleLogout }: NavUserProps) {
   const { isMobile } = useSidebar();
   const currentUser = useUserStore((state) => state.user);
-  const userProfile = currentUser && getUserProfile(currentUser);
+
   return (
     <SidebarMenu>
       {currentUser ? (
@@ -101,7 +76,7 @@ export function NavUser({ handleLogout }: NavUserProps) {
                 <img src={logo} alt="Logo" />
                 <div className="grid flex-1 text-center text-sm leading-tight">
                   <span className="truncate font-semibold">
-                    {userProfile?.firstLast}
+                    {getUserFullName(currentUser)}
                   </span>
                   <span className="truncate text-xs">{currentUser?.email}</span>
                 </div>
@@ -119,15 +94,15 @@ export function NavUser({ handleLogout }: NavUserProps) {
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage
                       // src={user.avatar}
-                      alt={userProfile?.firstLast}
+                      alt={getUserFullName(currentUser)}
                     />
                     <AvatarFallback className="rounded-lg">
-                      {userProfile?.initials}
+                      {getUserInitials(currentUser)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
-                      {userProfile?.firstLast}
+                      {getUserFullName(currentUser)}
                     </span>
                     <span className="truncate text-xs">
                       {currentUser?.email}
@@ -139,10 +114,7 @@ export function NavUser({ handleLogout }: NavUserProps) {
               <DropdownMenuSeparator />
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <BadgeCheck />
-                  Manage Profile
-                </DropdownMenuItem>
+                <UserProfileDialog />
                 <DropdownMenuItem>
                   <Bell />
                   Notifications
