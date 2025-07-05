@@ -25,6 +25,11 @@ export class AuthService {
           hash,
           firstName: dto.firstName,
           lastName: dto.lastName,
+          profile: {
+            create: {
+              avatarUrl: null, // optional
+            },
+          },
         },
       });
 
