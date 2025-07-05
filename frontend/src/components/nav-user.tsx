@@ -91,9 +91,10 @@ export function NavUser({ handleLogout }: NavUserProps) {
             >
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar className="h-8 w-8 rounded-lg">
+                  <Avatar className="h-8 w-8">
                     <AvatarImage
-                      // src={user.avatar}
+                      src={currentUser.profile.avatarUrl}
+                      className="object-cover"
                       alt={getUserFullName(currentUser)}
                     />
                     <AvatarFallback className="rounded-lg">

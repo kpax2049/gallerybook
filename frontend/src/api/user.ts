@@ -1,8 +1,8 @@
 import { UserStatus, UserRole } from '../common/enums';
 import { apiRequest } from '@/lib/apiClient';
 import { Gallery } from './gallery';
+import { Profile } from './profile';
 
-// Define the shape of data for a user
 export interface User {
   id: number;
   createdAt?: Date;
@@ -14,9 +14,17 @@ export interface User {
   lastName?: string;
   settings?: { [key: string]: unknown }[];
   status?: UserStatus;
-  //   profile?: Profile,
+  profile: Profile;
   galleries?: Gallery[];
 }
+
+export const getUserInitials = (user: User | undefined): string => {
+  return `${user?.firstName?.substring(0, 1)} ${user?.lastName?.substring(0, 1)}`;
+};
+
+export const getUserFullName = (user: User | undefined): string => {
+  return `${user?.firstName} ${user?.lastName}`;
+};
 
 // Fetching users
 export const getUsers = async (): Promise<User[]> => {
@@ -26,12 +34,4 @@ export const getUsers = async (): Promise<User[]> => {
 // Fetching current user
 export const getUser = async (): Promise<User> => {
   return await apiRequest<User>('/users/me', 'GET');
-};
-
-export const getUserInitials = (user: User | undefined): string => {
-  return `${user?.firstName?.substring(0, 1)} ${user?.lastName?.substring(0, 1)}`;
-};
-
-export const getUserFullName = (user: User | undefined): string => {
-  return `${user?.firstName} ${user?.lastName}`;
 };
