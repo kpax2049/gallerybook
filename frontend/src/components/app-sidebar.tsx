@@ -23,13 +23,6 @@ import { User } from '@/api/user';
 
 // This is sample data.
 const data = {
-  user: {
-    firstName: 'Kirill',
-    lastName: 'Pakhomov',
-    email: 'kpax@example.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
-
   navMain: [
     {
       title: 'My  stuff',

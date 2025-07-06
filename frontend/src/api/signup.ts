@@ -5,8 +5,8 @@ import qs from 'qs';
 interface SignupRequest {
   email: string;
   password: string;
-  firstName?: string;
-  lastName?: string;
+  username?: string;
+  fullName?: string;
 }
 
 // Define the response structure from the server when a user is created

@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/sidebar';
 import logo from '../assets/GB-logo.png';
 import { ModeToggle } from './mode-toggle';
-import { getUserFullName, getUserInitials, User } from '@/api/user';
+import { getUserInitials, User } from '@/api/user';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { NavLink } from 'react-router-dom';
@@ -76,7 +76,7 @@ export function NavUser({ handleLogout }: NavUserProps) {
                 <img src={logo} alt="Logo" />
                 <div className="grid flex-1 text-center text-sm leading-tight">
                   <span className="truncate font-semibold">
-                    {getUserFullName(currentUser)}
+                    {currentUser.fullName}
                   </span>
                   <span className="truncate text-xs">{currentUser?.email}</span>
                 </div>
@@ -95,7 +95,7 @@ export function NavUser({ handleLogout }: NavUserProps) {
                     <AvatarImage
                       src={currentUser.profile.avatarUrl}
                       className="object-cover"
-                      alt={getUserFullName(currentUser)}
+                      alt={currentUser.fullName}
                     />
                     <AvatarFallback className="rounded-lg">
                       {getUserInitials(currentUser)}
@@ -103,7 +103,7 @@ export function NavUser({ handleLogout }: NavUserProps) {
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
-                      {getUserFullName(currentUser)}
+                      {currentUser.fullName}
                     </span>
                     <span className="truncate text-xs">
                       {currentUser?.email}

@@ -10,8 +10,8 @@ export interface User {
   role: UserRole;
   email: string;
   hash?: string;
-  firstName?: string;
-  lastName?: string;
+  fullName?: string;
+  username: string;
   settings?: { [key: string]: unknown }[];
   status?: UserStatus;
   profile: Profile;
@@ -19,11 +19,13 @@ export interface User {
 }
 
 export const getUserInitials = (user: User | undefined): string => {
-  return `${user?.firstName?.substring(0, 1)} ${user?.lastName?.substring(0, 1)}`;
-};
+  if (!user?.fullName) return 'GB';
 
-export const getUserFullName = (user: User | undefined): string => {
-  return `${user?.firstName} ${user?.lastName}`;
+  return user?.fullName
+    .trim()
+    .split(/\s+/) // split by one or more spaces
+    .map((word) => word[0].toUpperCase())
+    .join('');
 };
 
 // Fetching users

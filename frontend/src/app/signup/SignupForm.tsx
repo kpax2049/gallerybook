@@ -28,8 +28,10 @@ import { signupUser } from '@/api/signup';
 
 const formSchema = z
   .object({
-    firstName: z.string(),
-    lastName: z.string(),
+    fullName: z.string(),
+    username: z.string().min(3, {
+      message: 'Username must be at least 3 characters.',
+    }),
     email: z
       .string()
       .min(2, {
@@ -62,8 +64,8 @@ export function SignupForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
-      firstName: '',
-      lastName: '',
+      fullName: '',
+      username: '',
       password: '',
       confirmPassword: '',
     },
@@ -74,8 +76,8 @@ export function SignupForm({
     signupUser({
       email: values.email,
       password: values.password,
-      firstName: values.firstName,
-      lastName: values.lastName,
+      fullName: values.fullName,
+      username: values.username,
     }).then((response) => {
       localStorage.setItem('ACCESS_TOKEN', response.access_token);
       setLoading(false);
@@ -112,12 +114,12 @@ export function SignupForm({
                 />
                 <FormField
                   control={form.control}
-                  name="firstName"
+                  name="fullName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First Name</FormLabel>
+                      <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="first name" {...field} />
+                        <Input placeholder="name" {...field} />
                       </FormControl>
                       <FormDescription>
                         This is your public display name.
@@ -128,15 +130,15 @@ export function SignupForm({
                 />
                 <FormField
                   control={form.control}
-                  name="lastName"
+                  name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Last Name</FormLabel>
+                      <FormLabel>Username</FormLabel>
                       <FormControl>
-                        <Input placeholder="last name" {...field} />
+                        <Input placeholder="username" {...field} />
                       </FormControl>
                       <FormDescription>
-                        This is your public display name.
+                        This is your public display username.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

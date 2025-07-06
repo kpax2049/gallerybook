@@ -10,7 +10,6 @@ import {
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { getUserFullName } from '@/api/user';
 import { useUserStore } from '@/stores/userStore';
 import { uploadAvatar } from '@/api/profile';
 
@@ -65,7 +64,7 @@ export function AvatarUpload() {
               className="object-cover"
               src={user?.profile.avatarUrl}
             />
-            <AvatarFallback>{getUserFullName(user)}</AvatarFallback>
+            <AvatarFallback>{user?.fullName}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col gap-1 font-semibold">
             <p>Upload a new avatar</p>

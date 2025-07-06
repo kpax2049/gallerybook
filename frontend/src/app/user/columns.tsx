@@ -57,12 +57,12 @@ export const columns: ColumnDef<User>[] = [
     cell: ({ row }) => <div className="lowercase">{row.getValue('email')}</div>,
   },
   {
-    accessorKey: 'firstName',
-    header: ({ column }) => sortableColumn(column, 'First Name'),
+    accessorKey: 'fullName',
+    header: ({ column }) => sortableColumn(column, 'Name'),
   },
   {
-    accessorKey: 'lastName',
-    header: ({ column }) => sortableColumn(column, 'Last Name'),
+    accessorKey: 'username',
+    header: ({ column }) => sortableColumn(column, 'Username'),
   },
   {
     accessorKey: 'role',
@@ -75,7 +75,13 @@ export const columns: ColumnDef<User>[] = [
     accessorKey: 'Last Updated',
     header: ({ column }) => sortableColumn(column, 'Last Updated'),
     cell: ({ row }) => {
-      return <div>{convertISOtoReadableDate(row.original.updatedAt)}</div>;
+      return (
+        <div>
+          {row.original?.updatedAt
+            ? convertISOtoReadableDate(row.original.updatedAt)
+            : ''}
+        </div>
+      );
     },
   },
 ];
