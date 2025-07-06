@@ -23,8 +23,8 @@ export class AuthService {
         data: {
           email: dto.email,
           hash,
-          firstName: dto.firstName,
-          lastName: dto.lastName,
+          fullName: dto.fullName,
+          username: dto.username,
           profile: {
             create: {
               avatarUrl: null, // optional

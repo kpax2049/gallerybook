@@ -7,9 +7,9 @@ export class EditUserDto {
 
   @IsString()
   @IsOptional()
-  firstName?: string;
+  fullName?: string;
 
   @IsString()
   @IsOptional()
-  lastName?: string;
+  username?: string;
 }

@@ -6,14 +6,13 @@ async function main() {
   await prisma.user.deleteMany();
 
   for (let i = 0; i < 20; i++) {
-    const firstName = faker.person.firstName();
-    const lastName = faker.person.lastName();
+    const fullName = faker.person.fullName();
 
     await prisma.user.create({
       data: {
-        email: faker.internet.email({ firstName, lastName }),
-        firstName: firstName,
-        lastName: lastName,
+        email: faker.internet.email(),
+        fullName: fullName,
+        username: faker.internet.displayName(),
         hash: '$argon2id$v=19$m=65536,t=3,p=4$KjtVrfEeE2LUan8FcKgxsg$5JsHfwkLO5cazqfN0G5daQIUyh8I3bYn3QhEE0hYavM',
       },
     });

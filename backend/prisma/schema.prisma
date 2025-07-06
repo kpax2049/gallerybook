@@ -42,8 +42,8 @@ model User {
   role      Role       @default(USER)
   email     String     @unique
   hash      String
-  firstName String?
-  lastName  String?
+  fullName  String?
+  username  String     @unique
   settings  Json?
   status    UserStatus @default(active)
 
