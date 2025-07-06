@@ -12,7 +12,11 @@ import { cloudinary } from 'src/cloudinary/cloudinary.config';
 import { v4 as uuidv4 } from 'uuid';
 import { GetUser } from 'src/auth/decorator';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import * as fs from 'fs/promises';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 
 @UseGuards(JwtGuard)
 @Controller('profile')
@@ -24,7 +28,7 @@ export class ProfileController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads',
+        destination: './temp_uploads',
         filename: (req, file, cb) => {
           const uniqueName = `${Date.now()}-${file.originalname}`;
           cb(null, uniqueName);
@@ -36,17 +40,38 @@ export class ProfileController {
     @GetUser('id') userId: number,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    const result = await cloudinary.uploader.upload(file.path, {
-      folder: 'avatars',
-      public_id: uuidv4(),
-    });
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
 
-    // Update profile.avatarUrl in DB
-    await this.profileService.updateAvatarUrl(userId, result.secure_url);
+    let result;
 
-    return {
-      url: result.secure_url,
-      public_id: result.public_id,
-    };
+    try {
+      result = await cloudinary.uploader.upload(file.path, {
+        folder: 'avatars',
+        public_id: uuidv4(),
+      });
+
+      if (!result?.secure_url) {
+        throw new Error('Cloudinary response missing secure_url');
+      }
+      // Update profile.avatarUrl in DB
+      await this.profileService.updateAvatarUrl(userId, result.secure_url);
+
+      return {
+        url: result.secure_url,
+        public_id: result.public_id,
+      };
+    } catch (err) {
+      console.error('Upload failed:', err);
+      throw new InternalServerErrorException('Avatar upload failed');
+    } finally {
+      // Cleanup local disk uploads
+      try {
+        await fs.unlink(file.path);
+      } catch (cleanupErr) {
+        console.warn('Failed to delete temp file:', file.path, cleanupErr);
+      }
+    }
   }
 }
