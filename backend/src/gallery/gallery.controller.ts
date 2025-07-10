@@ -15,6 +15,7 @@ import { JwtGuard } from '../auth/guard';
 import { GalleryService } from './gallery.service';
 import { GetUser } from 'src/auth/decorator';
 import { CreateGalleryDto } from './dto';
+import { PresignRequestDto } from './dto/presign-request.dto';
 
 @UseGuards(JwtGuard)
 @Controller('galleries')
@@ -33,6 +34,11 @@ export class GalleryController {
     @Param('id', ParseIntPipe) galleryId: number,
   ) {
     return this.galleryService.getGalleryById(userId, galleryId);
+  }
+
+  @Post('presign')
+  async getPresignedUrls(@Body() body: PresignRequestDto) {
+    return this.galleryService.generatePresignedUrls(body.paths);
   }
 
   @Post()
