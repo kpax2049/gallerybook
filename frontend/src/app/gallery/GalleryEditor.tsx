@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createGallery } from '@/api/gallery';
+import { createGallery, Gallery, uploadImagesToS3 } from '@/api/gallery';
 // import { MinimalTiptapEditor } from '@/components/minimal-tiptap';
 import { Dispatch, SetStateAction, useState } from 'react';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
@@ -34,6 +34,7 @@ import { useTheme } from '@/components/theme-provider';
 import { enrich } from '@/lib/galleryUtils';
 import { AnyExtension } from '@tiptap/react';
 import { fileToBase64 } from '@/lib/fileUtils';
+import { extractBase64ImagesFromJSON } from '@/lib/utils';
 
 const extensions: AnyExtension[] = [
   BaseKit.configure({
@@ -82,25 +83,46 @@ export function GalleryEditor() {
   const [showBubbleMenu, setShowBubbleMenu] = useState<boolean>(false);
   const isDarkMode = useTheme();
 
-  const onSave = (
+  const onSave = async (
     data: FormDataProps,
     setOpen: Dispatch<SetStateAction<boolean>>
   ) => {
     setLoading(true);
 
-    createGallery({
-      title: data.title,
-      description: data.description,
-      content: JSON.stringify(value),
-      thumbnail: data.thumbnail,
-    })
-      .then(() => {
-        setLoading(false);
-        setOpen(false);
+    try {
+      const { valueWithPaths, images } = await extractBase64ImagesFromJSON(
+        structuredClone(value)
+      );
+
+      const s3Map = await uploadImagesToS3(images);
+
+      // Replace placeholder paths with actual S3 URLs
+      const replacePaths = (node: any): void => {
+        if (node.type === 'image' && node.attrs?.src && s3Map[node.attrs.src]) {
+          node.attrs.src = s3Map[node.attrs.src];
+        }
+        if (node.content) node.content.forEach(replacePaths);
+      };
+      replacePaths(valueWithPaths);
+
+      createGallery({
+        title: data.title,
+        description: data.description,
+        content: JSON.stringify(valueWithPaths),
+        thumbnail: data.thumbnail,
       })
-      .catch(() => {
-        setLoading(false);
-      });
+        .then((data: Gallery) => {
+          console.log('Gallery saved:', data);
+          setLoading(false);
+          setOpen(false);
+        })
+        .catch(() => {
+          setLoading(false);
+        });
+    } catch (err) {
+      console.error('Error saving gallery:', err);
+      alert('Failed to save gallery: ' + (err as Error).message);
+    }
   };
 
   const onChangeContent = (val: any) => {

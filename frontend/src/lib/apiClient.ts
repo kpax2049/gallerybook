@@ -11,7 +11,7 @@ const headers = token
       'Content-Type': 'application/x-www-form-urlencoded',
     };
 
-const errorHandler = (error: AxiosError | undefined) => {
+export const errorHandler = (error: AxiosError | undefined) => {
   if (error?.status === 401) {
     localStorage.removeItem('ACCESS_TOKEN');
     //TODO: redirect back to root/login page

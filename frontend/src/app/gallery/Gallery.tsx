@@ -13,6 +13,7 @@ import { FontFamily } from '@tiptap/extension-font-family';
 import { FontSize } from 'reactjs-tiptap-editor/lib/FontSize.js';
 import { TextAlign } from 'reactjs-tiptap-editor/lib/TextAlign.js';
 import Comment from './galleryComment/Comment';
+import { rewriteImageSrcs } from '@/lib/s3Utils';
 
 const extensions = [
   StarterKit,
@@ -50,7 +51,8 @@ export default function GalleryPage() {
     getGallery(galleryId).then((data) => {
       setGallery(data);
       if (data.content) {
-        editor?.commands.setContent(JSON.parse(data.content));
+        const cdnReadyContent = rewriteImageSrcs(JSON.parse(data.content));
+        editor?.commands.setContent(cdnReadyContent);
       }
       setLoading(false);
     });
