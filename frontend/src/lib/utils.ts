@@ -2,6 +2,8 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+const S3_FOLDER = import.meta.env.VITE_S3_FOLDER;
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -25,13 +27,17 @@ export async function extractBase64ImagesFromJSON(content: any) {
   const walk = (node: any) => {
     if (node.type === 'image' && node.attrs?.src?.startsWith('data:image/')) {
       const { file, mime } = base64ToFile(node.attrs.src);
-      const path = `image_${Date.now()}_${Math.random().toString(36).substring(2)}.${mime.split('/')[1]}`;
+      const path = `${S3_FOLDER || ''}image_${Date.now()}_${Math.random().toString(36).substring(2)}.${mime.split('/')[1]}`;
       images.push({ path, file });
       node.attrs.src = path; // temporary, will replace later with S3 URL
     }
     if (node.content) node.content.forEach(walk);
   };
   walk(content);
+  console.info('{ valueWithPaths: content, images }', {
+    valueWithPaths: content,
+    images,
+  });
   return { valueWithPaths: content, images };
 }
 

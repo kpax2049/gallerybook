@@ -62,7 +62,7 @@ export function AvatarUpload() {
           <Avatar className={cn(isPending && 'animate-pulse')}>
             <AvatarImage
               className="object-cover"
-              src={user?.profile.avatarUrl}
+              src={user?.profile?.avatarUrl}
             />
             <AvatarFallback>{user?.fullName}</AvatarFallback>
           </Avatar>

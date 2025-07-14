@@ -35,7 +35,7 @@ export default function CommentList({ galleryId }: CommentProps) {
 
   const onReply = (val: CreateCommentRequest) => {
     createComment(val).then((data: Comment) => {
-      //TODO: replace new object with Comment returnted from backend
+      //TODO: replace new object with Comment returned from backend
       setValue(
         value.map((f) =>
           f.id === val.parentId
@@ -59,7 +59,7 @@ export default function CommentList({ galleryId }: CommentProps) {
             onChange({
               text: val,
               galleryId: Number(galleryId),
-              userId: 22,
+              userId: currentUser?.id,
             });
           }}
         />

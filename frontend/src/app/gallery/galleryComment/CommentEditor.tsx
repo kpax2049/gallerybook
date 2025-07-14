@@ -30,7 +30,7 @@ export const CommentEditor = ({
     <div className={`flex flex-col gap-2 w-full editor-content-container`}>
       <div className={`flex gap-4 w-full`}>
         <Avatar className={'w-[32px] h-[32px]'}>
-          <AvatarImage src={'https://github.com/shadcn.png'} />
+          <AvatarImage src={currentUser?.profile?.avatarUrl} />
           <AvatarFallback>CN</AvatarFallback>
         </Avatar>
 

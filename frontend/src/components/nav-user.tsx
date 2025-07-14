@@ -93,7 +93,7 @@ export function NavUser({ handleLogout }: NavUserProps) {
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar className="h-8 w-8">
                     <AvatarImage
-                      src={currentUser.profile.avatarUrl}
+                      src={currentUser.profile?.avatarUrl}
                       className="object-cover"
                       alt={currentUser.fullName}
                     />

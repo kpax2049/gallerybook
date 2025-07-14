@@ -94,16 +94,22 @@ export function GalleryEditor() {
         structuredClone(value)
       );
 
-      const s3Map = await uploadImagesToS3(images);
+      if (images && images.length > 0) {
+        const s3Map = await uploadImagesToS3(images);
 
-      // Replace placeholder paths with actual S3 URLs
-      const replacePaths = (node: any): void => {
-        if (node.type === 'image' && node.attrs?.src && s3Map[node.attrs.src]) {
-          node.attrs.src = s3Map[node.attrs.src];
-        }
-        if (node.content) node.content.forEach(replacePaths);
-      };
-      replacePaths(valueWithPaths);
+        // Replace placeholder paths with actual S3 URLs
+        const replacePaths = (node: any): void => {
+          if (
+            node.type === 'image' &&
+            node.attrs?.src &&
+            s3Map[node.attrs.src]
+          ) {
+            node.attrs.src = s3Map[node.attrs.src];
+          }
+          if (node.content) node.content.forEach(replacePaths);
+        };
+        replacePaths(valueWithPaths);
+      }
 
       createGallery({
         title: data.title,
