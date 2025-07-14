@@ -118,7 +118,6 @@ export function GalleryEditor() {
         thumbnail: data.thumbnail,
       })
         .then((data: Gallery) => {
-          console.log('Gallery saved:', data);
           setLoading(false);
           setOpen(false);
         })
