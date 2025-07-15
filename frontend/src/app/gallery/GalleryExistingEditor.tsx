@@ -87,7 +87,7 @@ export function GalleryExistingEditor() {
   useEffect(() => {
     setLoading(true);
     if (galleryId) {
-      getGallery(galleryId).then((data) => {
+      getGallery(galleryId, 'edit').then((data) => {
         setGallery(data);
         if (data.content) {
           const parsedData = JSON.parse(data.content);

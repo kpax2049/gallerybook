@@ -50,9 +50,15 @@ export const getGalleries = async (): Promise<Gallery[]> => {
 
 // Fetch single gallery
 export const getGallery = async (
-  galleryId: string | undefined
+  galleryId: string | undefined,
+  mode?: 'edit'
 ): Promise<Gallery> => {
-  return await apiRequest<Gallery>(`/galleries/${galleryId}`, 'GET');
+  return await apiRequest<Gallery>(
+    `/galleries/${galleryId}`,
+    'GET',
+    undefined,
+    { mode }
+  );
 };
 
 export const uploadImagesToS3 = async (

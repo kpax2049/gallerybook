@@ -8,7 +8,6 @@ import Image from '@tiptap/extension-image';
 // import ImageResize from 'tiptap-extension-resize-image';
 import TextStyle from '@tiptap/extension-text-style';
 import Comment from './galleryComment/Comment';
-import { rewriteImageSrcs } from '@/lib/s3Utils';
 import { useInView } from 'react-intersection-observer';
 import { generateHTML } from '@tiptap/html';
 import Document from '@tiptap/extension-document';
@@ -80,10 +79,10 @@ export default function GalleryPage() {
     getGallery(galleryId).then((data) => {
       setGallery(data);
       if (data.content) {
-        const cdnReadyContent = rewriteImageSrcs(JSON.parse(data.content));
-        setRawBlocks(cdnReadyContent.content || []);
+        const jsonContent = JSON.parse(data.content);
+        setRawBlocks(jsonContent.content || []);
 
-        const firstChunk = cdnReadyContent.content.slice(0, chunkSize);
+        const firstChunk = jsonContent.content.slice(0, chunkSize);
         const html = generateHTML({ type: 'doc', content: firstChunk }, [
           // Document,
           // Paragraph,
