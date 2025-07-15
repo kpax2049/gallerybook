@@ -6,10 +6,23 @@ import {
 } from '@nestjs/common';
 import { CreateGalleryDto } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 // import { ProseMirrorDocSchema } from './zod/prosemirror.schema';
 import { ConfigService } from '@nestjs/config';
+import { User } from '@prisma/client';
+import { Role } from '@prisma/client';
+type Mode = 'edit' | 'view';
+
+interface ProseMirrorNode {
+  type: string;
+  attrs?: Record<string, any>;
+  content?: ProseMirrorNode[];
+}
 
 @Injectable()
 export class GalleryService {
@@ -62,6 +75,76 @@ export class GalleryService {
     }
   }
 
+  async rewriteImageSrcsInNode(
+    node: ProseMirrorNode,
+    mode: Mode,
+  ): Promise<ProseMirrorNode> {
+    const updatedNode: ProseMirrorNode = { ...node };
+
+    // Rewrite image src
+    if (node.type === 'image' && node.attrs?.src) {
+      const originalSrc = node.attrs.src; // e.g., 'uploads/user1/photo.jpg'
+
+      if (mode === 'view') {
+        // Replace with CloudFront + transforms
+        const cloudfrontDomain = this.config.get<string>('CLOUDFRONT_DOMAIN');
+        const transformParams = this.config.get<string>(
+          'LAMBDA_TRANSFORM_PARAMS',
+        );
+        updatedNode.attrs = {
+          ...updatedNode.attrs,
+          src: `${cloudfrontDomain}/${originalSrc}?${transformParams}`,
+        };
+      } else if (mode === 'edit') {
+        // Replace with presigned S3 URL
+        const command = new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: originalSrc,
+        });
+
+        const signedUrl = await getSignedUrl(this.s3, command, {
+          expiresIn: 300,
+        }); // 5 minutes
+        updatedNode.attrs = {
+          ...updatedNode.attrs,
+          src: signedUrl,
+        };
+      }
+    }
+
+    // Recursively process content
+    if (node.content && Array.isArray(node.content)) {
+      updatedNode.content = await Promise.all(
+        node.content.map((child) => this.rewriteImageSrcsInNode(child, mode)),
+      );
+    }
+
+    return updatedNode;
+  }
+
+  async rewriteGalleryImageSrcs(
+    content: any,
+    mode: Mode,
+  ): Promise<ProseMirrorNode> {
+    return await this.rewriteImageSrcsInNode(content, mode);
+  }
+
+  async checkGalleryOwnershipOrAdmin(
+    galleryId: number,
+    user: User,
+  ): Promise<boolean> {
+    // Admins can bypass ownership
+    if (user.role === Role.ADMIN) return true;
+
+    const gallery = await this.prisma.gallery.findUnique({
+      where: { id: galleryId },
+      select: { userId: true },
+    });
+
+    if (!gallery) return false;
+    return gallery.userId === user.id;
+  }
+
   getGalleries(userId: number) {
     return this.prisma.gallery.findMany({
       where: {
@@ -88,13 +171,41 @@ export class GalleryService {
     }
   }
 
-  getGalleryById(userId: number, galleryId: number) {
-    return this.prisma.gallery.findFirst({
+  async getGalleryById(galleryId: number, mode: 'view' | 'edit') {
+    const gallery = this.prisma.gallery.findUnique({
       where: {
         id: galleryId,
-        userId,
       },
     });
+    if (!gallery) {
+      throw new Error('Gallery not found'); // or your preferred error handling
+    }
+
+    if (mode === 'view') {
+      // const cacheKey = this.getCacheKey(galleryId);
+      // const cached = await this.cacheManager.get(cacheKey);
+      // if (cached) {
+      //   return { ...gallery, content: cached };
+      // }
+
+      // Rewrite URLs to CloudFront + transforms for viewing
+      const rewritten = await this.rewriteGalleryImageSrcs(
+        (await gallery).content,
+        'view',
+      );
+
+      // // Cache rewritten JSON for 1 hour
+      // await this.cacheManager.set(cacheKey, rewritten, { ttl: 3600 });
+
+      return { ...gallery, content: rewritten };
+    } else {
+      // Edit mode — always fresh, presigned S3 URLs
+      const rewritten = await this.rewriteGalleryImageSrcs(
+        (await gallery).content,
+        'edit',
+      );
+      return { ...gallery, content: rewritten };
+    }
   }
 
   async editGalleryById(

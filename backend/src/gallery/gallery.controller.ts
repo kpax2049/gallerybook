@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -9,6 +10,8 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { JwtGuard } from '../auth/guard';
@@ -16,6 +19,7 @@ import { GalleryService } from './gallery.service';
 import { GetUser } from 'src/auth/decorator';
 import { CreateGalleryDto } from './dto';
 import { PresignRequestDto } from './dto/presign-request.dto';
+import { User } from '@prisma/client';
 
 @UseGuards(JwtGuard)
 @Controller('galleries')
@@ -28,12 +32,30 @@ export class GalleryController {
   }
 
   @Get(':id')
-  getGalleryById(
-    @GetUser('id') userId: number,
-
+  async getGalleryById(
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) galleryId: number,
+    @Query('mode') mode: 'view' | 'edit' = 'view',
   ) {
-    return this.galleryService.getGalleryById(userId, galleryId);
+    const validatedMode = mode === 'edit' ? 'edit' : 'view';
+
+    if (validatedMode === 'edit') {
+      if (!user?.id) {
+        throw new UnauthorizedException('User required for edit mode');
+      }
+
+      const allowed = await this.galleryService.checkGalleryOwnershipOrAdmin(
+        galleryId,
+        user,
+      );
+      if (!allowed) {
+        throw new ForbiddenException(
+          'You are not allowed to edit this gallery',
+        );
+      }
+    }
+
+    return this.galleryService.getGalleryById(galleryId, validatedMode);
   }
 
   @Post('presign')
