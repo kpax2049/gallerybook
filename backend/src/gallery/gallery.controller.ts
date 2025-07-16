@@ -20,6 +20,7 @@ import { GetUser } from 'src/auth/decorator';
 import { CreateGalleryDto } from './dto';
 import { PresignRequestDto } from './dto/presign-request.dto';
 import { User } from '@prisma/client';
+import { AuthGuard } from '@nestjs/passport';
 
 @UseGuards(JwtGuard)
 @Controller('galleries')
@@ -58,8 +59,23 @@ export class GalleryController {
     return this.galleryService.getGalleryById(galleryId, validatedMode);
   }
 
-  @Post('presign')
-  async getPresignedUrls(@Body() body: PresignRequestDto) {
+  // @Post('presign')
+  // async getPresignedUrls(@Body() body: PresignRequestDto) {
+  //   return this.galleryService.generatePresignedUrls(body.paths);
+  // }
+  @Post(':id/presigned-urls')
+  @UseGuards(AuthGuard)
+  async getPresignedUrls(
+    @Param('id', ParseIntPipe) galleryId: number,
+    @Body() body: PresignRequestDto,
+    @GetUser() user: User,
+  ) {
+    const gallery = await this.galleryService.findById(galleryId);
+
+    if (gallery.userId !== user.id) {
+      throw new ForbiddenException();
+    }
+
     return this.galleryService.generatePresignedUrls(body.paths);
   }
 

@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   // BadRequestException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { CreateGalleryDto } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -16,7 +18,17 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ConfigService } from '@nestjs/config';
 import { User } from '@prisma/client';
 import { Role } from '@prisma/client';
+import { extname } from 'path';
+import { lookup as mimeLookup } from 'mime-types';
+
 type Mode = 'edit' | 'view';
+
+const allowedMimeTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/avif',
+];
 
 interface ProseMirrorNode {
   type: string;
@@ -55,10 +67,19 @@ export class GalleryService {
     try {
       await Promise.all(
         paths.map(async (path) => {
+          const ext = extname(path); // e.g. ".webp"
+          const mime = mimeLookup(ext) || '';
+          const normalizedType = mime === 'image/jpg' ? 'image/jpeg' : mime;
+
+          if (!allowedMimeTypes.includes(normalizedType)) {
+            throw new BadRequestException(`Unsupported image type: ${mime}`);
+          }
+          const contentType = mimeLookup(ext) || 'application/octet-stream'; // fallback safe type
+
           const command = new PutObjectCommand({
             Bucket: this.bucket,
             Key: path,
-            ContentType: 'image/jpeg', // or dynamic based on extension
+            ContentType: contentType,
           });
 
           const url = await getSignedUrl(this.s3, command, { expiresIn: 300 });
@@ -251,21 +272,15 @@ export class GalleryService {
     });
   }
 
-  // async getPresignedUrls(paths: string[]) {
-  //   const urls: Record<string, string> = {};
-  //   for (const path of paths) {
-  //     const command: PutObjectCommandInput = {
-  //       Bucket: BUCKET_NAME,
-  //       Key: path,
-  //       ContentType: 'image/jpeg', // or infer from path
-  //     };
-  //     const signedUrl = await getSignedUrl(
-  //       this.s3,
-  //       new PutObjectCommand(command),
-  //       { expiresIn: 300 },
-  //     );
-  //     urls[path] = signedUrl;
-  //   }
-  //   return urls;
-  // }
+  async findById(galleryId: number) {
+    const gallery = await this.prisma.gallery.findUnique({
+      where: { id: galleryId },
+    });
+
+    if (!gallery) {
+      throw new NotFoundException(`Gallery with ID ${galleryId} not found`);
+    }
+
+    return gallery;
+  }
 }
