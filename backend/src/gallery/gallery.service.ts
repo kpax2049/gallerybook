@@ -16,10 +16,11 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 // import { ProseMirrorDocSchema } from './zod/prosemirror.schema';
 import { ConfigService } from '@nestjs/config';
-import { User } from '@prisma/client';
+import { GalleryStatus, User } from '@prisma/client';
 import { Role } from '@prisma/client';
 import { extname } from 'path';
 import { lookup as mimeLookup } from 'mime-types';
+import { CreateDraftGalleryDto } from './dto/create-draft-gallery.dto';
 
 type Mode = 'edit' | 'view';
 
@@ -166,10 +167,41 @@ export class GalleryService {
     return gallery.userId === user.id;
   }
 
+  async verifyOwnership(galleryId: number, userId: number) {
+    const gallery = await this.prisma.gallery.findUnique({
+      where: { id: galleryId },
+    });
+
+    if (!gallery) throw new NotFoundException();
+    if (gallery.userId !== userId) throw new ForbiddenException();
+  }
+
   getGalleries(userId: number) {
     return this.prisma.gallery.findMany({
       where: {
         userId,
+      },
+    });
+  }
+
+  async createDraft(dto: CreateDraftGalleryDto, userId: number) {
+    return this.prisma.gallery.create({
+      data: {
+        title: dto.title,
+        description: dto.description,
+        thumbnail: dto.thumbnail,
+        userId,
+      },
+    });
+  }
+
+  async updateContent(galleryId: number, content: any) {
+    return this.prisma.gallery.update({
+      where: { id: galleryId },
+      data: {
+        content,
+        status: GalleryStatus.PUBLISHED,
+        updatedAt: new Date(),
       },
     });
   }

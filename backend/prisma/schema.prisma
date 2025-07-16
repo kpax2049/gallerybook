@@ -35,6 +35,12 @@ enum ActionType {
   UPVOTE
 }
 
+enum GalleryStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model User {
   id        Int        @id @default(autoincrement())
   createdAt DateTime   @default(now())
@@ -78,6 +84,7 @@ model Gallery {
   description String?
   content     Json?
   thumbnail   String?
+  status      GalleryStatus @default(DRAFT)
   comments    Comment[]
 
   @@map("galleries")

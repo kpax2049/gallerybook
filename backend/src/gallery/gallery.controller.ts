@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
   Query,
   UnauthorizedException,
   UseGuards,
@@ -21,6 +22,8 @@ import { CreateGalleryDto } from './dto';
 import { PresignRequestDto } from './dto/presign-request.dto';
 import { User } from '@prisma/client';
 import { AuthGuard } from '@nestjs/passport';
+import { CreateDraftGalleryDto } from './dto/create-draft-gallery.dto';
+import { UpdateGalleryContentDto } from './dto/update-gallery-content.dto';
 
 @UseGuards(JwtGuard)
 @Controller('galleries')
@@ -70,6 +73,8 @@ export class GalleryController {
     @Body() body: PresignRequestDto,
     @GetUser() user: User,
   ) {
+    await this.galleryService.verifyOwnership(galleryId, user.id);
+
     const gallery = await this.galleryService.findById(galleryId);
 
     if (gallery.userId !== user.id) {
@@ -79,9 +84,32 @@ export class GalleryController {
     return this.galleryService.generatePresignedUrls(body.paths);
   }
 
+  @Post('draft')
+  @UseGuards(AuthGuard)
+  async createDraftGallery(
+    @Body() dto: CreateDraftGalleryDto,
+    @GetUser() user: User,
+  ) {
+    const gallery = await this.galleryService.createDraft(dto, user.id);
+    return { id: gallery.id };
+  }
+
   @Post()
   createGallery(@GetUser('id') userId: number, @Body() dto: CreateGalleryDto) {
     return this.galleryService.createGallery(userId, dto);
+  }
+
+  @Put(':id/content')
+  @UseGuards(AuthGuard)
+  async updateGalleryContent(
+    @Param('id', ParseIntPipe) galleryId: number,
+    @Body() dto: UpdateGalleryContentDto,
+    @GetUser() user: User,
+  ) {
+    await this.galleryService.verifyOwnership(galleryId, user.id);
+
+    await this.galleryService.updateContent(galleryId, dto.content);
+    return { success: true };
   }
 
   @Patch(':id')

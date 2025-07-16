@@ -15,7 +15,4 @@ export class CreateGalleryDto {
 
   @IsOptional()
   thumbnail?: any;
-
-  // TODO: define Image field
-  // images: Image[]
 }
