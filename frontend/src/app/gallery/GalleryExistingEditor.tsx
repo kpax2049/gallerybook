@@ -90,8 +90,8 @@ export function GalleryExistingEditor() {
       getGallery(galleryId, 'edit').then((data) => {
         setGallery(data);
         if (data.content) {
-          const parsedData = JSON.parse(data.content);
-          setValue(parsedData);
+          // const parsedData = JSON.parse(data.content);
+          setValue(data.content.content);
         }
         setLoading(false);
       });
@@ -108,7 +108,7 @@ export function GalleryExistingEditor() {
         ...gallery,
         title: data.title,
         description: data.description,
-        content: JSON.stringify(value),
+        content: JSON.parse(value),
         thumbnail: data.thumbnail,
       };
 

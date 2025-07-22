@@ -22,32 +22,79 @@ export function convertISOtoReadableDate(updatedAt: Date) {
   return result;
 }
 
-export async function extractBase64ImagesFromJSON(content: any) {
-  const images: { path: string; file: File }[] = [];
-  const walk = (node: any) => {
-    if (node.type === 'image' && node.attrs?.src?.startsWith('data:image/')) {
-      const { file, mime } = base64ToFile(node.attrs.src);
-      const path = `${S3_FOLDER || ''}image_${Date.now()}_${Math.random().toString(36).substring(2)}.${mime.split('/')[1]}`;
-      images.push({ path, file });
-      node.attrs.src = path; // temporary, will replace later with S3 URL
+export type ExtractedImage = {
+  originalPath: string; // original base64 src
+  file: File;
+  mimeType: string;
+};
+
+export async function extractBase64ImagesFromJson(
+  json: any,
+  userId: number,
+  galleryId: number
+): Promise<{ imageFiles: File[]; paths: string[]; updatedJson: any }> {
+  const imageFiles: File[] = [];
+  const paths: string[] = [];
+
+  let index = 0;
+
+  async function traverse(node: any): Promise<any> {
+    if (
+      node.type === 'image' &&
+      typeof node.attrs?.src === 'string' &&
+      node.attrs.src.startsWith('data:image/')
+    ) {
+      const base64 = node.attrs.src;
+      const match = base64.match(/^data:(image\/[a-zA-Z]+);base64,(.*)$/);
+      if (!match) return node;
+
+      const [, mimeType, base64Data] = match;
+      const binary = atob(base64Data);
+      const array = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      const file = new File([array], `image-${index}.bin`, { type: mimeType });
+      const hash = await hashFile(file);
+      const ext = mimeToExt(mimeType) || 'bin';
+      const path = `${S3_FOLDER}users/${userId}/galleries/${galleryId}/${hash}.${ext}`;
+
+      imageFiles.push(file);
+      paths.push(path);
+      index += 1;
+
+      return {
+        ...node,
+        attrs: {
+          ...node.attrs,
+          src: path, // now already a final S3 path
+        },
+      };
     }
-    if (node.content) node.content.forEach(walk);
-  };
-  walk(content);
-  console.info('{ valueWithPaths: content, images }', {
-    valueWithPaths: content,
-    images,
-  });
-  return { valueWithPaths: content, images };
+
+    if (node.content) {
+      const newContent = await Promise.all(node.content.map(traverse));
+      return { ...node, content: newContent };
+    }
+
+    return node;
+  }
+
+  const updatedJson = await traverse(json);
+  return { imageFiles, paths, updatedJson };
 }
 
-function base64ToFile(dataURL: string): { file: File; mime: string } {
-  const [header, base64] = dataURL.split(',');
-  const mime = header.match(/:(.*?);/)?.[1] ?? 'image/jpeg';
-  const binary = atob(base64);
-  const array = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-  return {
-    file: new File([array], 'upload.' + mime.split('/')[1], { type: mime }),
-    mime,
+async function hashFile(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-1', buffer);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function mimeToExt(mime: string): string | null {
+  const map: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
   };
+  return map[mime] || null;
 }

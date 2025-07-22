@@ -42,17 +42,18 @@ import { TextUnderline } from 'reactjs-tiptap-editor/textunderline';
 //   Highlight,
 // ];
 
-interface GalleryBlock {
+export interface GalleryBlock {
   type: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
-
+export interface GalleryData {
+  type: string;
+  content: GalleryBlock[];
+}
 const chunkSize = 2;
 
 export default function GalleryPage() {
-  const [gallery, setGallery] = useState<Gallery>();
-  const [content, setContent] = useState<string>();
   const [loading, setLoading] = useState<boolean>(false);
   const { galleryId } = useParams();
   const [rawBlocks, setRawBlocks] = useState<GalleryBlock[]>([]);
@@ -76,13 +77,11 @@ export default function GalleryPage() {
   // });
   useEffect(() => {
     setLoading(true);
-    getGallery(galleryId).then((data) => {
-      setGallery(data);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getGallery(galleryId).then((data: any) => {
       if (data.content) {
-        const jsonContent = JSON.parse(data.content);
-        setRawBlocks(jsonContent.content || []);
-
-        const firstChunk = jsonContent.content.slice(0, chunkSize);
+        setRawBlocks(data.content.content || []);
+        const firstChunk = data.content.content.slice(0, chunkSize);
         const html = generateHTML({ type: 'doc', content: firstChunk }, [
           // Document,
           // Paragraph,

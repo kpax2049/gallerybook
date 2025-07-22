@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { apiRequest } from '@/lib/apiClient';
 import { User } from './user';
 import qs from 'qs';
@@ -11,30 +12,41 @@ export interface Gallery {
   createdBy?: User;
   title?: string;
   description?: string;
-  content?: string;
+  content?: Record<string, string>;
   thumbnail?: string;
   //   images: Image[];
 }
 
-interface CreateGalleryRequest {
+interface CreateDraftGalleryRequest {
   title?: string;
   description?: string;
-  content?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   thumbnail?: any;
 }
-// Function to create new gallery
-export const createGallery = async (
-  galleryData: CreateGalleryRequest
-): Promise<Gallery> => {
-  return await apiRequest<Gallery>(
-    '/galleries',
+
+interface CreateGalleryRequest {
+  content?: string;
+}
+
+export const createDraftGallery = async (
+  galleryData: CreateDraftGalleryRequest
+): Promise<{ id: number }> => {
+  return await apiRequest<{ id: number }>(
+    '/galleries/draft',
     'POST',
     qs.stringify(galleryData)
   );
 };
 
-// Function to edit new gallery
+export const createGallery = async (
+  galleryData: CreateGalleryRequest,
+  galleryId: number
+): Promise<Gallery> => {
+  return await apiRequest<Gallery>(`/galleries/${galleryId}/content`, 'PUT', {
+    content: galleryData,
+  });
+};
+
 export const editGallery = async (galleryData: Gallery): Promise<Gallery> => {
   return await apiRequest<Gallery>(
     `/galleries/${galleryData.id}`,
@@ -43,12 +55,10 @@ export const editGallery = async (galleryData: Gallery): Promise<Gallery> => {
   );
 };
 
-// Fetching galleries
 export const getGalleries = async (): Promise<Gallery[]> => {
   return await apiRequest<Gallery[]>('/galleries', 'GET');
 };
 
-// Fetch single gallery
 export const getGallery = async (
   galleryId: string | undefined,
   mode?: 'edit'
@@ -61,47 +71,67 @@ export const getGallery = async (
   );
 };
 
-export const uploadImagesToS3 = async (
-  images: { path: string; file: File }[]
-): Promise<Record<string, string>> => {
-  let presignData: Record<string, string>;
+export async function fetchPresignedUrls(
+  galleryId: number,
+  paths: string[]
+): Promise<{ presignedUrls: string[] }> {
   try {
-    //   JSON.stringify({ paths: images.map((i) => i.path) })
     const response = await apiRequest<Record<string, string>>(
-      '/galleries/presign',
+      `/galleries/${galleryId}/presigned-urls`,
       'POST',
-      {
-        paths: images.map((img) => img.path),
-      }
+      { paths }
     );
-    presignData = response;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (err) {
-    throw new Error('Failed to fetch S3 presigned URLs');
-  }
 
-  const uploadedPaths: string[] = [];
+    const presignedUrlMap = response;
 
-  for (const { path, file } of images) {
-    const url = presignData[path];
-    if (!url) {
-      console.warn(`No presigned URL returned for ${path}`);
-      continue;
+    if (
+      typeof presignedUrlMap !== 'object' ||
+      presignedUrlMap === null ||
+      Array.isArray(presignedUrlMap)
+    ) {
+      throw new Error(
+        'Invalid response: presignedUrls must be a Record<string, string>'
+      );
     }
 
+    // Ensure presignedUrls array is in the same order as paths
+    const presignedUrls = paths.map((path) => {
+      const url = presignedUrlMap[path];
+      if (!url) {
+        throw new Error(`Missing presigned URL for path: ${path}`);
+      }
+      return url;
+    });
+
+    return { presignedUrls };
+  } catch (error) {
+    console.error('Failed to fetch presigned URLs:', error);
+    throw new Error('Could not get presigned URLs from server');
+  }
+}
+
+export async function uploadFilesToS3(
+  files: File[],
+  presignedUrls: string[],
+  paths: string[]
+): Promise<void> {
+  if (files.length !== presignedUrls.length || files.length !== paths.length) {
+    throw new Error('Mismatch between files, URLs, and paths');
+  }
+
+  for (let i = 0; i < files.length; i++) {
     try {
+      const file = files[i];
+      const url = presignedUrls[i];
+
       await axios.put(url, file, {
-        headers: { 'Content-Type': file.type },
+        headers: {
+          'Content-Type': file.type,
+        },
       });
-      uploadedPaths.push(path);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-      throw new Error(`Upload failed for ${path}`);
+    } catch (error) {
+      console.error(`Failed to upload file to S3 for path ${paths[i]}`, error);
+      throw new Error(`S3 upload failed for file: ${files[i].name}`);
     }
   }
-
-  // Return map of original paths -> actual S3 URLs (strip query string)
-  return Object.fromEntries(
-    uploadedPaths.map((path) => [path, presignData[path].split('?')[0]])
-  );
-};
+}

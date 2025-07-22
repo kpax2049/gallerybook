@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createGallery, Gallery, uploadImagesToS3 } from '@/api/gallery';
+import {
+  createDraftGallery,
+  createGallery,
+  fetchPresignedUrls,
+  Gallery,
+  uploadFilesToS3,
+} from '@/api/gallery';
 // import { MinimalTiptapEditor } from '@/components/minimal-tiptap';
 import { Dispatch, SetStateAction, useState } from 'react';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
@@ -34,7 +40,8 @@ import { useTheme } from '@/components/theme-provider';
 import { enrich } from '@/lib/galleryUtils';
 import { AnyExtension } from '@tiptap/react';
 import { fileToBase64 } from '@/lib/fileUtils';
-import { extractBase64ImagesFromJSON } from '@/lib/utils';
+import { extractBase64ImagesFromJson } from '@/lib/utils';
+import { useUserStore } from '@/stores/userStore';
 
 const extensions: AnyExtension[] = [
   BaseKit.configure({
@@ -82,41 +89,50 @@ export function GalleryEditor() {
   const [loading, setLoading] = useState<boolean>(false);
   const [showBubbleMenu, setShowBubbleMenu] = useState<boolean>(false);
   const isDarkMode = useTheme();
+  const currentUser = useUserStore((state) => state.user);
 
   const onSave = async (
     data: FormDataProps,
     setOpen: Dispatch<SetStateAction<boolean>>
   ) => {
+    if (!currentUser) return;
     setLoading(true);
 
     try {
-      const { valueWithPaths, images } = await extractBase64ImagesFromJSON(
-        structuredClone(value)
-      );
-
-      if (images && images.length > 0) {
-        const s3Map = await uploadImagesToS3(images);
-
-        // Replace placeholder paths with actual S3 URLs
-        const replacePaths = (node: any): void => {
-          if (
-            node.type === 'image' &&
-            node.attrs?.src &&
-            s3Map[node.attrs.src]
-          ) {
-            node.attrs.src = s3Map[node.attrs.src];
-          }
-          if (node.content) node.content.forEach(replacePaths);
-        };
-        replacePaths(valueWithPaths);
-      }
-
-      createGallery({
+      // Step 1: Create draft gallery and get galleryId
+      const response = await createDraftGallery({
         title: data.title,
         description: data.description,
-        content: JSON.stringify(valueWithPaths),
         thumbnail: data.thumbnail,
-      })
+      });
+
+      const galleryId = response.id;
+
+      // Step 2: Extract base64 images, generate final S3 paths, and update JSON with real paths
+      const { imageFiles, paths, updatedJson } =
+        await extractBase64ImagesFromJson(value, currentUser.id, galleryId);
+
+      if (imageFiles.length === 0) {
+        // No images to upload; save content directly
+        createGallery({ content: JSON.stringify(updatedJson) }, galleryId)
+          .then((data: Gallery) => {
+            setLoading(false);
+            setOpen(false);
+          })
+          .catch(() => {
+            setLoading(false);
+          });
+        return;
+      }
+
+      // Step 3: Generate S3 keys and get presigned upload URLs
+      const { presignedUrls } = await fetchPresignedUrls(galleryId, paths);
+
+      // Step 4: Upload each image to its presigned S3 URL
+      await uploadFilesToS3(imageFiles, presignedUrls, paths);
+
+      // Step 5: Save gallery content
+      createGallery(updatedJson, galleryId)
         .then((data: Gallery) => {
           setLoading(false);
           setOpen(false);
@@ -124,9 +140,9 @@ export function GalleryEditor() {
         .catch(() => {
           setLoading(false);
         });
-    } catch (err) {
-      console.error('Error saving gallery:', err);
-      alert('Failed to save gallery: ' + (err as Error).message);
+    } catch (error) {
+      console.error('Failed to save gallery:', error);
+      throw error;
     }
   };
 
