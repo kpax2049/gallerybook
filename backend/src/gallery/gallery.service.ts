@@ -101,12 +101,19 @@ export class GalleryService {
     node: ProseMirrorNode,
     mode: Mode,
   ): Promise<ProseMirrorNode> {
+    if (Array.isArray(node)) {
+      for (const n of node) {
+        this.rewriteImageSrcsInNode(n, mode);
+      }
+      return;
+    }
+    // console.log('Visiting node type:', node.type);
+    // console.log('Node content:', node.content);
     const updatedNode: ProseMirrorNode = { ...node };
 
     // Rewrite image src
     if (node.type === 'image' && node.attrs?.src) {
       const originalSrc = node.attrs.src; // e.g., 'uploads/user1/photo.jpg'
-
       if (mode === 'view') {
         // Replace with CloudFront + transforms
         const cloudfrontDomain = this.config.get<string>('CLOUDFRONT_DOMAIN');
@@ -131,6 +138,11 @@ export class GalleryService {
           ...updatedNode.attrs,
           src: signedUrl,
         };
+      }
+    }
+    if (Array.isArray(node.content)) {
+      for (const child of node.content) {
+        this.rewriteImageSrcsInNode(child, mode);
       }
     }
 
@@ -225,13 +237,13 @@ export class GalleryService {
   }
 
   async getGalleryById(galleryId: number, mode: 'view' | 'edit') {
-    const gallery = this.prisma.gallery.findUnique({
+    const gallery = await this.prisma.gallery.findUnique({
       where: {
         id: galleryId,
       },
     });
     if (!gallery) {
-      throw new Error('Gallery not found'); // or your preferred error handling
+      throw new Error('Gallery not found');
     }
 
     if (mode === 'view') {
@@ -243,7 +255,7 @@ export class GalleryService {
 
       // Rewrite URLs to CloudFront + transforms for viewing
       const rewritten = await this.rewriteGalleryImageSrcs(
-        (await gallery).content,
+        gallery.content,
         'view',
       );
 
@@ -254,7 +266,7 @@ export class GalleryService {
     } else {
       // Edit mode — always fresh, presigned S3 URLs
       const rewritten = await this.rewriteGalleryImageSrcs(
-        (await gallery).content,
+        gallery.content,
         'edit',
       );
       return { ...gallery, content: rewritten };

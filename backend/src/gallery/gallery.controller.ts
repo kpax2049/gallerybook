@@ -21,7 +21,6 @@ import { GetUser } from 'src/auth/decorator';
 import { CreateGalleryDto } from './dto';
 import { PresignRequestDto } from './dto/presign-request.dto';
 import { User } from '@prisma/client';
-import { AuthGuard } from '@nestjs/passport';
 import { CreateDraftGalleryDto } from './dto/create-draft-gallery.dto';
 import { UpdateGalleryContentDto } from './dto/update-gallery-content.dto';
 
@@ -40,7 +39,7 @@ export class GalleryController {
     @GetUser() user: User,
     @Param('id', ParseIntPipe) galleryId: number,
     @Query('mode') mode: 'view' | 'edit' = 'view',
-  ) {
+  ): Promise<{ content: any }> {
     const validatedMode = mode === 'edit' ? 'edit' : 'view';
 
     if (validatedMode === 'edit') {
@@ -67,7 +66,6 @@ export class GalleryController {
   //   return this.galleryService.generatePresignedUrls(body.paths);
   // }
   @Post(':id/presigned-urls')
-  @UseGuards(AuthGuard)
   async getPresignedUrls(
     @Param('id', ParseIntPipe) galleryId: number,
     @Body() body: PresignRequestDto,
@@ -85,7 +83,6 @@ export class GalleryController {
   }
 
   @Post('draft')
-  @UseGuards(AuthGuard)
   async createDraftGallery(
     @Body() dto: CreateDraftGalleryDto,
     @GetUser() user: User,
@@ -100,7 +97,6 @@ export class GalleryController {
   }
 
   @Put(':id/content')
-  @UseGuards(AuthGuard)
   async updateGalleryContent(
     @Param('id', ParseIntPipe) galleryId: number,
     @Body() dto: UpdateGalleryContentDto,
