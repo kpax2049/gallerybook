@@ -61,10 +61,6 @@ export class GalleryController {
     return this.galleryService.getGalleryById(galleryId, validatedMode);
   }
 
-  // @Post('presign')
-  // async getPresignedUrls(@Body() body: PresignRequestDto) {
-  //   return this.galleryService.generatePresignedUrls(body.paths);
-  // }
   @Post(':id/presigned-urls')
   async getPresignedUrls(
     @Param('id', ParseIntPipe) galleryId: number,
@@ -124,5 +120,22 @@ export class GalleryController {
     @Param('id', ParseIntPipe) galleryId: number,
   ) {
     return this.galleryService.deleteGalleryById(userId, galleryId);
+  }
+
+  @Delete(':id/images')
+  async deleteUnusedImages(
+    @Param('id', ParseIntPipe) galleryId: number,
+    @Body() body: { keys: string[] },
+  ) {
+    // Validate keys start with correct gallery prefix
+    const galleryPrefix = `galleries/${galleryId}/images/`;
+    const safeKeys = body.keys.filter((key) => key.startsWith(galleryPrefix));
+
+    if (safeKeys.length === 0) {
+      return { deleted: 0 };
+    }
+
+    await this.galleryService.deleteImagesFromS3(safeKeys);
+    return { deleted: safeKeys.length };
   }
 }

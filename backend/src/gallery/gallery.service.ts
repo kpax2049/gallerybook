@@ -12,6 +12,7 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 // import { ProseMirrorDocSchema } from './zod/prosemirror.schema';
@@ -326,5 +327,21 @@ export class GalleryService {
     }
 
     return gallery;
+  }
+
+  async deleteImagesFromS3(keys: string[]): Promise<void> {
+    const objects = keys.map((Key) => ({ Key }));
+
+    const command = new DeleteObjectsCommand({
+      Bucket: this.bucket,
+      Delete: { Objects: objects },
+    });
+
+    try {
+      await this.s3.send(command);
+    } catch (err) {
+      console.log('Failed to delete images from S3', err);
+      throw new InternalServerErrorException('Failed to delete images');
+    }
   }
 }
