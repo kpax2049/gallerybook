@@ -98,3 +98,45 @@ function mimeToExt(mime: string): string | null {
   };
   return map[mime] || null;
 }
+
+export const normalizeAttrs = (node: any): any => {
+  if (node.attrs) {
+    if (typeof node.attrs.flipX === 'string') {
+      node.attrs.flipX = node.attrs.flipX === 'true';
+    }
+    if (typeof node.attrs.flipY === 'string') {
+      node.attrs.flipY = node.attrs.flipY === 'true';
+    }
+  }
+
+  if (node.content && Array.isArray(node.content)) {
+    node.content = node.content.map(normalizeAttrs);
+  }
+
+  return node;
+};
+
+export function extractImageKeysFromJSON(json: any): Set<string> {
+  const keys = new Set<string>();
+
+  const walk = (node: any) => {
+    if (typeof node !== 'object' || node === null) return;
+
+    if (node.type === 'image' && node.attrs?.src) {
+      const src = node.attrs.src;
+      // Extract the S3 key from the src URL (after domain)
+      const url = new URL(src);
+      const key = url.pathname.slice(1); // remove leading '/'
+      keys.add(key);
+    }
+
+    if (Array.isArray(node.content)) {
+      node.content.forEach(walk);
+    } else if (typeof node === 'object') {
+      Object.values(node).forEach(walk);
+    }
+  };
+
+  walk(json);
+  return keys;
+}

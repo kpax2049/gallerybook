@@ -1,11 +1,20 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { editGallery, Gallery, getGallery } from '@/api/gallery';
+import {
+  createGallery,
+  deleteGalleryImages,
+  editGallery,
+  fetchPresignedUrls,
+  Gallery,
+  getGallery,
+  uploadFilesToS3,
+} from '@/api/gallery';
 // import { MinimalTiptapEditor } from '@/components/minimal-tiptap';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
 import RichTextEditor from 'reactjs-tiptap-editor';
 import { Image } from 'reactjs-tiptap-editor/image';
+// import { Image } from '@tiptap/extension-image';
 import 'react-image-crop/dist/ReactCrop.css';
 // Import CSS
 import 'reactjs-tiptap-editor/style.css';
@@ -34,6 +43,12 @@ import { useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AnyExtension } from '@tiptap/react';
 import { fileToBase64 } from '@/lib/fileUtils';
+import {
+  extractBase64ImagesFromJson,
+  extractImageKeysFromJSON,
+  normalizeAttrs,
+} from '@/lib/utils';
+import { useUserStore } from '@/stores/userStore';
 
 const extensions: AnyExtension[] = [
   BaseKit.configure({
@@ -48,14 +63,14 @@ const extensions: AnyExtension[] = [
   History,
   // Import Extensions Here
   Image.configure({
-    upload: (files: File) => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          // resolve(URL.createObjectURL(files));
-          resolve(fileToBase64(files));
-        }, 500);
-      });
-    },
+    // upload: (files: File) => {
+    //   return new Promise((resolve) => {
+    //     setTimeout(() => {
+    //       // resolve(URL.createObjectURL(files));
+    //       resolve(fileToBase64(files));
+    //     }, 500);
+    //   });
+    // },
   }),
   FontFamily,
   Heading,
@@ -77,49 +92,89 @@ const extensions: AnyExtension[] = [
 ];
 
 export function GalleryExistingEditor() {
-  const [value, setValue] = useState('');
-  const [gallery, setGallery] = useState<Gallery>();
+  const [value, setValue] = useState<any>('');
+  const [originalValue, setOriginalValue] = useState<any>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [showBubbleMenu, setShowBubbleMenu] = useState<boolean>(false);
   const isDarkMode = useTheme();
   const { galleryId } = useParams();
+  const currentUser = useUserStore((state) => state.user);
 
   useEffect(() => {
     setLoading(true);
     if (galleryId) {
       getGallery(galleryId, 'edit').then((data) => {
-        setGallery(data);
         if (data.content) {
-          // const parsedData = JSON.parse(data.content);
-          setValue(data.content.content);
+          setOriginalValue(data.content);
+          const normalizedContent = normalizeAttrs(data.content);
+          setValue(normalizedContent);
         }
         setLoading(false);
       });
     }
   }, []);
 
-  const onSave = (
+  const onSave = async (
     data: FormDataProps,
     setOpen: Dispatch<SetStateAction<boolean>>
   ) => {
+    if (!currentUser) return;
     setLoading(true);
-    if (gallery) {
-      const updatedGallery = {
-        ...gallery,
-        title: data.title,
-        description: data.description,
-        content: JSON.parse(value),
-        thumbnail: data.thumbnail,
-      };
+    try {
+      // Step 2: Extract base64 images, generate final S3 paths, and update JSON with real paths
+      const { imageFiles, paths, updatedJson } =
+        await extractBase64ImagesFromJson(
+          value,
+          currentUser.id,
+          Number(galleryId)
+        );
 
-      editGallery(updatedGallery)
-        .then(() => {
+      if (imageFiles.length === 0) {
+        // No images to upload; save content directly
+        createGallery({ content: updatedJson }, Number(galleryId))
+          .then((data: Gallery) => {
+            setLoading(false);
+            setOpen(false);
+          })
+          .catch(() => {
+            setLoading(false);
+          });
+        return;
+      }
+
+      // Step 3: Generate S3 keys and get presigned upload URLs
+      const { presignedUrls } = await fetchPresignedUrls(
+        Number(galleryId),
+        paths
+      );
+
+      // Step 4: Upload each image to its presigned S3 URL
+      await uploadFilesToS3(imageFiles, presignedUrls, paths);
+
+      // Step 5: Save gallery content
+      createGallery(updatedJson, Number(galleryId))
+        .then((data: Gallery) => {
+          // eslint-disable-next-line no-debugger
+          debugger;
+          const oldKeys = extractImageKeysFromJSON(originalValue);
+          const newKeys = extractImageKeysFromJSON(updatedJson);
+
+          // Difference: in old but not in new
+          const deletedKeys = [...oldKeys].filter((key) => !newKeys.has(key));
+          if (deletedKeys.length > 0) {
+            // eslint-disable-next-line no-debugger
+            debugger;
+            deleteGalleryImages(deletedKeys, Number(galleryId));
+          }
           setLoading(false);
           setOpen(false);
         })
         .catch(() => {
           setLoading(false);
         });
+    } catch (error) {
+      console.error('Failed to save gallery:', error);
+      throw error;
     }
   };
 

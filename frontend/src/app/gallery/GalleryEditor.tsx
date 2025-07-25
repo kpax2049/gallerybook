@@ -11,7 +11,7 @@ import {
 import { Dispatch, SetStateAction, useState } from 'react';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
 import RichTextEditor from 'reactjs-tiptap-editor';
-
+// import { Image } from '@tiptap/extension-image';
 import { Image } from 'reactjs-tiptap-editor/image';
 import 'react-image-crop/dist/ReactCrop.css';
 // Import CSS
@@ -114,7 +114,7 @@ export function GalleryEditor() {
 
       if (imageFiles.length === 0) {
         // No images to upload; save content directly
-        createGallery({ content: JSON.stringify(updatedJson) }, galleryId)
+        createGallery({ content: updatedJson }, galleryId)
           .then((data: Gallery) => {
             setLoading(false);
             setOpen(false);
@@ -129,8 +129,7 @@ export function GalleryEditor() {
       const { presignedUrls } = await fetchPresignedUrls(galleryId, paths);
 
       // Step 4: Upload each image to its presigned S3 URL
-      await uploadFilesToS3(imageFiles, presignedUrls, paths);
-
+      // await uploadFilesToS3(imageFiles, presignedUrls, paths);
       // Step 5: Save gallery content
       createGallery(updatedJson, galleryId)
         .then((data: Gallery) => {
