@@ -22,6 +22,7 @@ import { Role } from '@prisma/client';
 import { extname } from 'path';
 import { lookup as mimeLookup } from 'mime-types';
 import { CreateDraftGalleryDto } from './dto/create-draft-gallery.dto';
+import { extractS3KeysFromContent } from 'src/utils/gallery.utils';
 
 type Mode = 'edit' | 'view';
 
@@ -310,6 +311,12 @@ export class GalleryService {
     if (!gallery || gallery.userId !== userId) {
       throw new ForbiddenException('Access to Resource Denied');
     }
+
+    const content = gallery.content as any;
+    const keys = extractS3KeysFromContent(content); // Returns relative S3 paths
+
+    await this.deleteImagesFromS3(keys);
+
     await this.prisma.gallery.delete({
       where: {
         id: galleryId,
@@ -334,7 +341,7 @@ export class GalleryService {
 
     const command = new DeleteObjectsCommand({
       Bucket: this.bucket,
-      Delete: { Objects: objects },
+      Delete: { Objects: objects, Quiet: true },
     });
 
     try {
