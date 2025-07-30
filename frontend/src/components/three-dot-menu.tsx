@@ -11,9 +11,14 @@ import { Ellipsis } from 'lucide-react';
 interface ThreeDotMenuProps {
   props?: React.ComponentProps<typeof ThreeDotMenu>;
   onEdit: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
+  onDelete: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
 }
 
-export function ThreeDotMenu({ onEdit, ...props }: ThreeDotMenuProps) {
+export function ThreeDotMenu({
+  onEdit,
+  onDelete,
+  ...props
+}: ThreeDotMenuProps) {
   return (
     <DropdownMenu {...props}>
       <DropdownMenuTrigger asChild>
@@ -27,7 +32,7 @@ export function ThreeDotMenu({ onEdit, ...props }: ThreeDotMenuProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent sideOffset={4}>
         <DropdownMenuItem onClick={(e) => onEdit(e)}>Edit</DropdownMenuItem>
-        <DropdownMenuItem>Delete</DropdownMenuItem>
+        <DropdownMenuItem onClick={(e) => onDelete(e)}>Delete</DropdownMenuItem>
         <DropdownMenuItem>Share</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

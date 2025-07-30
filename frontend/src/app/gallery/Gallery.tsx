@@ -79,9 +79,9 @@ export default function GalleryPage() {
     setLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     getGallery(galleryId).then((data: any) => {
-      if (data.content) {
-        setRawBlocks(data.content.content || []);
-        const firstChunk = data.content.content.slice(0, chunkSize);
+      if (data?.content) {
+        setRawBlocks(data?.content?.content || []);
+        const firstChunk = data?.content?.content?.slice(0, chunkSize);
         const html = generateHTML({ type: 'doc', content: firstChunk }, [
           // Document,
           // Paragraph,
@@ -153,16 +153,18 @@ export default function GalleryPage() {
       <h3>Gallery Item: {galleryId}</h3>
       {/* <EditorContent editor={editor} /> */}
       <div className="gallery-container px-4 space-y-8 pb-12">
-        {htmlChunks.map((html, i) => (
-          <div key={i}>
-            <div dangerouslySetInnerHTML={{ __html: html }} />
-            {/* Attach ref ONLY to last chunk if more chunks remain */}
-            {i === htmlChunks.length - 1 &&
-              chunkIndex * chunkSize < rawBlocks.length && (
-                <div ref={ref} className="h-16" />
-              )}
-          </div>
-        ))}
+        {htmlChunks.map((html, i) => {
+          return (
+            <div key={i}>
+              <div dangerouslySetInnerHTML={{ __html: html }} />
+              {/* Attach ref ONLY to last chunk if more chunks remain */}
+              {i === htmlChunks.length - 1 &&
+                chunkIndex * chunkSize < rawBlocks.length && (
+                  <div ref={ref} className="h-16" />
+                )}
+            </div>
+          );
+        })}
       </div>
       <Comment galleryId={Number(galleryId)} />
     </div>

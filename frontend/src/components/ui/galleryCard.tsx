@@ -1,4 +1,4 @@
-import { Gallery } from '@/api/gallery';
+import { deleteGallery, Gallery } from '@/api/gallery';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import React from 'react';
@@ -21,6 +21,11 @@ const GalleryListCard = React.forwardRef<HTMLDivElement, GalleryListCardProps>(
       navigate(`/gallery/edit/${props.gallery.id}`);
     };
 
+    const onDelete = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+      if (e && e.stopPropagation) e.stopPropagation();
+      deleteGallery(props.gallery.id);
+    };
+
     return (
       <Card
         ref={ref}
@@ -41,7 +46,7 @@ const GalleryListCard = React.forwardRef<HTMLDivElement, GalleryListCardProps>(
             style={{ aspectRatio: '400/200', objectFit: 'cover' }}
             // className="w-full h-full object-cover p-2 rounded-2xl"
           />
-          <ThreeDotMenu onEdit={onEdit} />
+          <ThreeDotMenu onEdit={onEdit} onDelete={onDelete} />
         </div>
         <CardContent className="p-6 space-y-4">
           <CardTitle className="text-xl font-semibold">{title}</CardTitle>

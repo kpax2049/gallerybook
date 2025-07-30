@@ -129,7 +129,7 @@ export function GalleryEditor() {
       const { presignedUrls } = await fetchPresignedUrls(galleryId, paths);
 
       // Step 4: Upload each image to its presigned S3 URL
-      // await uploadFilesToS3(imageFiles, presignedUrls, paths);
+      await uploadFilesToS3(imageFiles, presignedUrls, paths);
       // Step 5: Save gallery content
       createGallery(updatedJson, galleryId)
         .then((data: Gallery) => {

@@ -55,6 +55,10 @@ export const editGallery = async (galleryData: Gallery): Promise<Gallery> => {
   );
 };
 
+export const deleteGallery = async (galleryId: number): Promise<Gallery> => {
+  return await apiRequest<Gallery>(`/galleries/${galleryId}`, 'DELETE');
+};
+
 export const getGalleries = async (): Promise<Gallery[]> => {
   return await apiRequest<Gallery[]>('/galleries', 'GET');
 };

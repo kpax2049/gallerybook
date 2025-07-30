@@ -47,6 +47,7 @@ import {
   extractBase64ImagesFromJson,
   extractImageKeysFromJSON,
   normalizeAttrs,
+  normalizeImageSrcsToS3Keys,
 } from '@/lib/utils';
 import { useUserStore } from '@/stores/userStore';
 
@@ -131,7 +132,9 @@ export function GalleryExistingEditor() {
 
       if (imageFiles.length === 0) {
         // No images to upload; save content directly
-        createGallery({ content: updatedJson }, Number(galleryId))
+        // TODO: doesn't account for any deleted images
+        normalizeImageSrcsToS3Keys(updatedJson);
+        createGallery(updatedJson, Number(galleryId))
           .then((data: Gallery) => {
             setLoading(false);
             setOpen(false);
@@ -151,19 +154,19 @@ export function GalleryExistingEditor() {
       // Step 4: Upload each image to its presigned S3 URL
       await uploadFilesToS3(imageFiles, presignedUrls, paths);
 
-      // Step 5: Save gallery content
+      // Step 5: Normalize Image sources to S3 Keys only
+      normalizeImageSrcsToS3Keys(updatedJson);
+
+      // Step 6: Save gallery content
       createGallery(updatedJson, Number(galleryId))
         .then((data: Gallery) => {
-          // eslint-disable-next-line no-debugger
-          debugger;
+          // Delete removed images from S3 directly
           const oldKeys = extractImageKeysFromJSON(originalValue);
           const newKeys = extractImageKeysFromJSON(updatedJson);
 
           // Difference: in old but not in new
           const deletedKeys = [...oldKeys].filter((key) => !newKeys.has(key));
           if (deletedKeys.length > 0) {
-            // eslint-disable-next-line no-debugger
-            debugger;
             deleteGalleryImages(deletedKeys, Number(galleryId));
           }
           setLoading(false);
