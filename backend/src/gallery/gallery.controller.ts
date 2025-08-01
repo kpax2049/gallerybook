@@ -124,11 +124,12 @@ export class GalleryController {
 
   @Delete(':id/images')
   async deleteUnusedImages(
+    @GetUser('id') userId: number,
     @Param('id', ParseIntPipe) galleryId: number,
     @Body() body: { keys: string[] },
   ) {
     // Validate keys start with correct gallery prefix
-    const galleryPrefix = `galleries/${galleryId}/images/`;
+    const galleryPrefix = `uploads/users/${userId}/galleries/${galleryId}/`;
     const safeKeys = body.keys.filter((key) => key.startsWith(galleryPrefix));
 
     if (safeKeys.length === 0) {
