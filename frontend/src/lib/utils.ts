@@ -156,10 +156,16 @@ export function extractImageKeysFromJSON(json: any): Set<string> {
 
     if (node.type === 'image' && node.attrs?.src) {
       const src = node.attrs.src;
-      // Extract the S3 key from the src URL (after domain)
-      const url = new URL(src);
-      const key = url.pathname.slice(1); // remove leading '/'
-      keys.add(key);
+
+      // If it's already a relative S3 key (no scheme or host), just return as-is
+      if (!src.startsWith('https://')) {
+        keys.add(src.replace(/^\/+/, ''));
+      } else {
+        // Extract the S3 key from the src URL (after domain)
+        const url = new URL(src);
+        const key = url.pathname.slice(1); // remove leading '/'
+        keys.add(key);
+      }
     }
 
     if (Array.isArray(node.content)) {

@@ -64,14 +64,14 @@ const extensions: AnyExtension[] = [
   History,
   // Import Extensions Here
   Image.configure({
-    // upload: (files: File) => {
-    //   return new Promise((resolve) => {
-    //     setTimeout(() => {
-    //       // resolve(URL.createObjectURL(files));
-    //       resolve(fileToBase64(files));
-    //     }, 500);
-    //   });
-    // },
+    upload: (files: File) => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          // resolve(URL.createObjectURL(files));
+          resolve(fileToBase64(files));
+        }, 500);
+      });
+    },
   }),
   FontFamily,
   Heading,
@@ -121,6 +121,15 @@ export function GalleryExistingEditor() {
   ) => {
     if (!currentUser) return;
     setLoading(true);
+    // Delete removed images from S3 directly
+    function handleDeletedImages(updatedJson: any) {
+      const oldKeys = extractImageKeysFromJSON(originalValue);
+      const newKeys = extractImageKeysFromJSON(updatedJson);
+      const deletedKeys = [...oldKeys].filter((key) => !newKeys.has(key));
+      if (deletedKeys.length > 0) {
+        deleteGalleryImages(deletedKeys, Number(galleryId));
+      }
+    }
     try {
       // Step 2: Extract base64 images, generate final S3 paths, and update JSON with real paths
       const { imageFiles, paths, updatedJson } =
@@ -132,12 +141,15 @@ export function GalleryExistingEditor() {
 
       if (imageFiles.length === 0) {
         // No images to upload; save content directly
-        // TODO: doesn't account for any deleted images
         normalizeImageSrcsToS3Keys(updatedJson);
         createGallery(updatedJson, Number(galleryId))
-          .then((data: Gallery) => {
-            setLoading(false);
-            setOpen(false);
+          .then((result: any) => {
+            if (result.success) {
+              handleDeletedImages(updatedJson);
+              setLoading(false);
+              setOpen(false);
+              setOriginalValue(updatedJson);
+            }
           })
           .catch(() => {
             setLoading(false);
@@ -159,18 +171,13 @@ export function GalleryExistingEditor() {
 
       // Step 6: Save gallery content
       createGallery(updatedJson, Number(galleryId))
-        .then((data: Gallery) => {
-          // Delete removed images from S3 directly
-          const oldKeys = extractImageKeysFromJSON(originalValue);
-          const newKeys = extractImageKeysFromJSON(updatedJson);
-
-          // Difference: in old but not in new
-          const deletedKeys = [...oldKeys].filter((key) => !newKeys.has(key));
-          if (deletedKeys.length > 0) {
-            deleteGalleryImages(deletedKeys, Number(galleryId));
+        .then((result: any) => {
+          if (result.success) {
+            handleDeletedImages(updatedJson);
+            setLoading(false);
+            setOpen(false);
+            setOriginalValue(updatedJson);
           }
-          setLoading(false);
-          setOpen(false);
         })
         .catch(() => {
           setLoading(false);

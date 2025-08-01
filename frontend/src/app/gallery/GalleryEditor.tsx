@@ -115,9 +115,11 @@ export function GalleryEditor() {
       if (imageFiles.length === 0) {
         // No images to upload; save content directly
         createGallery({ content: updatedJson }, galleryId)
-          .then((data: Gallery) => {
-            setLoading(false);
-            setOpen(false);
+          .then((result: any) => {
+            if (result.success) {
+              setLoading(false);
+              setOpen(false);
+            }
           })
           .catch(() => {
             setLoading(false);
@@ -132,9 +134,11 @@ export function GalleryEditor() {
       await uploadFilesToS3(imageFiles, presignedUrls, paths);
       // Step 5: Save gallery content
       createGallery(updatedJson, galleryId)
-        .then((data: Gallery) => {
-          setLoading(false);
-          setOpen(false);
+        .then((result: any) => {
+          if (result.success) {
+            setLoading(false);
+            setOpen(false);
+          }
         })
         .catch(() => {
           setLoading(false);

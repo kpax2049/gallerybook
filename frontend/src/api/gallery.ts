@@ -79,11 +79,9 @@ export const deleteGalleryImages = async (
   deletedKeys: string[],
   galleryId: number
 ): Promise<Gallery> => {
-  return await apiRequest<Gallery>(
-    `/galleries/${galleryId}/images`,
-    'DELETE',
-    JSON.stringify({ keys: deletedKeys })
-  );
+  return await apiRequest<Gallery>(`/galleries/${galleryId}/images`, 'DELETE', {
+    keys: deletedKeys,
+  });
 };
 
 export async function fetchPresignedUrls(
