@@ -1,14 +1,6 @@
 // import { User } from '@/api/user';
 import { User } from '@/api/user';
 import { AppSidebar } from '@/components/app-sidebar';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Separator } from '@/components/ui/separator';
 import {
   SidebarInset,
@@ -16,6 +8,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Outlet } from 'react-router-dom';
+import { GalleryBreadcrumb } from '../gallery/GalleryBreadcrumb';
 
 interface DashboardProps {
   user: User | undefined;
@@ -33,19 +26,7 @@ export default function Dashboard({ user, handleLogout }: DashboardProps) {
             <div className="flex items-center gap-2 px-4">
               <SidebarTrigger className="-ml-1" />
               <Separator orientation="vertical" className="mr-2 h-4" />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="#">
-                      Building Your Application
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
+              <GalleryBreadcrumb />
             </div>
           </header>
           <main className="h-full">

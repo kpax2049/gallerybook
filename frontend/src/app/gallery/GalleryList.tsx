@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 // import { Images } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useGalleryStore } from '@/stores/galleryStore';
 
 export default function GalleryList() {
   const [galleries, setGalleries] = useState<Gallery[]>([]);
@@ -12,6 +13,7 @@ export default function GalleryList() {
     setLoading(true);
     getGalleries().then((data) => {
       setGalleries(data);
+      useGalleryStore.getState().setGalleries(data);
       setLoading(false);
     });
   }, []);
