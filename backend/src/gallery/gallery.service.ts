@@ -195,6 +195,16 @@ export class GalleryService {
       where: {
         userId,
       },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+        status: true,
+        // thumbnailUrl: true, // Assuming you store a thumbnail per gallery
+      },
+      orderBy: { updatedAt: 'desc' },
     });
   }
 
