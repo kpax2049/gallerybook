@@ -65,7 +65,7 @@
     "react-intersection-observer": "^9.16.0",
     "react-medium-image-zoom": "^5.2.13",
     "react-router-dom": "^7.1.2",
-    "reactjs-tiptap-editor": "^0.3.17",
+    "reactjs-tiptap-editor": "^0.3.18",
     "shadcn-comments": "file:./local_modules/shadcn-comments",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
