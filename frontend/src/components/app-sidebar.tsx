@@ -1,10 +1,9 @@
 import * as React from 'react';
 import {
-  BookOpen,
+  Tags,
   Bot,
   Frame,
-  Map,
-  PieChart,
+  Search,
   Settings2,
   SquareTerminal,
 } from 'lucide-react';
@@ -21,7 +20,6 @@ import {
 } from '@/components/ui/sidebar';
 import { User } from '@/api/user';
 
-// This is sample data.
 const data = {
   navMain: [
     {
@@ -32,56 +30,34 @@ const data = {
       items: [
         {
           title: 'Galleries',
-          url: '/galleries', //'/admin/users',
+          url: '/galleries',
         },
         {
-          title: 'New Gallery',
-          url: '/gallery/new', //'/galleries',
+          title: 'Comments',
+          url: '/comments',
         },
         {
-          title: 'Users',
-          url: '/admin/users',
+          title: 'Favorites',
+          url: '/galleries/favorites',
+        },
+        {
+          title: 'Drafts',
+          url: '/galleries/drafts',
         },
       ],
     },
     {
-      title: 'Models',
+      title: 'Activity',
       url: '#',
       icon: Bot,
+      isActive: true,
       items: [
         {
-          title: 'Genesis',
+          title: 'Activity',
           url: '#',
         },
         {
-          title: 'Explorer',
-          url: '#',
-        },
-        {
-          title: 'Quantum',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Documentation',
-      url: '#',
-      icon: BookOpen,
-      items: [
-        {
-          title: 'Introduction',
-          url: '#',
-        },
-        {
-          title: 'Get Started',
-          url: '#',
-        },
-        {
-          title: 'Tutorials',
-          url: '#',
-        },
-        {
-          title: 'Changelog',
+          title: 'Following',
           url: '#',
         },
       ],
@@ -110,21 +86,21 @@ const data = {
       ],
     },
   ],
-  projects: [
+  galleries: [
     {
-      name: 'Design Engineering',
+      name: 'Trending',
       url: '#',
       icon: Frame,
     },
     {
-      name: 'Sales & Marketing',
+      name: 'Tags / Categories',
       url: '#',
-      icon: PieChart,
+      icon: Tags,
     },
     {
-      name: 'Travel',
+      name: 'Search',
       url: '#',
-      icon: Map,
+      icon: Search,
     },
   ],
 };
@@ -143,7 +119,7 @@ export function AppSidebar({ handleLogout, user, ...props }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavProjects projects={data.galleries} />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
       <SidebarRail />
