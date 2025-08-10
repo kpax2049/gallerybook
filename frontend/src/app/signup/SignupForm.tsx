@@ -25,6 +25,10 @@ import LoginPage from '../login/Login';
 import { PasswordInput } from '../../components/ui/password-input';
 import { useState } from 'react';
 import { signupUser } from '@/api/signup';
+import { useNavigate } from 'react-router-dom';
+import { getUser, User } from '@/api/user';
+import { useUserStore } from '@/stores/userStore';
+import { toast } from '@/hooks/use-toast';
 
 const formSchema = z
   .object({
@@ -60,6 +64,8 @@ export function SignupForm({
   ...props
 }: React.ComponentPropsWithoutRef<'div'>) {
   const [loading, setLoading] = useState<boolean>(false);
+  const setGlobalUser = useUserStore((state) => state.setUser);
+  const navigate = useNavigate();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -78,10 +84,23 @@ export function SignupForm({
       password: values.password,
       fullName: values.fullName,
       username: values.username,
-    }).then((response) => {
-      localStorage.setItem('ACCESS_TOKEN', response.access_token);
-      setLoading(false);
-    });
+    })
+      .then((response) => {
+        toast({
+          variant: 'default',
+          title: 'Success',
+          description: `Account created 🎉 — Welcome to Gallerybook, ${values.username}!`,
+        });
+        localStorage.setItem('ACCESS_TOKEN', response.access_token);
+        getUser().then((user: User) => {
+          setGlobalUser(user);
+          setLoading(false);
+          navigate('/', { viewTransition: true });
+        });
+      })
+      .catch(() => {
+        setLoading(false);
+      });
   }
 
   return (
