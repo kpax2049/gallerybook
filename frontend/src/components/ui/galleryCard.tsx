@@ -18,7 +18,7 @@ const GalleryListCard = React.forwardRef<HTMLDivElement, GalleryListCardProps>(
 
     const onEdit = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
       if (e && e.stopPropagation) e.stopPropagation();
-      navigate(`/gallery/edit/${props.gallery.id}`);
+      navigate(`/galleries/edit/${props.gallery.id}`);
     };
 
     const onDelete = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -58,17 +58,3 @@ const GalleryListCard = React.forwardRef<HTMLDivElement, GalleryListCardProps>(
 );
 
 export default GalleryListCard;
-
-// const Card1 = React.forwardRef<
-//   HTMLDivElement,
-//   React.HTMLAttributes<HTMLDivElement>
-// >(({ className, ...props }, ref) => (
-//   <div
-//     ref={ref}
-//     className={cn(
-//       'rounded-xl border bg-card text-card-foreground shadow',
-//       className
-//     )}
-//     {...props}
-//   />
-// ));

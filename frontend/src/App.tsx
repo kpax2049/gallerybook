@@ -107,13 +107,13 @@ const App = () => {
             <Route path="admin/users" element={<UserList />} />
             <Route path="galleries" element={<GalleryList />} />
             <Route path="galleries/:galleryId" element={<GalleryPage />} />
-            <Route path="gallery/new" element={<GalleryEditor />} />
+            <Route path="galleries/new" element={<GalleryEditor />} />
             {/* <Route
               path="gallery/minimal-tiptap"
               element={<GalleryMinimalTiptapEditor />}
             /> */}
             <Route
-              path="gallery/edit/:galleryId"
+              path="galleries/edit/:galleryId"
               element={<GalleryExistingEditor />}
             />
           </Route>

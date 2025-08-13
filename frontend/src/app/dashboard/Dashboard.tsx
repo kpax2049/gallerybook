@@ -29,7 +29,7 @@ export default function Dashboard({ user, handleLogout }: DashboardProps) {
               <Separator orientation="vertical" className="mr-2 h-4" />
               <GalleryBreadcrumb />
               <Button asChild variant="outline" className="ml-auto px-4 py-2">
-                <NavLink viewTransition to={'/gallery/new'}>
+                <NavLink viewTransition to={'/galleries/new'}>
                   <ImagePlusIcon /> New Gallery
                 </NavLink>
               </Button>

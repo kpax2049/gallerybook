@@ -1,11 +1,12 @@
 import * as React from 'react';
 import {
   Tags,
-  Bot,
+  SquareActivity,
   Frame,
   Search,
   Settings2,
-  SquareTerminal,
+  BookImage,
+  Album,
 } from 'lucide-react';
 
 import { NavMain } from '@/components/nav-main';
@@ -25,7 +26,7 @@ const data = {
     {
       title: 'My  stuff',
       url: '#',
-      icon: SquareTerminal,
+      icon: Album,
       isActive: true,
       items: [
         {
@@ -49,7 +50,7 @@ const data = {
     {
       title: 'Activity',
       url: '#',
-      icon: Bot,
+      icon: SquareActivity,
       isActive: true,
       items: [
         {
@@ -87,6 +88,11 @@ const data = {
     },
   ],
   galleries: [
+    {
+      name: 'All ',
+      url: '#',
+      icon: BookImage,
+    },
     {
       name: 'Trending',
       url: '#',
