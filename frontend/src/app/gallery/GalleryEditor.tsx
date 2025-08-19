@@ -3,12 +3,13 @@
 import {
   createDraftGallery,
   createGallery,
+  editGallery,
   fetchPresignedUrls,
   Gallery,
   uploadFilesToS3,
 } from '@/api/gallery';
 // import { MinimalTiptapEditor } from '@/components/minimal-tiptap';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
 import RichTextEditor from 'reactjs-tiptap-editor';
 // import { Image } from '@tiptap/extension-image';
@@ -42,6 +43,7 @@ import { AnyExtension } from '@tiptap/react';
 import { fileToBase64 } from '@/lib/fileUtils';
 import { extractBase64ImagesFromJson } from '@/lib/utils';
 import { useUserStore } from '@/stores/userStore';
+import { useThumbStore } from '@/stores/thumbStore';
 
 const extensions: AnyExtension[] = [
   BaseKit.configure({
@@ -103,7 +105,6 @@ export function GalleryEditor() {
       const response = await createDraftGallery({
         title: data.title,
         description: data.description,
-        thumbnail: data.thumbnail,
       });
 
       const galleryId = response.id;
@@ -132,7 +133,19 @@ export function GalleryEditor() {
 
       // Step 4: Upload each image to its presigned S3 URL
       await uploadFilesToS3(imageFiles, presignedUrls, paths);
-      // Step 5: Save gallery content
+      // Step 5: Resolve the thumbnail URL safely by index, with fallbacks
+      const { index } = useThumbStore.getState();
+      const thumbnailUrl =
+        paths[index] ??
+        paths[0] ?? // fallback to first image if needed
+        null;
+      editGallery(
+        {
+          thumbnail: thumbnailUrl,
+        },
+        galleryId
+      );
+      // Step 6: Save gallery content
       createGallery(updatedJson, galleryId)
         .then((result: any) => {
           if (result.success) {

@@ -14,7 +14,6 @@ export interface Gallery {
   description?: string;
   content?: Record<string, string>;
   thumbnail?: string;
-  //   images: Image[];
 }
 
 interface CreateDraftGalleryRequest {
@@ -26,6 +25,18 @@ interface CreateDraftGalleryRequest {
 
 interface CreateGalleryRequest {
   content?: string;
+}
+
+export interface EditGalleryRequest {
+  id?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+  userId?: number;
+  createdBy?: User;
+  title?: string;
+  description?: string;
+  content?: Record<string, string>;
+  thumbnail?: string;
 }
 
 export const createDraftGallery = async (
@@ -47,9 +58,12 @@ export const createGallery = async (
   });
 };
 
-export const editGallery = async (galleryData: Gallery): Promise<Gallery> => {
+export const editGallery = async (
+  galleryData: EditGalleryRequest,
+  galleryId: number
+): Promise<Gallery> => {
   return await apiRequest<Gallery>(
-    `/galleries/${galleryData.id}`,
+    `/galleries/${galleryId}`,
     'PATCH',
     qs.stringify(galleryData)
   );

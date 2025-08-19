@@ -29,6 +29,26 @@ export type ExtractedImage = {
   mimeType: string;
 };
 
+export type Img = { src: string; alt?: string };
+
+export function extractImagesFromPM(content: any): Img[] {
+  if (!content) return [];
+  function traverse(obj: any): Img[] {
+    let images: Img[] = [];
+    for (const key in obj) {
+      const val = obj[key];
+      if (val && typeof val === 'object') {
+        if (val.type === 'image') {
+          images.push({ src: val.attrs?.src, alt: val.attrs?.alt });
+        }
+        images = images.concat(traverse(val));
+      }
+    }
+    return images;
+  }
+  return traverse(content);
+}
+
 export async function extractBase64ImagesFromJson(
   json: any,
   userId: number,

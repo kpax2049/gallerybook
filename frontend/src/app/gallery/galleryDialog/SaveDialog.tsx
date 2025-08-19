@@ -1,6 +1,6 @@
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction, useMemo, useState } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn, extractImagesFromPM } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,20 +24,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
-} from '@/components/ui/carousel';
 import { Content } from '@tiptap/react';
+import { ThumbnailCarousel } from './ThumbnailCarousel';
 
 export interface FormDataProps {
   title: string;
   description: string;
-  thumbnail: string;
+  thumbnailIndex: number;
 }
 
 interface GallerySaveDialogProps {
@@ -125,33 +118,18 @@ function GallerySaveForm({
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    thumbnail: '',
+    thumbnailIndex: 0,
   });
 
-  function getImages(): string[] {
-    console.info('getImages');
-    if (!content) return [];
-    function traverse(obj) {
-      let images: string[] = [];
-      for (const prop in obj) {
-        if (typeof obj[prop] == 'object' && obj[prop]) {
-          if (obj[prop].type === 'image') {
-            images.push(obj[prop].attrs?.src);
-          }
-          images = images.concat(traverse(obj[prop]));
-        }
-      }
-      return images;
-    }
-    const images = traverse(content);
-    return images;
-  }
-  // getImages();
-  const imageArray: string[] = getImages();
+  // Only recompute when `content` changes
+  const imageArray = useMemo(() => {
+    console.info('getImages (memo)');
+    return extractImagesFromPM(content);
+  }, [content]);
 
   const handleSubmit = (event: React.SyntheticEvent) => {
     event.preventDefault();
-    onSubmit(formData, setOpen); // Pass the form data to the parent component
+    onSubmit(formData, setOpen);
   };
   return (
     <form
@@ -164,10 +142,8 @@ function GallerySaveForm({
           type="text"
           name="title"
           id="title"
-          // defaultValue=""
           value={formData.title}
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          // onChange={handleInputChange}
         />
       </div>
       <div className="grid gap-2">
@@ -175,49 +151,18 @@ function GallerySaveForm({
         <Textarea
           name="description"
           id="description"
-          // defaultValue=""
           value={formData.description}
           onChange={(e) =>
             setFormData({
               ...formData,
               description: e.target.value,
-              thumbnail: imageArray[0],
             })
           }
         />
-        {/* <Input
-          type="text"
-          name="description"
-          id="description"
-          // defaultValue=""
-          value={formData.description}
-          onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
-          }
-        /> */}
       </div>
       <Label htmlFor="description">Gallery Thumbnail</Label>
       <div className="grid gap-2">
-        <Carousel className="w-full max-w-xs flex-col mx-auto">
-          <CarouselContent>
-            {imageArray.map((_, index) => (
-              <CarouselItem key={index}>
-                <div className="p-1">
-                  <Card>
-                    <CardContent className="relative aspect-square w-full basis-1/4 p-0">
-                      <img
-                        src={imageArray[index]}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious type="button" />
-          <CarouselNext type="button" />
-        </Carousel>
+        <ThumbnailCarousel images={imageArray} />
       </div>
       <Button type="submit">Save changes</Button>
     </form>
