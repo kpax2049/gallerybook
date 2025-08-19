@@ -31,7 +31,7 @@ export const CommentEditor = ({
       <div className={`flex gap-4 w-full`}>
         <Avatar className={'w-[32px] h-[32px]'}>
           <AvatarImage src={currentUser?.profile?.avatarUrl} />
-          <AvatarFallback>CN</AvatarFallback>
+          <AvatarFallback>GB</AvatarFallback>
         </Avatar>
 
         <div className={'w-full flex-1'}>
