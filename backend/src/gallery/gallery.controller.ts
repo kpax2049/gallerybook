@@ -23,6 +23,7 @@ import { PresignRequestDto } from './dto/presign-request.dto';
 import { User } from '@prisma/client';
 import { CreateDraftGalleryDto } from './dto/create-draft-gallery.dto';
 import { UpdateGalleryContentDto } from './dto/update-gallery-content.dto';
+import { UpdateGalleryDto } from './dto/update-gallery-dto';
 
 @UseGuards(JwtGuard)
 @Controller('galleries')
@@ -108,7 +109,7 @@ export class GalleryController {
   editGalleryById(
     @GetUser('id') userId: number,
     @Param('id', ParseIntPipe) galleryId: number,
-    @Body() dto: CreateGalleryDto,
+    @Body() dto: UpdateGalleryDto,
   ) {
     return this.galleryService.editGalleryById(userId, galleryId, dto);
   }

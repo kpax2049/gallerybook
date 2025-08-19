@@ -23,6 +23,7 @@ import { extname } from 'path';
 import { lookup as mimeLookup } from 'mime-types';
 import { CreateDraftGalleryDto } from './dto/create-draft-gallery.dto';
 import { extractS3KeysFromContent } from 'src/utils/gallery.utils';
+import { UpdateGalleryDto } from './dto/update-gallery-dto';
 
 type Mode = 'edit' | 'view';
 
@@ -288,7 +289,7 @@ export class GalleryService {
   async editGalleryById(
     userId: number,
     galleryId: number,
-    dto: CreateGalleryDto,
+    dto: UpdateGalleryDto,
   ) {
     // get gallery by id
     const gallery = await this.prisma.gallery.findUnique({
