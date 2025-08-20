@@ -166,6 +166,37 @@ export class GalleryService {
     return await this.rewriteImageSrcsInNode(content, mode);
   }
 
+  thumbKeyToCdnUrl(
+    key: string | null | undefined,
+    params?: Record<string, string | number>,
+  ): string | null {
+    if (!key) return null;
+
+    const cloudfrontDomain = this.config.get<string>('CLOUDFRONT_DOMAIN');
+    const transformParams = this.config.get<string>(
+      'THUMB_IMG_TRANSFORM_PARAMS',
+    );
+
+    // normalize key (no leading slash)
+    const cleanKey = key.replace(/^\/+/, '');
+
+    const url = new URL(`${cloudfrontDomain}/${cleanKey}`);
+
+    // apply params override or env defaults
+    if (params) {
+      Object.entries(params).forEach(([k, v]) =>
+        url.searchParams.set(k, String(v)),
+      );
+    } else if (transformParams) {
+      transformParams.split('&').forEach((p) => {
+        const [k, v = ''] = p.split('=');
+        if (k) url.searchParams.set(k, v);
+      });
+    }
+
+    return url.toString();
+  }
+
   async checkGalleryOwnershipOrAdmin(
     galleryId: number,
     user: User,
@@ -191,8 +222,8 @@ export class GalleryService {
     if (gallery.userId !== userId) throw new ForbiddenException();
   }
 
-  getGalleries(userId: number) {
-    return this.prisma.gallery.findMany({
+  async getGalleries(userId: number) {
+    const galleries = await this.prisma.gallery.findMany({
       where: {
         userId,
       },
@@ -203,10 +234,20 @@ export class GalleryService {
         createdAt: true,
         updatedAt: true,
         status: true,
-        // thumbnailUrl: true, // Assuming you store a thumbnail per gallery
+        thumbnail: true,
       },
       orderBy: { updatedAt: 'desc' },
     });
+
+    return galleries.map((g) => ({
+      id: g.id,
+      title: g.title,
+      description: g.description,
+      createdAt: g.createdAt,
+      updatedAt: g.updatedAt,
+      status: g.status,
+      thumbnail: this.thumbKeyToCdnUrl(g.thumbnail),
+    }));
   }
 
   async createDraft(dto: CreateDraftGalleryDto, userId: number) {
