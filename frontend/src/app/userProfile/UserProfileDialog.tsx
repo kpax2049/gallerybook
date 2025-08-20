@@ -9,13 +9,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { UserProfileEditor } from './UserProfileEditor';
+import {
+  UserProfileEditor,
+  UserProfileFormDataProps,
+} from './UserProfileEditor';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { BadgeCheck } from 'lucide-react';
+import { Dispatch, SetStateAction, useState } from 'react';
 
+const onSave = (
+  data: UserProfileFormDataProps,
+  setOpen: Dispatch<SetStateAction<boolean>>
+) => {
+  console.info(data);
+};
 export function UserProfileDialog() {
+  const [open, setOpen] = useState(false);
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <form>
         <DialogTrigger asChild>
           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -32,7 +43,7 @@ export function UserProfileDialog() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
-            <UserProfileEditor />
+            <UserProfileEditor setOpen={setOpen} onSubmit={onSave} />
           </div>
           <DialogFooter>
             <DialogClose asChild>
