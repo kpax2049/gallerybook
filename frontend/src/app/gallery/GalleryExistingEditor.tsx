@@ -50,6 +50,7 @@ import {
   normalizeImageSrcsToS3Keys,
 } from '@/lib/utils';
 import { useUserStore } from '@/stores/userStore';
+import { useThumbStore } from '@/stores/thumbStore';
 
 const extensions: AnyExtension[] = [
   BaseKit.configure({
@@ -93,6 +94,7 @@ const extensions: AnyExtension[] = [
 ];
 
 export function GalleryExistingEditor() {
+  const [gallery, setGallery] = useState<Gallery>();
   const [value, setValue] = useState<any>('');
   const [originalValue, setOriginalValue] = useState<any>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -105,6 +107,7 @@ export function GalleryExistingEditor() {
     setLoading(true);
     if (galleryId) {
       getGallery(galleryId, 'edit').then((data) => {
+        setGallery(data);
         if (data.content) {
           setOriginalValue(data.content);
           const normalizedContent = normalizeAttrs(data.content);
@@ -130,6 +133,25 @@ export function GalleryExistingEditor() {
         deleteGalleryImages(deletedKeys, Number(galleryId));
       }
     }
+    function updateGalleryMeta(updatedJson: any) {
+      const newPaths: string[] = Array.from(
+        extractImageKeysFromJSON(updatedJson)
+      );
+      // Resolve the thumbnail URL safely by index, with fallbacks
+      const { index } = useThumbStore.getState();
+      const thumbnailUrl =
+        newPaths[index] ??
+        newPaths[0] ?? // fallback to first image if needed
+        null;
+      editGallery(
+        {
+          thumbnail: thumbnailUrl,
+          title: data.title,
+          description: data.description,
+        },
+        Number(galleryId)
+      );
+    }
     try {
       // Step 2: Extract base64 images, generate final S3 paths, and update JSON with real paths
       const { imageFiles, paths, updatedJson } =
@@ -142,6 +164,7 @@ export function GalleryExistingEditor() {
       if (imageFiles.length === 0) {
         // No images to upload; save content directly
         normalizeImageSrcsToS3Keys(updatedJson);
+        updateGalleryMeta(updatedJson);
         createGallery(updatedJson, Number(galleryId))
           .then((result: any) => {
             if (result.success) {
@@ -168,7 +191,7 @@ export function GalleryExistingEditor() {
 
       // Step 5: Normalize Image sources to S3 Keys only
       normalizeImageSrcsToS3Keys(updatedJson);
-
+      updateGalleryMeta(updatedJson);
       // Step 6: Save gallery content
       createGallery(updatedJson, Number(galleryId))
         .then((result: any) => {
@@ -193,7 +216,7 @@ export function GalleryExistingEditor() {
   };
 
   const SaveButton = enrich(() => (
-    <GallerySaveDialog onSubmit={onSave} content={value} />
+    <GallerySaveDialog onSubmit={onSave} content={value} initial={gallery} />
   ));
 
   const EditorSkeleton = () => {

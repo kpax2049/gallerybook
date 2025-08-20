@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useMemo, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 
 import { cn, extractImagesFromPM } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -39,11 +39,13 @@ interface GallerySaveDialogProps {
     formData: FormDataProps,
     setOpen: Dispatch<SetStateAction<boolean>>
   ) => void;
+  initial?: Partial<FormDataProps>;
 }
 
 export function GallerySaveDialog({
   content,
   onSubmit,
+  initial,
 }: GallerySaveDialogProps) {
   const [open, setOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -65,6 +67,7 @@ export function GallerySaveDialog({
             content={content}
             onSubmit={onSubmit}
             setOpen={setOpen}
+            initial={initial}
           />
         </DialogContent>
       </Dialog>
@@ -88,6 +91,7 @@ export function GallerySaveDialog({
           className="px-4"
           onSubmit={onSubmit}
           setOpen={setOpen}
+          initial={initial}
         />
         <DrawerFooter className="pt-2">
           <DrawerClose asChild>
@@ -107,6 +111,7 @@ interface GallerySaveFormProps {
     formData: FormDataProps,
     setOpen: Dispatch<SetStateAction<boolean>>
   ) => void;
+  initial?: Partial<FormDataProps>;
 }
 
 function GallerySaveForm({
@@ -114,12 +119,24 @@ function GallerySaveForm({
   className,
   onSubmit,
   setOpen,
+  initial,
 }: GallerySaveFormProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataProps>({
     title: '',
     description: '',
     thumbnailIndex: 0,
   });
+
+  // When editing, hydrate state from initial once data is available/changes
+  useEffect(() => {
+    if (!initial) return;
+    setFormData((prev) => ({
+      title: initial.title ?? prev.title,
+      description: initial.description ?? prev.description,
+      thumbnailIndex: initial.thumbnailIndex ?? prev.thumbnailIndex,
+    }));
+    // Depend on individual fields to avoid re-running on new object identity
+  }, [initial?.title, initial?.description, initial?.thumbnailIndex]);
 
   // Only recompute when `content` changes
   const imageArray = useMemo(() => {
