@@ -66,7 +66,7 @@ export class AuthService {
     const ok = await argon.verify(user.hash, dto.password);
     if (!ok) throw new ForbiddenException('Credentials incorrect');
 
-    const accessToken = this.signToken(user.id, user.email);
+    const accessToken = await this.signToken(user.id, user.email);
     const refreshToken = await this.signRefreshToken(
       user.id,
       user.tokenVersion,
@@ -75,10 +75,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async signToken(
-    userId: number,
-    email: string,
-  ): Promise<{ access_token: string }> {
+  async signToken(userId: number, email: string): Promise<string> {
     const payload = {
       sub: userId,
       email,
@@ -88,9 +85,7 @@ export class AuthService {
       secret: this.config.get('JWT_SECRET'),
     });
 
-    return {
-      access_token: token,
-    };
+    return token;
   }
 
   async signRefreshToken(userId: number, tokenVersion?: number) {
@@ -113,8 +108,10 @@ export class AuthService {
     if (current === next) {
       throw new BadRequestException('New password must differ from current.');
     }
-
-    const user = await this.users.findByIdWithPasswordHash(userId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, hash: true },
+    });
     if (!user) throw new BadRequestException('User not found.');
 
     const ok = await argon.verify(user.hash, current);
@@ -122,9 +119,24 @@ export class AuthService {
 
     const newHash = await argon.hash(next);
 
-    await this.users.updatePasswordAfterChange(userId, newHash);
+    await this.users.updatePasswordAfterChange(user.id, newHash);
 
     // TODO (nice-to-have): emit audit event, revoke sessions, log IP/device
     return { success: true };
+  }
+
+  async verifyCurrentPassword(
+    userId: number,
+    currentPassword: string,
+  ): Promise<boolean> {
+    // Only minimal data needed
+    const user = await this.users.findByIdWithPasswordHash(userId);
+    if (!user?.hash && !(user as any)?.hash) return false;
+    const hash = (user as any).hash ?? (user as any).hash;
+    try {
+      return await argon.verify(hash, currentPassword);
+    } catch {
+      return false;
+    }
   }
 }
