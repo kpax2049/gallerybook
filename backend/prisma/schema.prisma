@@ -52,6 +52,8 @@ model User {
   username  String     @unique
   settings  Json?
   status    UserStatus @default(active)
+  tokenVersion      Int      @default(0)
+  passwordUpdatedAt DateTime @default(now())
 
   profile Profile?
 

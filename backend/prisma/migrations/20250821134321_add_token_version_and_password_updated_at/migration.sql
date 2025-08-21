@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "public"."users" ADD COLUMN     "passwordUpdatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "tokenVersion" INTEGER NOT NULL DEFAULT 0;
