@@ -1,10 +1,15 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import * as argon from 'argon2';
 import { AuthDto, SignupDto } from '../../src/dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UserService } from 'src/users/user.service';
 
 @Injectable()
 export class AuthService {
@@ -12,6 +17,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
     private config: ConfigService,
+    private readonly users: UserService,
   ) {}
 
   async signup(dto: SignupDto) {
@@ -47,22 +53,26 @@ export class AuthService {
   async signin(dto: AuthDto) {
     // find user by email
     const user = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email,
+      where: { email: dto.email },
+      select: {
+        id: true,
+        email: true,
+        hash: true, // your password field
+        tokenVersion: true, // added field
       },
     });
-    // if user doesn't exist throw an exception
-    if (!user) {
-      throw new ForbiddenException('Credentials incorrect');
-    }
-    // copmare passwords
-    const pwMatches = await argon.verify(user.hash, dto.password);
-    // if password is incorrect throw an exception
-    if (!pwMatches) {
-      throw new ForbiddenException('Credentials incorrect');
-    }
-    // send back the jwt token
-    return this.signToken(user.id, user.email);
+    if (!user) throw new ForbiddenException('Credentials incorrect');
+
+    const ok = await argon.verify(user.hash, dto.password);
+    if (!ok) throw new ForbiddenException('Credentials incorrect');
+
+    const accessToken = this.signToken(user.id, user.email);
+    const refreshToken = await this.signRefreshToken(
+      user.id,
+      user.tokenVersion,
+    );
+
+    return { accessToken, refreshToken };
   }
 
   async signToken(
@@ -81,5 +91,40 @@ export class AuthService {
     return {
       access_token: token,
     };
+  }
+
+  async signRefreshToken(userId: number, tokenVersion?: number) {
+    // If tokenVersion wasn't selected above for some reason, fetch it
+    const tv =
+      tokenVersion ??
+      (await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { tokenVersion: true },
+      }))!.tokenVersion;
+
+    // include "tv" so you can invalidate by bumping tokenVersion on password change
+    return this.jwt.sign(
+      { sub: userId, tv },
+      { secret: this.config.get('JWT_REFRESH_SECRET'), expiresIn: '30d' },
+    );
+  }
+
+  async changePassword(userId: number, current: string, next: string) {
+    if (current === next) {
+      throw new BadRequestException('New password must differ from current.');
+    }
+
+    const user = await this.users.findByIdWithPasswordHash(userId);
+    if (!user) throw new BadRequestException('User not found.');
+
+    const ok = await argon.verify(user.hash, current);
+    if (!ok) throw new BadRequestException('Current password is incorrect.');
+
+    const newHash = await argon.hash(next);
+
+    await this.users.updatePasswordAfterChange(userId, newHash);
+
+    // TODO (nice-to-have): emit audit event, revoke sessions, log IP/device
+    return { success: true };
   }
 }

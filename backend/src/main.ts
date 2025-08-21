@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { json, urlencoded } from 'express';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const corsOptions = {
@@ -17,6 +18,7 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
+  app.use(cookieParser(process.env.COOKIE_SECRET));
   await app.listen(process.env.PORT ?? 3333);
 }
 bootstrap();

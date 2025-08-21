@@ -36,4 +36,37 @@ export class UserService {
     const users = await this.prisma.user.findMany();
     return users;
   }
+
+  findByIdWithPasswordHash(id: number) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, hash: true },
+    });
+  }
+
+  async updatePasswordAfterChange(id: number, hash: string) {
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        hash,
+        passwordUpdatedAt: new Date(),
+        tokenVersion: { increment: 1 }, // <- kills refresh tokens
+      },
+      select: { id: true },
+    });
+  }
+
+  getPasswordUpdatedAt(id: number) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, passwordUpdatedAt: true },
+    });
+  }
+
+  getTokenVersion(id: number) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, tokenVersion: true },
+    });
+  }
 }
