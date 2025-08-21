@@ -11,7 +11,7 @@ interface SignupRequest {
 
 // Define the response structure from the server when a user is created
 interface SignupResponse {
-  access_token: string;
+  accessToken: string;
 }
 
 // Function to create a new user

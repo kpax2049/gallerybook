@@ -65,7 +65,7 @@ export function LoginForm({
     setLoading(true);
     authUser({ email: values.email, password: values.password })
       .then((response) => {
-        localStorage.setItem('ACCESS_TOKEN', response.access_token);
+        localStorage.setItem('ACCESS_TOKEN', response.accessToken);
         getUser().then((user: User) => {
           handleLogin(user);
           setLoading(false);

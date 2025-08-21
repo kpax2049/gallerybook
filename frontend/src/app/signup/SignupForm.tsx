@@ -91,7 +91,7 @@ export function SignupForm({
           title: 'Success',
           description: `Account created 🎉 — Welcome to Gallerybook, ${values.username}!`,
         });
-        localStorage.setItem('ACCESS_TOKEN', response.access_token);
+        localStorage.setItem('ACCESS_TOKEN', response.accessToken);
         getUser().then((user: User) => {
           setGlobalUser(user);
           setLoading(false);

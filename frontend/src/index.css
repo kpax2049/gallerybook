@@ -234,3 +234,8 @@ button:focus-visible {
 .hide-mxeditor .editor-content-container {
   display: none;
 }
+
+/* remove outline only on active tab panels */
+[role='tabpanel'][data-state='active']:focus {
+  outline: none;
+}

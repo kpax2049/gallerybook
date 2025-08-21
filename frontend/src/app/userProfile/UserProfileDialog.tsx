@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -9,20 +10,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  UserProfileEditor,
-  UserProfileFormDataProps,
-} from './UserProfileEditor';
+import { UserProfileEditor } from './UserProfileEditor';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { BadgeCheck } from 'lucide-react';
-import { Dispatch, SetStateAction, useState } from 'react';
 
-const onSave = (
-  data: UserProfileFormDataProps,
-  setOpen: Dispatch<SetStateAction<boolean>>
-) => {
-  console.info(data);
-};
 export function UserProfileDialog() {
   const [open, setOpen] = useState(false);
   return (
@@ -43,13 +34,13 @@ export function UserProfileDialog() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
-            <UserProfileEditor setOpen={setOpen} onSubmit={onSave} />
+            <UserProfileEditor />
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">Close</Button>
             </DialogClose>
-            <Button type="submit">Save changes</Button>
+            {/* <Button type="submit">Save changes</Button> */}
           </DialogFooter>
         </DialogContent>
       </form>

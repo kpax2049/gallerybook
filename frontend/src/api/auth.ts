@@ -7,9 +7,25 @@ interface AuthUserRequest {
   password: string;
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  success: true;
+  accessToken: string;
+}
+export interface VerifyPasswordRequest {
+  currentPassword: string;
+}
+export interface VerifyPasswordResponse {
+  valid: boolean;
+}
+
 // Define the response structure from the server when a user is created
 interface AuthUserResponse {
-  access_token: string;
+  accessToken: string;
 }
 
 // Function to create a new user
@@ -20,5 +36,25 @@ export const authUser = async (
     '/auth/signin',
     'POST',
     qs.stringify(authData)
+  );
+};
+
+export const changePassword = async (
+  requestData: ChangePasswordRequest
+): Promise<ChangePasswordResponse> => {
+  return await apiRequest<ChangePasswordResponse>(
+    '/auth/password',
+    'PATCH',
+    qs.stringify(requestData)
+  );
+};
+
+export const verifyCurrentPassword = async (
+  requestData: VerifyPasswordRequest
+): Promise<VerifyPasswordResponse> => {
+  return await apiRequest<VerifyPasswordResponse>(
+    '/auth/password/verify',
+    'POST',
+    qs.stringify(requestData)
   );
 };
