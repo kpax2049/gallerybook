@@ -22,6 +22,7 @@ import {
   ChangePasswordResponse,
   verifyCurrentPassword,
 } from '@/api/auth';
+import { toast } from '@/hooks/use-toast';
 
 const profileSchema = z.object({
   fullName: z.string().min(1, { message: 'Name is required.' }),
@@ -150,7 +151,11 @@ export function UserProfileEditor() {
       }
 
       resetPassword({ current: '', next: '', confirmNext: '' });
-      // TODO: show toast/snackbar "Password updated"
+      toast({
+        variant: 'default',
+        title: 'Success',
+        description: `${initial?.username}, your password was successfully updated!`,
+      });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
     } catch (e: any) {
       setError('next', {
