@@ -35,30 +35,42 @@ enum ActionType {
   UPVOTE
 }
 
+enum ReactionType {
+  LIKE
+  FAVORITE
+}
+
 enum GalleryStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
 }
 
+enum Visibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
 model User {
-  id        Int        @id @default(autoincrement())
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  role      Role       @default(USER)
-  email     String     @unique
-  hash      String
-  fullName  String?
-  username  String     @unique
-  settings  Json?
-  status    UserStatus @default(active)
-  tokenVersion      Int      @default(0)
-  passwordUpdatedAt DateTime @default(now())
+  id                Int        @id @default(autoincrement())
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  role              Role       @default(USER)
+  email             String     @unique
+  hash              String
+  fullName          String?
+  username          String     @unique
+  settings          Json?
+  status            UserStatus @default(active)
+  tokenVersion      Int        @default(0)
+  passwordUpdatedAt DateTime   @default(now())
 
   profile Profile?
 
-  galleries Gallery[]
-  comments  Comment[]
+  galleries       Gallery[]
+  comments        Comment[]
+  GalleryReaction GalleryReaction[]
 
   @@map("users")
 }
@@ -74,6 +86,39 @@ model Profile {
   @@map("profiles")
 }
 
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  galleries GalleryTag[]
+}
+
+model GalleryTag {
+  galleryId Int
+  tagId     Int
+
+  gallery Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([galleryId, tagId])
+  @@index([tagId])
+}
+
+model GalleryReaction {
+  userId    Int
+  galleryId Int
+  type      ReactionType
+  createdAt DateTime     @default(now())
+
+  gallery Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, galleryId, type])
+  @@index([galleryId, type])
+}
+
 model Gallery {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -87,8 +132,21 @@ model Gallery {
   content     Json?
   thumbnail   String?
   status      GalleryStatus @default(DRAFT)
-  comments    Comment[]
 
+  viewsCount     Int        @default(0)
+  likesCount     Int        @default(0)
+  favoritesCount Int        @default(0)
+  slug           String?    @unique
+  publishedAt    DateTime?
+  visibility     Visibility @default(PUBLIC)
+
+  comments  Comment[]
+  tags      GalleryTag[]
+  reactions GalleryReaction[]
+
+  @@index([status, updatedAt])
+  @@index([userId, updatedAt])
+  @@index([visibility, updatedAt])
   @@map("galleries")
 }
 
@@ -132,34 +190,3 @@ model ActionCount {
   eye       Int
   comment   Comment @relation("CommentActionCount", fields: [commentId], references: [id])
 }
-
-// model Image {
-//   id        Int      @id @default(autoincrement())
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
-
-//   galleryId Int
-//   gallery   Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
-
-//   file File?
-
-//   @@map("images")
-// }
-
-// model File {
-//   id          Int      @id @default(autoincrement())
-//   createdAt   DateTime @default(now())
-//   updatedAt   DateTime @updatedAt
-//   docHash     String
-//   mimeType    String
-//   contentSize BigInt
-//   version     Int
-//   content     Bytes
-//   tags        String?
-//   keywords    String?
-
-//   imageId Int   @unique
-//   image   Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
-
-//   @@map("files")
-// }
