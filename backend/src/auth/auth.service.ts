@@ -40,7 +40,8 @@ export class AuthService {
       });
 
       // send back the jwt token
-      return this.signToken(user.id, user.email);
+      const accessToken = await this.signToken(user.id, user.email);
+      return accessToken;
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
