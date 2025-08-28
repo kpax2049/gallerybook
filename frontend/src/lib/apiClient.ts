@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { toast } from '@/hooks/use-toast';
 import axios, { AxiosError, AxiosResponse } from 'axios';
+
+const VITE_API_URL = import.meta.env.VITE_API_URL ?? '';
 const token = localStorage.getItem('ACCESS_TOKEN');
 const headers = token
   ? {
@@ -33,7 +35,7 @@ export const errorHandler = (error: AxiosError | undefined) => {
 };
 
 const client = axios.create({
-  baseURL: 'http://localhost:3333/',
+  baseURL: VITE_API_URL,
   headers,
   timeout: 60000,
   withCredentials: false,
@@ -77,5 +79,20 @@ export const apiRequest = async <T>(
 
   return response.data;
 };
+
+// Join arrays with commas and stringify booleans to match DTO transforms
+export function serializeParams(params: Record<string, unknown>) {
+  const out: Record<string, string | number | boolean> = {};
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null || v === '') continue;
+    if (Array.isArray(v)) {
+      if (v.length === 0) continue;
+      out[k] = v.join(',');
+    } else {
+      out[k] = v as any;
+    }
+  }
+  return out;
+}
 
 export default client;

@@ -3,7 +3,9 @@ import { apiRequest } from '@/lib/apiClient';
 import { User } from './user';
 import qs from 'qs';
 import axios from 'axios';
+import { Visibility } from '@/common/enums';
 
+export type GalleryStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 export interface Gallery {
   id: number;
   createdAt?: Date;
@@ -12,8 +14,16 @@ export interface Gallery {
   createdBy?: User;
   title?: string;
   description?: string;
+  status: GalleryStatus;
   content?: Record<string, string>;
   thumbnail?: string;
+  // new
+  slug?: string | null;
+  viewsCount?: number;
+  likesCount?: number;
+  favoritesCount?: number;
+  tags?: string[]; // tag slugs or names
+  visibility: Visibility;
 }
 
 interface CreateDraftGalleryRequest {
@@ -37,6 +47,15 @@ export interface EditGalleryRequest {
   description?: string;
   content?: Record<string, string>;
   thumbnail?: string;
+}
+
+export interface GalleriesListResponse {
+  total: number;
+  page: number;
+  pageSize: number;
+  items: Gallery[];
+  commentCounts: Record<number, number>;
+  myReactions?: Record<number, { like: boolean; favorite: boolean }>;
 }
 
 export const createDraftGallery = async (
@@ -76,6 +95,36 @@ export const deleteGallery = async (galleryId: number): Promise<Gallery> => {
 export const getGalleries = async (): Promise<Gallery[]> => {
   return await apiRequest<Gallery[]>('/galleries', 'GET');
 };
+
+export const getGalleriesList = async (
+  query: Record<string, string | number | boolean>
+): Promise<GalleriesListResponse> => {
+  return await apiRequest<GalleriesListResponse>(
+    '/galleries',
+    'GET',
+    undefined,
+    query
+  );
+};
+
+export async function toggleReaction(
+  galleryId: number,
+  type: 'LIKE' | 'FAVORITE'
+) {
+  return apiRequest<{ active: boolean }>(
+    `/galleries/${galleryId}/reactions/toggle`,
+    'POST',
+    { type }
+  );
+}
+
+export async function replaceTags(galleryId: number, tags: string[]) {
+  return apiRequest<{ tags: string[] }>(
+    `/galleries/${galleryId}/tags`,
+    'PATCH',
+    { tags }
+  );
+}
 
 export const getGallery = async (
   galleryId: string | undefined,
