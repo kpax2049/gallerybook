@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { toast } from '@/hooks/use-toast';
-import axios, { AxiosError, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL ?? '';
 const token = localStorage.getItem('ACCESS_TOKEN');
@@ -51,9 +51,7 @@ client.interceptors.request.use((config: any) => {
 });
 
 client.interceptors.response.use(
-  (response: AxiosResponse) => {
-    return response;
-  },
+  (response: AxiosResponse) => response,
   (error: AxiosError) => {
     try {
       errorHandler(error);
@@ -68,15 +66,18 @@ export const apiRequest = async <T>(
   url: string,
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   data?: any,
-  params?: any
+  params?: any,
+  signal?: AbortSignal
 ): Promise<T> => {
-  const response: AxiosResponse<T> = await client.request({
+  const config: AxiosRequestConfig = {
     method,
     url,
-    data,
     params,
-  });
+    signal,
+  };
 
+  if (data !== undefined) config.data = data;
+  const response: AxiosResponse<T> = await client.request(config);
   return response.data;
 };
 

@@ -1,17 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GalleriesListResponse, getGalleriesList } from '@/api/gallery';
-import { SortState, FilterState } from '@/components/ui/GalleryListToolbar';
+import { SortState, FilterState } from '@/components/ui/galleryListToolbar';
 import { serializeParams } from '@/lib/apiClient';
-
-export function useDebounced<T>(value: T, delay = 300) {
-  const [v, setV] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setV(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return v;
-}
 
 export function useGalleries(params: {
   sort: SortState;
@@ -20,19 +11,26 @@ export function useGalleries(params: {
   pageSize: number;
 }) {
   const { sort, filters, page, pageSize } = params;
-  const debouncedSearch = useDebounced(filters.search, 300);
 
   const [data, setData] = useState<GalleriesListResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // first load only
+  const [fetching, setFetching] = useState(false); // subsequent refetches
   const [error, setError] = useState<Error | null>(null);
 
-  // “last request wins” guard without needing AbortSignal on apiRequest
   const reqIdRef = useRef(0);
 
+  const statusList = useMemo(
+    () => (filters.status.size ? Array.from(filters.status) : undefined),
+    [filters.status]
+  );
+  const tagsList = useMemo(
+    () => (filters.tags.length ? filters.tags : undefined),
+    [filters.tags]
+  );
+
   const query = useMemo(() => {
-    const status = filters.status.size ? Array.from(filters.status) : undefined;
     return serializeParams({
-      status,
+      status: statusList,
       owner: filters.owner !== 'any' ? filters.owner : undefined,
       range: filters.range !== 'any' ? filters.range : undefined,
       hasCover:
@@ -40,40 +38,63 @@ export function useGalleries(params: {
       hasTags: filters.hasTags === null ? undefined : String(filters.hasTags),
       hasComments:
         filters.hasComments === null ? undefined : String(filters.hasComments),
-      tags: filters.tags.length ? filters.tags : undefined,
-      search: debouncedSearch || undefined,
+      tags: tagsList,
+      search: filters.search || undefined,
       sortKey: sort.key,
       sortDir: sort.dir,
       page,
       pageSize,
       includeMyReactions: true,
     });
-  }, [sort, filters, debouncedSearch, page, pageSize]);
+  }, [
+    sort.key,
+    sort.dir,
+    page,
+    pageSize,
+    filters.owner,
+    filters.range,
+    filters.hasCover,
+    filters.hasTags,
+    filters.hasComments,
+    filters.search,
+    statusList?.join(','),
+    tagsList?.join(','),
+  ]);
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
-    setError(null);
     const myReqId = ++reqIdRef.current;
+
+    // distinguish first load vs refetch to avoid flicker
+    const isFirstLoad = data == null;
+    if (isFirstLoad) {
+      setLoading(true);
+      setError(null);
+    } else {
+      setFetching(true);
+    }
+
     getGalleriesList(query)
       .then((res: any) => {
-        if (!alive || myReqId !== reqIdRef.current) return; // stale response
+        if (!alive || myReqId !== reqIdRef.current) return;
         setData(res);
+        setError(null);
       })
       .catch((e: any) => {
         if (!alive || myReqId !== reqIdRef.current) return;
         setError(e);
       })
       .finally(() => {
-        if (alive && myReqId == reqIdRef.current) {
-          setLoading(false);
-        }
+        if (!alive || myReqId !== reqIdRef.current) return;
+        if (isFirstLoad) setLoading(false);
+        setFetching(false);
       });
 
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  return { data, loading, error };
+  return { data, loading, error, fetching };
 }

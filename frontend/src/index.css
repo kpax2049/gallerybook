@@ -239,3 +239,31 @@ button:focus-visible {
 [role='tabpanel'][data-state='active']:focus {
   outline: none;
 }
+
+/* Hide scrollbars (WebKit + Firefox + old Edge) and add an edge-fade mask */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .mask-fade-x {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 12px,
+      black calc(100% - 12px),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 12px,
+      black calc(100% - 12px),
+      transparent
+    );
+  }
+}

@@ -8,10 +8,11 @@ import UserList from './app/user/UserList';
 import { LoginForm } from './app/login/LoginForm';
 import { SignupForm } from './app/signup/SignupForm';
 import { GalleryEditor } from './app/gallery/GalleryEditor';
-import GalleryList from './app/gallery/GalleryList';
+// import GalleryList from './app/gallery/GalleryList';
 import GalleryPage from './app/gallery/Gallery';
 import { GalleryExistingEditor } from './app/gallery/GalleryExistingEditor';
 import { useUserStore } from '@/stores/userStore';
+import GalleriesPage from './app/gallery/GalleriesPage';
 
 const Landing = () => {
   return <h2>Landing (Public: anyone can access this page)</h2>;
@@ -105,9 +106,10 @@ const App = () => {
             <Route path="home" element={<Home />} />
             <Route path="dashboard" element={<Dashboard1 />} />
             <Route path="admin/users" element={<UserList />} />
-            <Route path="galleries" element={<GalleryList />} />
+            <Route path="galleries" element={<GalleriesPage />} />
             <Route path="galleries/:galleryId" element={<GalleryPage />} />
             <Route path="galleries/new" element={<GalleryEditor />} />
+            <Route path="comments" element={<GalleriesPage />} />
             {/* <Route
               path="gallery/minimal-tiptap"
               element={<GalleryMinimalTiptapEditor />}
