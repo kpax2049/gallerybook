@@ -24,16 +24,19 @@ import { User } from '@prisma/client';
 import { CreateDraftGalleryDto } from './dto/create-draft-gallery.dto';
 import { UpdateGalleryContentDto } from './dto/update-gallery-content.dto';
 import { UpdateGalleryDto } from './dto/update-gallery-dto';
+import { ListGalleriesDto } from './dto/list-galleries.dto';
+import { ToggleReactionDto } from './dto/toggle-reaction.dto';
+import { UpsertTagsDto } from './dto/upsert-tags.dto';
 
 @UseGuards(JwtGuard)
 @Controller('galleries')
 export class GalleryController {
   constructor(private galleryService: GalleryService) {}
 
-  @Get()
-  getGalleries(@GetUser('id') userId: number) {
-    return this.galleryService.getGalleries(userId);
-  }
+  // @Get()
+  // getGalleries(@GetUser('id') userId: number) {
+  //   return this.galleryService.getGalleries(userId);
+  // }
 
   @Get(':id')
   async getGalleryById(
@@ -139,5 +142,42 @@ export class GalleryController {
 
     await this.galleryService.deleteImagesFromS3(safeKeys);
     return { deleted: safeKeys.length };
+  }
+
+  @UseGuards(JwtGuard)
+  @Get()
+  async list(@GetUser() user: User, @Query() dto: ListGalleriesDto) {
+    const userId = user?.id ?? null;
+    return this.galleryService.list(userId, dto);
+  }
+
+  @UseGuards(JwtGuard)
+  @Post(':id/reactions/toggle')
+  async toggleReaction(
+    @GetUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: ToggleReactionDto,
+  ) {
+    return this.galleryService.toggleReaction(user.id, id, body.type as any);
+  }
+
+  @UseGuards(JwtGuard)
+  @Get(':id/reactions/my')
+  async myReactions(
+    @GetUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.galleryService.getMyReactions(user.id, id);
+  }
+
+  @UseGuards(JwtGuard)
+  @Patch(':id/tags')
+  async replaceTags(
+    @GetUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: UpsertTagsDto,
+  ) {
+    const tags = Array.isArray(body?.tags) ? body.tags : [];
+    return this.galleryService.replaceTags(user.id, id, tags);
   }
 }

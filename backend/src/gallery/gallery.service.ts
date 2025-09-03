@@ -17,13 +17,14 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 // import { ProseMirrorDocSchema } from './zod/prosemirror.schema';
 import { ConfigService } from '@nestjs/config';
-import { GalleryStatus, User } from '@prisma/client';
+import { GalleryStatus, Prisma, ReactionType, User } from '@prisma/client';
 import { Role } from '@prisma/client';
 import { extname } from 'path';
 import { lookup as mimeLookup } from 'mime-types';
 import { CreateDraftGalleryDto } from './dto/create-draft-gallery.dto';
 import { extractS3KeysFromContent } from 'src/utils/gallery.utils';
 import { UpdateGalleryDto } from './dto/update-gallery-dto';
+import { ListGalleriesDto, SortDir, SortKey } from './dto/list-galleries.dto';
 
 type Mode = 'edit' | 'view';
 
@@ -39,6 +40,13 @@ interface ProseMirrorNode {
   attrs?: Record<string, any>;
   content?: ProseMirrorNode[];
 }
+
+const SELECT_LIST = {
+  tags: { include: { tag: true } },
+  _count: { select: { comments: true } },
+} as const;
+
+type ListRow = Prisma.GalleryGetPayload<{ include: typeof SELECT_LIST }>;
 
 @Injectable()
 export class GalleryService {
@@ -401,5 +409,312 @@ export class GalleryService {
       console.log('Failed to delete images from S3', err);
       throw new InternalServerErrorException('Failed to delete images');
     }
+  }
+
+  async list(userId: number | null, dto: ListGalleriesDto) {
+    const where = this.buildWhere(userId, dto);
+    const orderBy = this.buildOrderBy(
+      dto.sortKey ?? 'updatedAt',
+      dto.sortDir ?? 'desc',
+    );
+    const { skip, take, page, pageSize } = this.getPagination(
+      dto.page,
+      dto.pageSize,
+    );
+
+    const [total, rows] = await this.prisma.$transaction([
+      this.prisma.gallery.count({ where }),
+      this.prisma.gallery.findMany({
+        where,
+        orderBy,
+        skip,
+        take,
+        include: SELECT_LIST,
+      }),
+    ]);
+
+    const items = rows.map((row) => {
+      const g = this.mapToListItem(row);
+      // convert S3 keys to Cloudfront URLs for thumbnails
+      return { ...g, thumbnail: this.thumbKeyToCdnUrl(g.thumbnail) };
+    });
+    const commentCounts = this.buildCommentCounts(rows);
+
+    const myReactions =
+      dto.includeMyReactions && userId
+        ? await this.fetchMyReactionsMap(
+            userId,
+            rows.map((r) => r.id),
+          )
+        : undefined;
+
+    return { total, page, pageSize, items, commentCounts, myReactions };
+  }
+
+  async toggleReaction(userId: number, galleryId: number, type: ReactionType) {
+    await this.ensureGallery(galleryId);
+
+    const key = { userId_galleryId_type: { userId, galleryId, type } };
+    const existing = await this.prisma.galleryReaction.findUnique({
+      where: key,
+    });
+
+    if (existing) {
+      await this.prisma.$transaction([
+        this.prisma.galleryReaction.delete({ where: key }),
+        this.prisma.gallery.update({
+          where: { id: galleryId },
+          data:
+            type === 'LIKE'
+              ? { likesCount: { decrement: 1 } }
+              : { favoritesCount: { decrement: 1 } },
+        }),
+      ]);
+      return { active: false };
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.galleryReaction.create({ data: { userId, galleryId, type } }),
+      this.prisma.gallery.update({
+        where: { id: galleryId },
+        data:
+          type === 'LIKE'
+            ? { likesCount: { increment: 1 } }
+            : { favoritesCount: { increment: 1 } },
+      }),
+    ]);
+    return { active: true };
+  }
+
+  async getMyReactions(userId: number, galleryId: number) {
+    const reacts = await this.prisma.galleryReaction.findMany({
+      where: { userId, galleryId },
+      select: { type: true },
+    });
+    return {
+      like: reacts.some((r) => r.type === 'LIKE'),
+      favorite: reacts.some((r) => r.type === 'FAVORITE'),
+    };
+  }
+
+  async replaceTags(userId: number, galleryId: number, tags?: string[]) {
+    const gal = await this.prisma.gallery.findUnique({
+      where: { id: galleryId },
+    });
+    if (!gal) throw new NotFoundException('Gallery not found');
+    // if (gal.userId !== userId) throw new ForbiddenException();
+
+    const normalized = this.normalizeTags(tags ?? []);
+
+    // Create / fetch tag IDs for the normalized list
+    const wantedIds = normalized.length
+      ? new Set(await this.upsertTagsAndGetIds(normalized))
+      : new Set<number>();
+
+    // 🔁 Replace links atomically — delete all, then create the wanted ones
+    await this.prisma.$transaction([
+      this.prisma.galleryTag.deleteMany({ where: { galleryId } }),
+      ...(wantedIds.size
+        ? [
+            this.prisma.galleryTag.createMany({
+              data: [...wantedIds].map((tagId) => ({ galleryId, tagId })),
+              skipDuplicates: true,
+            }),
+          ]
+        : []),
+    ]);
+
+    // Return canonical tags
+    if (wantedIds.size === 0) return { tags: [] };
+
+    const final = await this.prisma.tag.findMany({
+      where: { id: { in: [...wantedIds] } },
+      select: { name: true, slug: true },
+    });
+
+    // Keep your existing preference for slug-or-name
+    return { tags: final.map((t) => t.slug || t.name) };
+  }
+
+  // -------- Helpers (small, focused) --------
+
+  private buildWhere(
+    userId: number | null,
+    dto: ListGalleriesDto,
+  ): Prisma.GalleryWhereInput {
+    const AND: Prisma.GalleryWhereInput[] = [];
+    const OR: Prisma.GalleryWhereInput[] = [];
+
+    // status
+    if (dto.status?.length) AND.push({ status: { in: dto.status as any } });
+
+    // owner
+    if ((dto.owner ?? 'any') === 'me' && userId) AND.push({ userId });
+
+    // updated range
+    const since = this.sinceFromRange(dto.range ?? 'any');
+    if (since) AND.push({ updatedAt: { gte: since } });
+
+    // cover
+    if (dto.hasCover !== null && typeof dto.hasCover !== 'undefined') {
+      AND.push(
+        dto.hasCover ? { thumbnail: { not: null } } : { thumbnail: null },
+      );
+    }
+
+    // tags presence
+    if (dto.hasTags !== null && typeof dto.hasTags !== 'undefined') {
+      AND.push(dto.hasTags ? { tags: { some: {} } } : { tags: { none: {} } });
+    }
+
+    // comments presence
+    if (dto.hasComments !== null && typeof dto.hasComments !== 'undefined') {
+      AND.push(
+        dto.hasComments
+          ? { comments: { some: {} } }
+          : { comments: { none: {} } },
+      );
+    }
+
+    // tag filter (by slug OR name)
+    if (dto.tags?.length) {
+      AND.push({
+        tags: {
+          some: {
+            tag: {
+              OR: [{ slug: { in: dto.tags } }, { name: { in: dto.tags } }],
+            },
+          },
+        },
+      });
+    }
+
+    // search
+    if (dto.search?.trim()) {
+      const q = dto.search.trim();
+      OR.push({ title: { contains: q, mode: 'insensitive' } });
+      OR.push({ description: { contains: q, mode: 'insensitive' } });
+    }
+
+    const where: Prisma.GalleryWhereInput = {};
+    if (AND.length) where.AND = AND;
+    if (OR.length) where.OR = OR;
+    return where;
+  }
+
+  private buildOrderBy(
+    key: SortKey,
+    dir: SortDir,
+  ): Prisma.GalleryOrderByWithRelationInput[] {
+    const d = dir ?? 'desc';
+    switch (key) {
+      case 'title':
+        return [{ title: d }, { updatedAt: 'desc' }];
+      case 'createdAt':
+        return [{ createdAt: d }];
+      case 'views':
+        return [{ viewsCount: d as any }, { updatedAt: 'desc' }];
+      case 'likes':
+        return [{ likesCount: d as any }, { updatedAt: 'desc' }];
+      case 'comments':
+        // Prisma supports relation count ordering; cast keeps TS happy
+        return [{ comments: { _count: d } } as any, { updatedAt: 'desc' }];
+      case 'updatedAt':
+      default:
+        return [{ updatedAt: d }];
+    }
+  }
+
+  private getPagination(page = 1, pageSize = 24) {
+    const p = Math.max(1, page);
+    const ps = Math.max(1, pageSize);
+    return { page: p, pageSize: ps, skip: (p - 1) * ps, take: ps };
+  }
+
+  private mapToListItem(g: ListRow) {
+    return {
+      id: g.id,
+      userId: g.userId,
+      title: g.title,
+      description: g.description,
+      content: g.content as unknown,
+      thumbnail: g.thumbnail,
+      status: g.status,
+      createdAt: g.createdAt.toISOString(),
+      updatedAt: g.updatedAt.toISOString(),
+      slug: g.slug ?? null,
+      viewsCount: g.viewsCount ?? 0,
+      likesCount: g.likesCount ?? 0,
+      favoritesCount: g.favoritesCount ?? 0,
+      tags: (g.tags ?? []).map((gt) => gt.tag.slug || gt.tag.name),
+    };
+  }
+
+  private buildCommentCounts(rows: ListRow[]) {
+    return Object.fromEntries(rows.map((g) => [g.id, g._count.comments]));
+  }
+
+  private async fetchMyReactionsMap(userId: number, galleryIds: number[]) {
+    if (!galleryIds.length) return {};
+    const uid = Number(userId);
+    const reacts = await this.prisma.galleryReaction.findMany({
+      where: { userId: uid, galleryId: { in: galleryIds } },
+      select: { galleryId: true, type: true },
+    });
+    const map: Record<number, { like: boolean; favorite: boolean }> = {};
+    for (const r of reacts) {
+      const cur = (map[r.galleryId] ||= { like: false, favorite: false });
+      if (r.type === 'LIKE') cur.like = true;
+      if (r.type === 'FAVORITE') cur.favorite = true;
+    }
+    return map;
+  }
+
+  private sinceFromRange(range: ListGalleriesDto['range']) {
+    switch (range) {
+      case '7d':
+        return new Date(Date.now() - 7 * 86400_000);
+      case '30d':
+        return new Date(Date.now() - 30 * 86400_000);
+      case '90d':
+        return new Date(Date.now() - 90 * 86400_000);
+      default:
+        return undefined;
+    }
+  }
+
+  private async ensureGallery(id: number) {
+    const exists = await this.prisma.gallery.findUnique({ where: { id } });
+    if (!exists) throw new NotFoundException('Gallery not found');
+  }
+
+  private slugify(s: string) {
+    return s.trim().toLowerCase().replace(/\s+/g, '-'); // adjust to your rules
+  }
+
+  private normalizeTags(list: string[]) {
+    // trim, collapse whitespace, dedupe case-insensitive
+    const map = new Map<string, string>();
+    for (const raw of list) {
+      const t = raw.trim().replace(/\s+/g, ' ');
+      if (!t) continue;
+      const key = t.toLowerCase();
+      if (!map.has(key)) map.set(key, t);
+    }
+    return [...map.values()];
+  }
+
+  private async upsertTagsAndGetIds(names: string[]): Promise<number[]> {
+    const rows = await Promise.all(
+      names.map((name) =>
+        this.prisma.tag.upsert({
+          where: { slug: this.slugify(name) }, // unique index on slug
+          update: {},
+          create: { name, slug: this.slugify(name) },
+          select: { id: true },
+        }),
+      ),
+    );
+    return rows.map((r) => r.id);
   }
 }
