@@ -259,13 +259,27 @@ export class GalleryService {
   }
 
   async createDraft(dto: CreateDraftGalleryDto, userId: number) {
-    return this.prisma.gallery.create({
-      data: {
-        title: dto.title,
-        description: dto.description,
-        thumbnail: dto.thumbnail,
-        userId,
-      },
+    const normalized = this.normalizeTags(dto.tags ?? []);
+
+    return this.prisma.$transaction(async (tx) => {
+      const gallery = await tx.gallery.create({
+        data: {
+          title: dto.title,
+          description: dto.description,
+          thumbnail: dto.thumbnail,
+          userId,
+        },
+      });
+
+      if (normalized.length) {
+        const tagIds = await this.upsertTagsAndGetIds(normalized); // returns number[]
+        await tx.galleryTag.createMany({
+          data: tagIds.map((tagId) => ({ galleryId: gallery.id, tagId })),
+          skipDuplicates: true,
+        });
+      }
+
+      return gallery;
     });
   }
 
@@ -281,21 +295,37 @@ export class GalleryService {
   }
 
   async createGallery(userId: number, dto: CreateGalleryDto) {
-    try {
-      // const parsed = ProseMirrorDocSchema.parse(dto.content);
+    const { tags: incomingTags, ...fields } = dto;
+    const normalized = this.normalizeTags(incomingTags ?? []);
 
-      const gallery = await this.prisma.gallery.create({
-        data: {
-          userId,
-          ...dto,
-          // ...{ ...dto, content: parsed },
-        },
-      });
-      return gallery;
-    } catch (err) {
-      console.log(err);
-      // throw new BadRequestException('Invalid ProseMirror content');
-    }
+    const created = await this.prisma.gallery.create({
+      data: {
+        userId,
+        ...fields,
+        ...(normalized.length > 0 && {
+          // "tags" is your explicit join relation (GalleryTag[])
+          tags: {
+            create: normalized.map((name) => ({
+              tag: {
+                connectOrCreate: {
+                  where: { slug: this.slugify(name) }, // ensure unique index on Tag.slug
+                  create: { name, slug: this.slugify(name) },
+                },
+              },
+            })),
+          },
+        }),
+      },
+      include: {
+        tags: { include: { tag: { select: { name: true, slug: true } } } },
+      },
+    });
+
+    // Flatten join rows -> string[]
+    const tagList = created.tags.map((row) => row.tag.slug ?? row.tag.name);
+
+    // Overwrite relation with the string[] in the response
+    return { ...created, tags: tagList };
   }
 
   async getGalleryById(galleryId: number, mode: 'view' | 'edit') {
@@ -303,36 +333,46 @@ export class GalleryService {
       where: {
         id: galleryId,
       },
+      include: {
+        tags: {
+          include: { tag: { select: { slug: true, name: true } } },
+          orderBy: { tag: { name: 'asc' } }, // optional: stable order
+        },
+      },
     });
     if (!gallery) {
       throw new Error('Gallery not found');
     }
+    const tagList = gallery.tags.map((row) => row.tag.slug ?? row.tag.name);
+    const rewritten = await this.rewriteGalleryImageSrcs(
+      gallery.content,
+      mode === 'view' ? 'view' : 'edit',
+    );
+    return { ...gallery, content: rewritten, tags: tagList };
+    // if (mode === 'view') {
+    //   // const cacheKey = this.getCacheKey(galleryId);
+    //   // const cached = await this.cacheManager.get(cacheKey);
+    //   // if (cached) {
+    //   //   return { ...gallery, content: cached };
+    //   // }
 
-    if (mode === 'view') {
-      // const cacheKey = this.getCacheKey(galleryId);
-      // const cached = await this.cacheManager.get(cacheKey);
-      // if (cached) {
-      //   return { ...gallery, content: cached };
-      // }
+    //   // Rewrite URLs to CloudFront + transforms for viewing
+    //   const rewritten = await this.rewriteGalleryImageSrcs(
+    //     gallery.content,
+    //     'view',
+    //   );
 
-      // Rewrite URLs to CloudFront + transforms for viewing
-      const rewritten = await this.rewriteGalleryImageSrcs(
-        gallery.content,
-        'view',
-      );
-
-      // // Cache rewritten JSON for 1 hour
-      // await this.cacheManager.set(cacheKey, rewritten, { ttl: 3600 });
-
-      return { ...gallery, content: rewritten };
-    } else {
-      // Edit mode — always fresh, presigned S3 URLs
-      const rewritten = await this.rewriteGalleryImageSrcs(
-        gallery.content,
-        'edit',
-      );
-      return { ...gallery, content: rewritten };
-    }
+    //   // // Cache rewritten JSON for 1 hour
+    //   // await this.cacheManager.set(cacheKey, rewritten, { ttl: 3600 });
+    //   return { ...gallery, content: rewritten };
+    // } else {
+    //   // Edit mode — always fresh, presigned S3 URLs
+    //   const rewritten = await this.rewriteGalleryImageSrcs(
+    //     gallery.content,
+    //     'edit',
+    //   );
+    //   return { ...gallery, content: rewritten };
+    // }
   }
 
   async editGalleryById(
@@ -340,23 +380,65 @@ export class GalleryService {
     galleryId: number,
     dto: UpdateGalleryDto,
   ) {
-    // get gallery by id
-    const gallery = await this.prisma.gallery.findUnique({
-      where: {
-        id: galleryId,
-      },
+    // fetch & authorize
+    const existing = await this.prisma.gallery.findUnique({
+      where: { id: galleryId },
     });
-    // check if user owns gallery
-    if (!gallery || gallery.userId !== userId) {
+    if (!existing || existing.userId !== userId) {
       throw new ForbiddenException('Access to Resource Denied');
     }
-    return this.prisma.gallery.update({
-      where: {
-        id: galleryId,
-      },
-      data: {
-        ...dto,
-      },
+
+    // split updated fields from tags
+    const { tags: incomingTags, ...updateFields } = dto;
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1) update updated fields
+      await tx.gallery.update({ where: { id: galleryId }, data: updateFields });
+
+      // 2) if tags were provided, fully replace them
+      if (incomingTags !== undefined) {
+        const normalized = this.normalizeTags(incomingTags ?? []);
+
+        // clear existing links
+        await tx.galleryTag.deleteMany({ where: { galleryId } });
+
+        if (normalized.length) {
+          // upsert/fetch tag IDs
+          const tagRows = await Promise.all(
+            normalized.map((name) =>
+              tx.tag.upsert({
+                where: { slug: this.slugify(name) }, // ensure unique index on Tag.slug
+                update: {},
+                create: { name, slug: this.slugify(name) },
+                select: { id: true },
+              }),
+            ),
+          );
+          const tagIds = tagRows.map((r) => r.id);
+
+          // recreate links
+          await tx.galleryTag.createMany({
+            data: tagIds.map((tagId) => ({ galleryId, tagId })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      // 3) return payload with tags as string[]
+      const withTags = await tx.gallery.findUnique({
+        where: { id: galleryId },
+        include: {
+          tags: {
+            include: { tag: { select: { name: true, slug: true } } },
+            orderBy: { tag: { name: 'asc' } },
+          },
+        },
+      });
+      if (!withTags)
+        throw new NotFoundException('Gallery not found after update');
+
+      const tagList = withTags.tags.map((row) => row.tag.slug ?? row.tag.name);
+      return { ...withTags, tags: tagList }; // overwrites relation object with string[]
     });
   }
 
