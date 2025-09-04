@@ -31,6 +31,7 @@ interface CreateDraftGalleryRequest {
   description?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   thumbnail?: any;
+  tags: string[];
 }
 
 interface CreateGalleryRequest {
@@ -47,6 +48,7 @@ export interface EditGalleryRequest {
   description?: string;
   content?: Record<string, string>;
   thumbnail?: string;
+  tags?: string[];
 }
 
 export interface GalleriesListResponse {

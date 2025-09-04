@@ -14,8 +14,6 @@ import {
 } from './gallery-query-params';
 import { GalleryCard } from './GalleryCard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useUserStore } from '@/stores/userStore';
-import { canEditTags } from '@/lib/authz';
 
 type ReactionPatch = { like?: boolean; favorite?: boolean };
 
@@ -23,14 +21,10 @@ export default function GalleriesPage() {
   const [sp, setSp] = useSearchParams();
   const { sort, setSort, filters, setFilters, pager, setPager } =
     useGalleryListState();
-  const currentUser = useUserStore((s) => s.user);
 
   // Optimistic overlays
   const [reactionOverrides, setReactionOverrides] = React.useState<
     Record<number, { like: boolean; favorite: boolean }>
-  >({});
-  const [tagOverrides, setTagOverrides] = React.useState<
-    Record<number, string[]>
   >({});
 
   // Hydrate from URL once at mount
@@ -102,10 +96,6 @@ export default function GalleriesPage() {
     [serverReactions]
   );
 
-  const handleTagsChanged = React.useCallback((id: number, tags: string[]) => {
-    setTagOverrides((prev) => ({ ...prev, [id]: tags }));
-  }, []);
-
   return (
     <div className="space-y-4 p-2">
       <GalleryListToolbar
@@ -160,18 +150,11 @@ export default function GalleriesPage() {
               const likesDisplay = (g.likesCount ?? 0) + likesDelta;
               const favsDisplay = (g.favoritesCount ?? 0) + favsDelta;
 
-              // Effective tags (overlay)
-              const effectiveItem = {
-                ...g,
-                tags: tagOverrides[g.id] ?? g.tags ?? [],
-              };
-              const editable = canEditTags(currentUser, g.userId);
-
               return (
                 <GalleryCard
                   key={g.id}
                   to={g.id.toString()}
-                  item={effectiveItem}
+                  item={g}
                   comments={commentCounts[g.id] ?? 0}
                   myReaction={current}
                   likesCountOverride={likesDisplay}
@@ -179,8 +162,6 @@ export default function GalleriesPage() {
                   onReactionChanged={(next) =>
                     handleReactionChanged(g.id, next)
                   }
-                  onTagsChanged={(next) => handleTagsChanged(g.id, next)}
-                  canEditTags={editable}
                 />
               );
             })}

@@ -26,11 +26,13 @@ import useMediaQuery from '@/hooks/useMediaQuery';
 import { Textarea } from '@/components/ui/textarea';
 import { Content } from '@tiptap/react';
 import { ThumbnailCarousel } from './ThumbnailCarousel';
+import { TagField } from '@/components/ui/tag-field';
 
 export interface FormDataProps {
   title: string;
   description: string;
   thumbnailIndex: number;
+  tags: string[];
 }
 
 interface GallerySaveDialogProps {
@@ -49,7 +51,7 @@ export function GallerySaveDialog({
 }: GallerySaveDialogProps) {
   const [open, setOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
-
+  console.info(initial);
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
@@ -125,6 +127,7 @@ function GallerySaveForm({
     title: '',
     description: '',
     thumbnailIndex: 0,
+    tags: [],
   });
 
   // When editing, hydrate state from initial once data is available/changes
@@ -134,9 +137,15 @@ function GallerySaveForm({
       title: initial.title ?? prev.title,
       description: initial.description ?? prev.description,
       thumbnailIndex: initial.thumbnailIndex ?? prev.thumbnailIndex,
+      tags: initial.tags ?? prev.tags,
     }));
     // Depend on individual fields to avoid re-running on new object identity
-  }, [initial?.title, initial?.description, initial?.thumbnailIndex]);
+  }, [
+    initial?.title,
+    initial?.description,
+    initial?.thumbnailIndex,
+    initial?.tags,
+  ]);
 
   // Only recompute when `content` changes
   const imageArray = useMemo(() => {
@@ -178,9 +187,19 @@ function GallerySaveForm({
         />
       </div>
       <Label htmlFor="description">Gallery Thumbnail</Label>
+
       <div className="grid gap-2">
         <ThumbnailCarousel images={imageArray} />
       </div>
+      <TagField
+        value={formData.tags}
+        onChange={(newTags) =>
+          setFormData({
+            ...formData,
+            tags: newTags,
+          })
+        }
+      />
       <Button type="submit">Save changes</Button>
     </form>
   );

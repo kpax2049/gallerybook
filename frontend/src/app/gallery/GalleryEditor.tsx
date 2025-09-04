@@ -105,6 +105,7 @@ export function GalleryEditor() {
       const response = await createDraftGallery({
         title: data.title,
         description: data.description,
+        tags: data.tags,
       });
 
       const galleryId = response.id;

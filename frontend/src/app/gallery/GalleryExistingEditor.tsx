@@ -148,6 +148,7 @@ export function GalleryExistingEditor() {
           thumbnail: thumbnailUrl,
           title: data.title,
           description: data.description,
+          tags: data.tags,
         },
         Number(galleryId)
       );

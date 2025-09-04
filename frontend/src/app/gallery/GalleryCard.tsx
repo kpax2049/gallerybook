@@ -1,11 +1,12 @@
 import * as React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Star, Loader2, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Gallery, toggleReaction } from '@/api/gallery';
-import { InlineTagsEditor } from '@/components/ui/inlineTagsEditor';
+import { deleteGallery, Gallery, toggleReaction } from '@/api/gallery';
+import { ThreeDotMenu } from '@/components/three-dot-menu';
+import { TagStrip } from '@/components/ui/tags-strip';
 
 type Props = {
   item: Gallery;
@@ -15,8 +16,6 @@ type Props = {
   likesCountOverride?: number;
   favoritesCountOverride?: number;
   to?: string;
-  onTagsChanged?: (tags: string[]) => void;
-  canEditTags?: boolean;
 };
 
 export const GalleryCard = React.memo(function GalleryCard({
@@ -27,9 +26,19 @@ export const GalleryCard = React.memo(function GalleryCard({
   likesCountOverride,
   favoritesCountOverride,
   to = '#',
-  onTagsChanged,
-  canEditTags = false,
 }: Props) {
+  const navigate = useNavigate();
+
+  const onEdit = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    navigate(`/galleries/edit/${item.id}`);
+  };
+
+  const onDelete = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    deleteGallery(item.id);
+  };
+
   const [busyLike, setBusyLike] = React.useState(false);
   const [busyFav, setBusyFav] = React.useState(false);
 
@@ -66,9 +75,6 @@ export const GalleryCard = React.memo(function GalleryCard({
     }
   };
 
-  const likesDisplay = likesCountOverride ?? item.likesCount ?? 0;
-  const favsDisplay = favoritesCountOverride ?? item.favoritesCount ?? 0;
-
   const Figure = (
     <figure
       className={cn(
@@ -82,7 +88,8 @@ export const GalleryCard = React.memo(function GalleryCard({
       )}
     >
       {/* Photo */}
-      <Card className="w-full rounded-[10px] overflow-hidden">
+      <Card className="relative w-full rounded-[10px] overflow-hidden border border-border/60 bg-background">
+        {/* Photo */}
         <div className="relative w-full aspect-[4/3] bg-muted">
           {item.thumbnail ? (
             <img
@@ -97,31 +104,25 @@ export const GalleryCard = React.memo(function GalleryCard({
             </div>
           )}
         </div>
-      </Card>
 
-      {/* Caption: fixed 4 rows; last row constant height (so all cards match) */}
-      <figcaption className="mt-2 px-2 grid grid-rows-[auto_auto_auto_28px] gap-y-1.5">
-        {/* Row 1: title */}
-        <div className="text-[13px] font-medium text-foreground line-clamp-1">
-          {item.title ?? 'Untitled gallery'}
-        </div>
-
-        {/* Row 2: meta + actions */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-[11px] text-muted-foreground">
-            {item.updatedAt && (
-              <>Updated {new Date(item.updatedAt).toLocaleDateString()}</>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
+        {/* Overlay: show on hover/focus (always visible on mobile) */}
+        <div
+          className="
+      pointer-events-none absolute inset-0
+      md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100
+      transition-opacity
+    "
+        >
+          {/* Top-right actions */}
+          <div className="pointer-events-auto absolute top-2 right-2 flex gap-1">
             <Button
               size="icon"
-              variant="outline"
-              aria-pressed={liked}
+              variant="secondary"
+              className="h-8 w-8 rounded-full bg-background/70 backdrop-blur"
               title={liked ? 'Unlike' : 'Like'}
+              aria-pressed={liked}
               onClick={(e) => handleToggle('LIKE', e)}
-              disabled={busyLike}
-              className="h-8 w-8 hover:bg-muted/60"
+              data-stop-link="true"
             >
               {busyLike ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -138,12 +139,12 @@ export const GalleryCard = React.memo(function GalleryCard({
             </Button>
             <Button
               size="icon"
-              variant="outline"
-              aria-pressed={faved}
+              variant="secondary"
+              className="h-8 w-8 rounded-full bg-background/70 backdrop-blur"
               title={faved ? 'Remove favorite' : 'Favorite'}
+              aria-pressed={faved}
               onClick={(e) => handleToggle('FAVORITE', e)}
-              disabled={busyFav}
-              className="h-8 w-8 hover:bg-muted/60"
+              data-stop-link="true"
             >
               {busyFav ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -159,32 +160,60 @@ export const GalleryCard = React.memo(function GalleryCard({
               )}
             </Button>
           </div>
-        </div>
 
-        {/* Row 3: counters */}
-        <div className="text-[11px] text-muted-foreground flex items-center gap-3">
-          <span className="inline-flex items-center gap-1">
-            <Heart className="h-3.5 w-3.5" />
-            {likesDisplay}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Star className="h-3.5 w-3.5" />
-            {favsDisplay}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <MessageSquare className="h-3.5 w-3.5" />
-            {comments}
-          </span>
+          {/* Bottom gradient panel */}
+          <div className="pointer-events-auto absolute inset-x-0 bottom-0">
+            <div className="bg-gradient-to-t from-black/60 via-black/20 to-transparent text-white">
+              <div className="p-3 space-y-2">
+                <div className="text-[11px] opacity-80">
+                  {item.updatedAt &&
+                    new Date(item.updatedAt).toLocaleDateString()}
+                </div>
+                {/* Quick stats + Tags trigger */}
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="inline-flex items-center gap-1 opacity-90">
+                    <Heart className="h-3.5 w-3.5" aria-hidden />
+                    {likesCountOverride ?? item.likesCount ?? 0}
+                  </span>
+                  <span className="inline-flex items-center gap-1 opacity-90">
+                    <Star className="h-3.5 w-3.5" aria-hidden />
+                    {favoritesCountOverride ?? item.favoritesCount ?? 0}
+                  </span>
+                  <span className="inline-flex items-center gap-1 opacity-90">
+                    <MessageSquare className="h-3.5 w-3.5" aria-hidden />
+                    {comments}
+                  </span>
+                </div>
+                <TagStrip
+                  tags={Array.isArray(item.tags) ? item.tags : []}
+                  maxVisible={3}
+                  dense
+                />
+              </div>
+            </div>
+          </div>
         </div>
+      </Card>
 
-        {/* Row 4: tags (constant height) + inline editor popover */}
-        <InlineTagsEditor
-          galleryId={item.id}
-          initial={Array.isArray(item.tags) ? item.tags : []}
-          onUpdated={(next) => onTagsChanged?.(next)}
-          editable={canEditTags}
-        />
+      {/* Keep a minimal caption under the photo (optional): just the date */}
+      <figcaption className="mt-2 px-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-[13px] font-medium text-foreground leading-tight line-clamp-1">
+            {item.title ?? 'Untitled gallery'}
+          </div>
+          <ThreeDotMenu onEdit={onEdit} onDelete={onDelete} gallery={item} />
+        </div>
       </figcaption>
+      {/* Mount the editor once; it will portal itself and open via ref */}
+      {/* <InlineTagsEditor
+        ref={tagsRef}
+        galleryId={item.id}
+        initial={Array.isArray(item.tags) ? item.tags : []}
+        onUpdated={(next) => onTagsChanged?.(next)}
+        editable={canEditTags}
+        renderTriggerRow={false}
+        anchorRef={cardRef}
+      /> */}
     </figure>
   );
 
