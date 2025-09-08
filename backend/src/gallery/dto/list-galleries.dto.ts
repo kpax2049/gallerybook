@@ -1,3 +1,4 @@
+import { GalleryStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import {
   IsIn,
@@ -8,6 +9,7 @@ import {
   IsBoolean,
   IsArray,
   ArrayUnique,
+  IsEnum,
 } from 'class-validator';
 
 export type SortKey =
@@ -18,16 +20,27 @@ export type SortKey =
   | 'likes'
   | 'comments';
 export type SortDir = 'asc' | 'desc';
-export type GalleryStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 export class ListGalleriesDto {
   // Filtering
   @IsOptional()
-  @IsArray()
-  @ArrayUnique()
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.split(',') : value,
-  )
+  @Transform(({ value }) => {
+    if (value == null) return undefined;
+
+    const arr = Array.isArray(value) ? value : String(value).split(',');
+    const upper = arr
+      .map((s) => String(s).trim().toUpperCase())
+      .filter(Boolean);
+
+    const enumValues = Object.values(GalleryStatus) as string[]; // ['DRAFT','PUBLISHED','ARCHIVED']
+    const isGalleryStatus = (x: string): x is GalleryStatus =>
+      enumValues.includes(x);
+
+    const norm = upper.filter(isGalleryStatus); // <- now typed as GalleryStatus[]
+    // (optional) dedupe
+    return Array.from(new Set(norm));
+  })
+  @IsEnum(GalleryStatus, { each: true })
   status?: GalleryStatus[];
 
   @IsOptional()
@@ -105,4 +118,8 @@ export class ListGalleriesDto {
   @Transform(({ value }) => value === 'true')
   @IsBoolean()
   includeMyReactions?: boolean = true;
+
+  @IsOptional()
+  @IsString()
+  favoriteBy?: string; // "me" or a userId
 }

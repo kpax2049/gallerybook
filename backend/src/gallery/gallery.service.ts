@@ -618,7 +618,13 @@ export class GalleryService {
     return { tags: final.map((t) => t.slug || t.name) };
   }
 
-  // -------- Helpers (small, focused) --------
+  // Helper functions
+  private coerceFavUserId(favoriteBy: string | undefined, meId: number | null) {
+    if (!favoriteBy) return undefined;
+    if (favoriteBy === 'me') return meId ?? undefined;
+    const n = Number(favoriteBy);
+    return Number.isFinite(n) ? n : undefined;
+  }
 
   private buildWhere(
     userId: number | null,
@@ -632,6 +638,21 @@ export class GalleryService {
 
     // owner
     if ((dto.owner ?? 'any') === 'me' && userId) AND.push({ userId });
+
+    // favorites filter
+    if (dto.favoriteBy !== undefined) {
+      const favUserId = this.coerceFavUserId(dto.favoriteBy, userId);
+      if (favUserId) {
+        AND.push({
+          reactions: {
+            some: { userId: favUserId, type: 'FAVORITE' },
+          },
+        });
+      } else {
+        // asked for favoriteBy=me but unauthenticated → return empty set
+        AND.push({ id: -1 });
+      }
+    }
 
     // updated range
     const since = this.sinceFromRange(dto.range ?? 'any');
