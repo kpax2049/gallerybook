@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GalleriesListResponse, getGalleriesList } from '@/api/gallery';
-import { SortState, FilterState } from '@/components/ui/galleryListToolbar';
 import { serializeParams } from '@/lib/apiClient';
+import { FilterState, SortState } from '@/app/gallery/gallery-query-params';
 
 export function useGalleries(params: {
   sort: SortState;
-  filters: FilterState;
+  filters?: FilterState;
   page: number;
   pageSize: number;
 }) {
@@ -20,26 +20,33 @@ export function useGalleries(params: {
   const reqIdRef = useRef(0);
 
   const statusList = useMemo(
-    () => (filters.status.size ? Array.from(filters.status) : undefined),
-    [filters.status]
+    () => (filters?.status?.size ? Array.from(filters.status) : undefined),
+    [filters?.status]
   );
+
   const tagsList = useMemo(
-    () => (filters.tags.length ? filters.tags : undefined),
-    [filters.tags]
+    () => (filters?.tags?.length ? filters.tags : undefined),
+    [filters?.tags]
   );
 
   const query = useMemo(() => {
     return serializeParams({
       status: statusList,
-      owner: filters.owner !== 'any' ? filters.owner : undefined,
-      range: filters.range !== 'any' ? filters.range : undefined,
+      owner: filters?.owner !== 'any' ? filters?.owner : undefined,
+      range: filters?.range !== 'any' ? filters?.range : undefined,
       hasCover:
-        filters.hasCover === null ? undefined : String(filters.hasCover),
-      hasTags: filters.hasTags === null ? undefined : String(filters.hasTags),
+        filters?.hasCover === null ? undefined : String(filters?.hasCover),
+      hasTags: filters?.hasTags === null ? undefined : String(filters?.hasTags),
       hasComments:
-        filters.hasComments === null ? undefined : String(filters.hasComments),
+        filters?.hasComments === null
+          ? undefined
+          : String(filters?.hasComments),
       tags: tagsList,
-      search: filters.search || undefined,
+      favoriteBy:
+        filters?.favoriteBy !== undefined
+          ? String(filters?.favoriteBy)
+          : undefined,
+      search: filters?.search || undefined,
       sortKey: sort.key,
       sortDir: sort.dir,
       page,
@@ -51,13 +58,14 @@ export function useGalleries(params: {
     sort.dir,
     page,
     pageSize,
-    filters.owner,
-    filters.range,
-    filters.hasCover,
-    filters.hasTags,
-    filters.hasComments,
-    filters.search,
-    statusList?.join(','),
+    filters?.owner,
+    filters?.range,
+    filters?.hasCover,
+    filters?.hasTags,
+    filters?.hasComments,
+    filters?.search,
+    filters?.favoriteBy,
+    statusList?.join(','), // stable dep when arrays change
     tagsList?.join(','),
   ]);
 
@@ -65,7 +73,6 @@ export function useGalleries(params: {
     let alive = true;
     const myReqId = ++reqIdRef.current;
 
-    // distinguish first load vs refetch to avoid flicker
     const isFirstLoad = data == null;
     if (isFirstLoad) {
       setLoading(true);

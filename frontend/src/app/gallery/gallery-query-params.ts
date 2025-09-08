@@ -18,6 +18,7 @@ export interface FilterState {
   hasComments: boolean | null;
   tags: string[];
   search: string;
+  favoriteBy?: 'me' | number;
 }
 
 export interface SortState {
@@ -39,14 +40,16 @@ export const defaultFilters: FilterState = {
 
 export function filtersToQuery(f: FilterState) {
   return {
-    status: f.status.size ? Array.from(f.status) : undefined,
+    status: f.status?.size ? Array.from(f.status) : undefined,
     owner: f.owner !== 'any' ? f.owner : undefined,
     range: f.range !== 'any' ? f.range : undefined,
-    hasCover: f.hasCover === null ? undefined : String(f.hasCover),
-    hasTags: f.hasTags === null ? undefined : String(f.hasTags),
-    hasComments: f.hasComments === null ? undefined : String(f.hasComments),
-    tags: f.tags.length ? f.tags : undefined,
+    // use == null to treat null OR undefined as “omit”
+    hasCover: f.hasCover == null ? undefined : String(f.hasCover),
+    hasTags: f.hasTags == null ? undefined : String(f.hasTags),
+    hasComments: f.hasComments == null ? undefined : String(f.hasComments),
+    tags: f.tags?.length ? f.tags : undefined,
     search: f.search || undefined,
+    favoriteBy: f.favoriteBy == null ? undefined : String(f.favoriteBy), // if you added this
   };
 }
 
@@ -68,6 +71,15 @@ export function queryToFilters(q: URLSearchParams): FilterState {
     | GalleryStatus[]
     | undefined;
   const tags = q.get('tags')?.split(',').filter(Boolean) ?? [];
+  const favoriteByRaw = q.get('favoriteBy') ?? undefined;
+  const favoriteBy =
+    favoriteByRaw === 'me'
+      ? 'me'
+      : favoriteByRaw != null
+        ? Number.isNaN(Number(favoriteByRaw))
+          ? undefined
+          : Number(favoriteByRaw)
+        : undefined;
 
   return {
     status: new Set<GalleryStatus>(status ?? []),
@@ -78,6 +90,7 @@ export function queryToFilters(q: URLSearchParams): FilterState {
     hasComments: parseTri('hasComments'),
     tags,
     search: q.get('search') ?? '',
+    favoriteBy,
   };
 }
 

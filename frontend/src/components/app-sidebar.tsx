@@ -31,19 +31,19 @@ const data = {
       items: [
         {
           title: 'Galleries',
-          url: '/galleries',
-        },
-        {
-          title: 'Comments',
-          url: '/comments',
+          url: '/galleries?owner=me',
         },
         {
           title: 'Favorites',
-          url: '/galleries/favorites',
+          url: '/galleries?favoriteBy=me',
         },
         {
           title: 'Drafts',
-          url: '/galleries/drafts',
+          url: '/galleries?owner=me&status=draft',
+        },
+        {
+          title: 'Comments',
+          url: '/me/comments?scope=onMyGalleries',
         },
       ],
     },

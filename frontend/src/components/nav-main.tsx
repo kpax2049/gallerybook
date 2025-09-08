@@ -17,7 +17,8 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useGalleryListState } from '@/stores/galleryStore';
 
 interface ItemProps {
   items: {
@@ -34,6 +35,23 @@ interface ItemProps {
 }
 
 export function NavMain({ items }: ItemProps) {
+  const navigate = useNavigate();
+  const { setFilters, setSort, setPager } = useGalleryListState();
+  const goFavorites = () => {
+    setFilters((f) => ({
+      ...f,
+      owner: 'any',
+      favoriteBy: 'me',
+      status: new Set(),
+    }));
+    setSort({ key: 'updatedAt', dir: 'desc' });
+    setPager({ page: 1, pageSize: 24 });
+    navigate('/galleries?favoriteBy=me'); // 👈 add the query
+  };
+
+  const goMyGalleries = () => navigate('/galleries?owner=me');
+  const goDrafts = () => navigate('/galleries?owner=me&status=draft');
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
@@ -56,24 +74,33 @@ export function NavMain({ items }: ItemProps) {
               <CollapsibleContent>
                 <SidebarMenuSub>
                   {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <NavLink viewTransition to={subItem.url}>
-                        <SidebarMenuSubButton
-                          asChild
-                          size="sm"
-                          isActive={subItem.isActive}
-                          // onClick={() =>
-                          //   navigate(subItem.url, {
-                          //     viewTransition: true,
-                          //   })
-                          // }
-                        >
-                          <span>{subItem.title}</span>
-                          {/* <a href={subItem.url}>
+                    <SidebarMenuSubItem
+                      key={subItem.title}
+                      onClick={
+                        subItem.title == 'Galleries'
+                          ? goMyGalleries
+                          : subItem.title == 'Favorites'
+                            ? goFavorites
+                            : goDrafts
+                      }
+                    >
+                      {/* <NavLink viewTransition to={subItem.url}> */}
+                      <SidebarMenuSubButton
+                        asChild
+                        size="sm"
+                        isActive={subItem.isActive}
+                        // onClick={() =>
+                        //   navigate(subItem.url, {
+                        //     viewTransition: true,
+                        //   })
+                        // }
+                      >
+                        <span>{subItem.title}</span>
+                        {/* <a href={subItem.url}>
                             <span>{subItem.title}</span>
                           </a> */}
-                        </SidebarMenuSubButton>
-                      </NavLink>
+                      </SidebarMenuSubButton>
+                      {/* </NavLink> */}
                     </SidebarMenuSubItem>
                   ))}
                 </SidebarMenuSub>

@@ -1,7 +1,6 @@
 import { Gallery } from '@/api/gallery';
+import { FilterState, SortState } from '@/app/gallery/gallery-query-params';
 import {
-  SortState,
-  FilterState,
   defaultSort,
   defaultFilters,
 } from '@/components/ui/galleryListToolbar';
@@ -26,7 +25,7 @@ type Store = {
   filters: FilterState;
   pager: Pager;
   setSort: (s: SortState) => void;
-  setFilters: (f: FilterState) => void;
+  setFilters: (f: FilterState | ((prev: FilterState) => FilterState)) => void;
   setPager: (p: Pager) => void;
   reset: () => void;
 };
@@ -36,7 +35,13 @@ export const useGalleryListState = create<Store>((set) => ({
   filters: { ...defaultFilters },
   pager: { page: 1, pageSize: 24 },
   setSort: (sort) => set({ sort }),
-  setFilters: (filters) => set({ filters, pager: { page: 1, pageSize: 24 } }), // reset to page 1
+  setFilters: (f) =>
+    set((state) => ({
+      filters:
+        typeof f === 'function'
+          ? (f as (p: FilterState) => FilterState)(state.filters)
+          : f,
+    })),
   setPager: (pager) => set({ pager }),
   reset: () =>
     set({

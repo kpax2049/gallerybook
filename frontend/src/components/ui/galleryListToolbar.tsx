@@ -50,33 +50,38 @@ import {
   List as ListIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  FilterState,
+  SortKey,
+  SortState,
+} from '@/app/gallery/gallery-query-params';
 
 // ---------- Types
 
-export type SortKey =
-  | 'updatedAt'
-  | 'createdAt'
-  | 'title'
-  | 'views'
-  | 'likes'
-  | 'comments';
-export type SortDir = 'asc' | 'desc';
+// export type SortKey =
+//   | 'updatedAt'
+//   | 'createdAt'
+//   | 'title'
+//   | 'views'
+//   | 'likes'
+//   | 'comments';
+// export type SortDir = 'asc' | 'desc';
 
-export interface SortState {
-  key: SortKey;
-  dir: SortDir;
-}
+// export interface SortState {
+//   key: SortKey;
+//   dir: SortDir;
+// }
 
-export interface FilterState {
-  status: Set<'DRAFT' | 'PUBLISHED' | 'ARCHIVED'>;
-  owner: 'me' | 'any';
-  range: 'any' | '7d' | '30d' | '90d';
-  hasCover: boolean | null;
-  hasTags: boolean | null;
-  hasComments: boolean | null;
-  tags: string[];
-  search: string;
-}
+// export interface FilterState {
+//   status: Set<'DRAFT' | 'PUBLISHED' | 'ARCHIVED'>;
+//   owner: 'me' | 'any';
+//   range: 'any' | '7d' | '30d' | '90d';
+//   hasCover: boolean | null;
+//   hasTags: boolean | null;
+//   hasComments: boolean | null;
+//   tags: string[];
+//   search: string;
+// }
 
 export interface GalleryListToolbarProps {
   className?: string;
@@ -104,6 +109,7 @@ export const defaultFilters: FilterState = {
   hasComments: null,
   tags: [],
   search: '',
+  favoriteBy: undefined,
 };
 
 // ---------- Toolbar (compact single row)
@@ -121,35 +127,44 @@ function GalleryListToolbarInner(props: GalleryListToolbarProps) {
     onViewChange,
   } = props;
 
+  // normalize filters so status/tags are always present
+  const f = React.useMemo<FilterState>(
+    () => ({
+      ...defaultFilters,
+      ...(filters ?? {}),
+      status: filters?.status ?? new Set(), // Set always exists
+      tags: filters?.tags ?? [], // array always exists
+    }),
+    [filters]
+  );
+
   // Local draft for debounced search (commit after 300ms idle)
-  const [searchDraft, setSearchDraft] = React.useState(filters.search);
+  const [searchDraft, setSearchDraft] = React.useState(f.search);
   React.useEffect(() => {
-    if (filters.search !== searchDraft) setSearchDraft(filters.search);
+    if (f.search !== searchDraft) setSearchDraft(f.search);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.search]);
+  }, [f.search]);
 
   React.useEffect(() => {
-    if (searchDraft === filters.search) return;
+    if (searchDraft === f.search) return;
     const id = setTimeout(() => {
-      onFiltersChange({ ...filters, search: searchDraft });
+      onFiltersChange({ ...f, search: searchDraft });
     }, 300);
     return () => clearTimeout(id);
-  }, [searchDraft, filters, onFiltersChange]);
+  }, [searchDraft, f, onFiltersChange]);
 
-  // View toggle (controlled if onViewChange is provided)
+  // View toggle …
   const [localView, setLocalView] = React.useState<'grid' | 'list'>(
     view ?? 'grid'
   );
   React.useEffect(() => {
     if (view && view !== localView) setLocalView(view);
   }, [view, localView]);
-  const setView = (v: 'grid' | 'list') => {
-    if (onViewChange) onViewChange(v);
-    else setLocalView(v);
-  };
+  const setView = (v: 'grid' | 'list') =>
+    onViewChange ? onViewChange(v) : setLocalView(v);
   const currentView = view ?? localView;
 
-  const activeFilters = countActiveFilters(filters);
+  const activeFilters = countActiveFilters(f);
 
   return (
     <TooltipProvider>
@@ -228,7 +243,7 @@ function GalleryListToolbarInner(props: GalleryListToolbarProps) {
 
         {/* Filter (opens sheet) */}
         <FilterSheet
-          filters={filters}
+          filters={f}
           onChange={onFiltersChange}
           availableTags={availableTags}
         >

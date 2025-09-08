@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { GalleryListToolbar } from '@/components/ui/galleryListToolbar';
 import { useGalleries } from '@/hooks/use-gallery';
@@ -21,6 +21,7 @@ type ReactionPatch = { like?: boolean; favorite?: boolean };
 type ViewMode = 'grid' | 'list';
 
 export default function GalleriesPage() {
+  // const [sp, setSp] = useSearchParams();
   const [sp, setSp] = useSearchParams();
   const [view, setView] = React.useState<ViewMode>(() =>
     sp.get('view') === 'list' ? 'list' : 'grid'
@@ -33,47 +34,69 @@ export default function GalleriesPage() {
     Record<number, { like: boolean; favorite: boolean }>
   >({});
 
-  // Hydrate from URL once at mount
-  React.useEffect(() => {
-    const hydratedSort = queryToSort(sp);
-    const hydratedFilters = queryToFilters(sp);
-    setSort(hydratedSort);
-    setFilters(hydratedFilters);
-    const page = Number(sp.get('page') ?? 1);
-    const pageSize = Number(sp.get('pageSize') ?? 24);
-    setPager({ page, pageSize });
-    if (sp.get('view') === 'list') setView('list');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const location = useLocation();
 
-  // Keep URL in sync with state
-  React.useEffect(() => {
-    const next = new URLSearchParams(sp);
+  // helpers (unchanged if you already added them)
+  const buildSearchParams = (
+    filters: FilterState,
+    sort: SortState,
+    pager: { page: number; pageSize: number }
+  ) => {
+    const next = new URLSearchParams();
     const fq = filtersToQuery(filters);
     const sq = sortToQuery(sort);
-    Object.entries({
+    const entries: Record<string, string | string[] | number | undefined> = {
       ...fq,
       ...sq,
       page: pager.page,
       pageSize: pager.pageSize,
-    }).forEach(([k, v]) => {
-      if (
-        v === undefined ||
-        v === null ||
-        v === '' ||
-        (Array.isArray(v) && v.length === 0)
-      ) {
-        next.delete(k);
-      } else if (Array.isArray(v)) {
-        next.set(k, v.join(','));
-      } else {
-        next.set(k, String(v));
-      }
-    });
-    if (view === 'list') next.set('view', 'list');
-    else next.delete('view');
-    setSp(next, { replace: true });
-  }, [filters, sort, pager, view, setSp, sp]);
+    };
+    for (const [k, v] of Object.entries(entries)) {
+      if (v == null || v === '' || (Array.isArray(v) && v.length === 0))
+        continue;
+      if (Array.isArray(v)) next.set(k, v.join(','));
+      else next.set(k, String(v));
+    }
+    return next;
+  };
+
+  const paramsEqual = (a: URLSearchParams, b: URLSearchParams) => {
+    const aKeys = Array.from(a.keys()).sort();
+    const bKeys = Array.from(b.keys()).sort();
+    if (aKeys.length !== bKeys.length) return false;
+    for (let i = 0; i < aKeys.length; i++) {
+      const k = aKeys[i];
+      if (k !== bKeys[i]) return false;
+      if (a.get(k) !== b.get(k)) return false;
+    }
+    return true;
+  };
+
+  // A) React to URL changes (only when on /galleries)
+  React.useEffect(() => {
+    if (location.pathname !== '/galleries') return;
+    const desired = buildSearchParams(filters, sort, pager);
+    if (paramsEqual(sp, desired)) return;
+
+    const nextSort = queryToSort(sp);
+    const nextFilters = queryToFilters(sp);
+    const page = Number(sp.get('page') ?? 1);
+    const pageSize = Number(sp.get('pageSize') ?? 24);
+
+    setSort(nextSort);
+    setFilters(nextFilters);
+    setPager({ page, pageSize });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sp, location.pathname]);
+
+  // B) Keep URL in sync with state (only when on /galleries)
+  React.useEffect(() => {
+    if (location.pathname !== '/galleries') return;
+    const desired = buildSearchParams(filters, sort, pager);
+    if (!paramsEqual(sp, desired)) {
+      setSp(desired, { replace: true });
+    }
+  }, [filters, sort, pager, setSp, sp, location.pathname]);
 
   // Fetch galleries
   const { data, loading, error } = useGalleries({
