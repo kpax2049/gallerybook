@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useMatch, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { GalleryListToolbar } from '@/components/ui/galleryListToolbar';
 import { useGalleries } from '@/hooks/use-gallery';
@@ -17,11 +17,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { GalleryRow } from './GalleryRow';
 import { Gallery } from '@/api/gallery';
 
+export default function GalleriesPage() {
+  // exact match for /galleries (NOT /galleries/:id)
+  const onList = useMatch({ path: '/galleries', end: true }) != null;
+
+  // Only mount the real list page on /galleries
+  return onList ? <GalleriesListPage /> : null;
+}
+
 type ReactionPatch = { like?: boolean; favorite?: boolean };
 type ViewMode = 'grid' | 'list';
 
-export default function GalleriesPage() {
-  // const [sp, setSp] = useSearchParams();
+function GalleriesListPage() {
   const [sp, setSp] = useSearchParams();
   const [view, setView] = React.useState<ViewMode>(() =>
     sp.get('view') === 'list' ? 'list' : 'grid'
@@ -72,9 +79,12 @@ export default function GalleriesPage() {
     return true;
   };
 
+  const onList = useMatch({ path: '/galleries', end: true }) != null;
+
   // A) React to URL changes (only when on /galleries)
   React.useEffect(() => {
-    if (location.pathname !== '/galleries') return;
+    // if (location.pathname !== '/galleries') return;
+    if (!onList) return;
     const desired = buildSearchParams(filters, sort, pager);
     if (paramsEqual(sp, desired)) return;
 
@@ -87,16 +97,17 @@ export default function GalleriesPage() {
     setFilters(nextFilters);
     setPager({ page, pageSize });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sp, location.pathname]);
+  }, [onList, sp, location.pathname]);
 
   // B) Keep URL in sync with state (only when on /galleries)
   React.useEffect(() => {
-    if (location.pathname !== '/galleries') return;
+    // if (location.pathname !== '/galleries') return;
+    if (!onList) return;
     const desired = buildSearchParams(filters, sort, pager);
     if (!paramsEqual(sp, desired)) {
       setSp(desired, { replace: true });
     }
-  }, [filters, sort, pager, setSp, sp, location.pathname]);
+  }, [onList, filters, sort, pager, setSp, sp, location.pathname]);
 
   // Fetch galleries
   const { data, loading, error } = useGalleries({
@@ -140,13 +151,13 @@ export default function GalleriesPage() {
     return (
       <GalleryCard
         key={g.id}
+        to={`/galleries/${g.id}`}
         item={effectiveItem}
         comments={commentCounts[g.id] ?? 0}
         myReaction={current}
         likesCountOverride={likesDisplay}
         favoritesCountOverride={favsDisplay}
         onReactionChanged={(next) => handleReactionChanged(g.id, next)}
-        // no tag editing in card
       />
     );
   };

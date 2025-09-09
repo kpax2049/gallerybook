@@ -1,6 +1,8 @@
 'use client';
 
+import * as React from 'react';
 import { ChevronRight, type LucideIcon } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
 
 import {
   Collapsible,
@@ -17,8 +19,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useGalleryListState } from '@/stores/galleryStore';
+import { cn } from '@/lib/utils';
 
 interface ItemProps {
   items: {
@@ -34,80 +35,118 @@ interface ItemProps {
   }[];
 }
 
-export function NavMain({ items }: ItemProps) {
-  const navigate = useNavigate();
-  const { setFilters, setSort, setPager } = useGalleryListState();
-  const goFavorites = () => {
-    setFilters((f) => ({
-      ...f,
-      owner: 'any',
-      favoriteBy: 'me',
-      status: new Set(),
-    }));
-    setSort({ key: 'updatedAt', dir: 'desc' });
-    setPager({ page: 1, pageSize: 24 });
-    navigate('/galleries?favoriteBy=me'); // 👈 add the query
-  };
+// Accept just what we need from the router location
+function isSubActiveByUrl(
+  title: string,
+  url: string,
+  pathname: string,
+  search: string
+) {
+  const to = new URL(url, window.location.origin);
+  const targetPath = to.pathname;
 
-  const goMyGalleries = () => navigate('/galleries?owner=me');
-  const goDrafts = () => navigate('/galleries?owner=me&status=draft');
+  if (pathname !== targetPath) {
+    // Allow Comments to be active for deeper routes under /me/comments
+    if (!(title === 'Comments' && pathname.startsWith('/me/comments'))) {
+      return false;
+    }
+  }
+
+  const sp = new URLSearchParams(search);
+
+  switch (title) {
+    case 'Galleries': {
+      const owner = sp.get('owner');
+      const favoriteBy = sp.get('favoriteBy');
+      const statusRaw = sp.get('status');
+      const statuses = statusRaw ? statusRaw.split(',') : [];
+      return owner === 'me' && !favoriteBy && !statuses.includes('draft');
+    }
+    case 'Favorites':
+      return sp.get('favoriteBy') === 'me';
+    case 'Drafts': {
+      const owner = sp.get('owner');
+      const statusRaw = sp.get('status');
+      const statuses = statusRaw ? statusRaw.split(',') : [];
+      return owner === 'me' && statuses.includes('draft');
+    }
+    case 'Comments':
+      return pathname.startsWith('/me/comments');
+    default:
+      // Fallback: strict match
+      return pathname === targetPath && search === to.search;
+  }
+}
+
+export function NavMain({ items }: ItemProps) {
+  const loc = useLocation();
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => (
-          <Collapsible
-            key={item.title}
-            asChild
-            defaultOpen={item.isActive}
-            className="group/collapsible"
-          >
-            <SidebarMenuItem>
-              <CollapsibleTrigger asChild>
-                <SidebarMenuButton tooltip={item.title}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub>
-                  {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem
-                      key={subItem.title}
-                      onClick={
-                        subItem.title == 'Galleries'
-                          ? goMyGalleries
-                          : subItem.title == 'Favorites'
-                            ? goFavorites
-                            : goDrafts
-                      }
-                    >
-                      {/* <NavLink viewTransition to={subItem.url}> */}
-                      <SidebarMenuSubButton
-                        asChild
-                        size="sm"
-                        isActive={subItem.isActive}
-                        // onClick={() =>
-                        //   navigate(subItem.url, {
-                        //     viewTransition: true,
-                        //   })
-                        // }
-                      >
-                        <span>{subItem.title}</span>
-                        {/* <a href={subItem.url}>
-                            <span>{subItem.title}</span>
-                          </a> */}
-                      </SidebarMenuSubButton>
-                      {/* </NavLink> */}
-                    </SidebarMenuSubItem>
-                  ))}
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </SidebarMenuItem>
-          </Collapsible>
-        ))}
+        {items.map((item) => {
+          const anyActive =
+            item.items?.some((sub) =>
+              isSubActiveByUrl(sub.title, sub.url, loc.pathname, loc.search)
+            ) ?? false;
+
+          return (
+            <Collapsible
+              key={item.title}
+              asChild
+              defaultOpen={item.isActive || anyActive}
+              className="group/collapsible"
+            >
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton tooltip={item.title}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {item.items?.map((subItem) => {
+                      const active = isSubActiveByUrl(
+                        subItem.title,
+                        subItem.url,
+                        loc.pathname,
+                        loc.search
+                      );
+
+                      return (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            asChild
+                            size="sm"
+                            isActive={active}
+                          >
+                            <NavLink
+                              to={subItem.url}
+                              end
+                              className={({ isActive }) =>
+                                cn(
+                                  isActive || active
+                                    ? 'data-[active=true]'
+                                    : undefined
+                                )
+                              }
+                            >
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          );
+        })}
       </SidebarMenu>
     </SidebarGroup>
   );
