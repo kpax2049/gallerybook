@@ -13,6 +13,8 @@ import GalleryPage from './app/gallery/Gallery';
 import { GalleryExistingEditor } from './app/gallery/GalleryExistingEditor';
 import { useUserStore } from '@/stores/userStore';
 import GalleriesPage from './app/gallery/GalleriesPage';
+import CommentsPage from './app/comment/CommentsPage';
+import GalleriesLayout from './app/gallery/GalleriesLayout';
 
 const Landing = () => {
   return <h2>Landing (Public: anyone can access this page)</h2>;
@@ -106,18 +108,27 @@ const App = () => {
             <Route path="home" element={<Home />} />
             <Route path="dashboard" element={<Dashboard1 />} />
             <Route path="admin/users" element={<UserList />} />
-            <Route path="galleries" element={<GalleriesPage />} />
-            <Route path="galleries/:galleryId" element={<GalleryPage />} />
-            <Route path="galleries/new" element={<GalleryEditor />} />
-            <Route path="comments" element={<GalleriesPage />} />
+            <Route path="galleries" element={<GalleriesLayout />}>
+              <Route index element={<GalleriesPage />} /> {/* /galleries */}
+              <Route path=":galleryId" element={<GalleryPage />} />{' '}
+              <Route path="new" element={<GalleryEditor />} />
+              <Route
+                path="edit/:galleryId"
+                element={<GalleryExistingEditor />}
+              />
+            </Route>
+            {/* <Route path="galleries" element={<GalleriesPage />} />
+            <Route path="galleries/:galleryId" element={<GalleryPage />} /> */}
+            {/* <Route path="comments" element={<GalleriesPage />} /> */}
+            <Route path="/me/comments" element={<CommentsPage />} />
             {/* <Route
               path="gallery/minimal-tiptap"
               element={<GalleryMinimalTiptapEditor />}
             /> */}
-            <Route
+            {/* <Route
               path="galleries/edit/:galleryId"
               element={<GalleryExistingEditor />}
-            />
+            /> */}
           </Route>
           <Route
             path="analytics"
