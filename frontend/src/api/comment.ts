@@ -129,3 +129,46 @@ export const getComment = async (
 ): Promise<Comment> => {
   return await apiRequest<Comment>(`/comments/${commentId}`, 'GET');
 };
+
+export type CommentScope = 'onMyGalleries' | 'authored' | 'mentions';
+
+export type CommentAuthor = {
+  id: number;
+  name: string;
+  avatar?: string | null;
+};
+
+export type CommentGallery = {
+  id: number;
+  title: string | null;
+  thumbnail?: string | null;
+};
+
+export type CommentItem = {
+  id: number;
+  body: string;
+  createdAt: string; // ISO
+  author: CommentAuthor;
+  gallery: CommentGallery;
+};
+
+export type CommentsListResponse = {
+  items: CommentItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export async function getCommentsList(params: {
+  scope: CommentScope;
+  page: number;
+  pageSize: number;
+  search?: string;
+}) {
+  return apiRequest<CommentsListResponse>(
+    '/me/comments',
+    'GET',
+    undefined,
+    params
+  );
+}
