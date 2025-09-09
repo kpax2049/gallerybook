@@ -25,6 +25,7 @@ import { CreateDraftGalleryDto } from './dto/create-draft-gallery.dto';
 import { extractS3KeysFromContent } from 'src/utils/gallery.utils';
 import { UpdateGalleryDto } from './dto/update-gallery-dto';
 import { ListGalleriesDto, SortDir, SortKey } from './dto/list-galleries.dto';
+import { AssetUrlService } from 'src/common/asset-url.service';
 
 type Mode = 'edit' | 'view';
 
@@ -56,6 +57,7 @@ export class GalleryService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private assetUrl: AssetUrlService,
   ) {
     this.bucket = this.config.get<string>(
       'S3_BUCKET_NAME',
@@ -174,36 +176,39 @@ export class GalleryService {
     return await this.rewriteImageSrcsInNode(content, mode);
   }
 
-  thumbKeyToCdnUrl(
-    key: string | null | undefined,
-    params?: Record<string, string | number>,
-  ): string | null {
-    if (!key) return null;
-
-    const cloudfrontDomain = this.config.get<string>('CLOUDFRONT_DOMAIN');
-    const transformParams = this.config.get<string>(
-      'THUMB_IMG_TRANSFORM_PARAMS',
-    );
-
-    // normalize key (no leading slash)
-    const cleanKey = key.replace(/^\/+/, '');
-
-    const url = new URL(`${cloudfrontDomain}/${cleanKey}`);
-
-    // apply params override or env defaults
-    if (params) {
-      Object.entries(params).forEach(([k, v]) =>
-        url.searchParams.set(k, String(v)),
-      );
-    } else if (transformParams) {
-      transformParams.split('&').forEach((p) => {
-        const [k, v = ''] = p.split('=');
-        if (k) url.searchParams.set(k, v);
-      });
-    }
-
-    return url.toString();
+  private thumbKeyToCdnUrl(key: string | null) {
+    return this.assetUrl.thumbKeyToCdnUrl(key);
   }
+  // thumbKeyToCdnUrl(
+  //   key: string | null | undefined,
+  //   params?: Record<string, string | number>,
+  // ): string | null {
+  //   if (!key) return null;
+
+  //   const cloudfrontDomain = this.config.get<string>('CLOUDFRONT_DOMAIN');
+  //   const transformParams = this.config.get<string>(
+  //     'THUMB_IMG_TRANSFORM_PARAMS',
+  //   );
+
+  //   // normalize key (no leading slash)
+  //   const cleanKey = key.replace(/^\/+/, '');
+
+  //   const url = new URL(`${cloudfrontDomain}/${cleanKey}`);
+
+  //   // apply params override or env defaults
+  //   if (params) {
+  //     Object.entries(params).forEach(([k, v]) =>
+  //       url.searchParams.set(k, String(v)),
+  //     );
+  //   } else if (transformParams) {
+  //     transformParams.split('&').forEach((p) => {
+  //       const [k, v = ''] = p.split('=');
+  //       if (k) url.searchParams.set(k, v);
+  //     });
+  //   }
+
+  //   return url.toString();
+  // }
 
   async checkGalleryOwnershipOrAdmin(
     galleryId: number,
