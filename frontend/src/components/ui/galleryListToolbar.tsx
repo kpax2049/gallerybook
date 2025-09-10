@@ -39,7 +39,6 @@ import {
 import {
   ArrowUpDown,
   Filter,
-  // ChevronDown,
   X,
   Users,
   ImageIcon,
@@ -56,33 +55,6 @@ import {
   SortState,
 } from '@/app/gallery/gallery-query-params';
 
-// ---------- Types
-
-// export type SortKey =
-//   | 'updatedAt'
-//   | 'createdAt'
-//   | 'title'
-//   | 'views'
-//   | 'likes'
-//   | 'comments';
-// export type SortDir = 'asc' | 'desc';
-
-// export interface SortState {
-//   key: SortKey;
-//   dir: SortDir;
-// }
-
-// export interface FilterState {
-//   status: Set<'DRAFT' | 'PUBLISHED' | 'ARCHIVED'>;
-//   owner: 'me' | 'any';
-//   range: 'any' | '7d' | '30d' | '90d';
-//   hasCover: boolean | null;
-//   hasTags: boolean | null;
-//   hasComments: boolean | null;
-//   tags: string[];
-//   search: string;
-// }
-
 export interface GalleryListToolbarProps {
   className?: string;
   sort: SortState;
@@ -91,7 +63,6 @@ export interface GalleryListToolbarProps {
   onSortChange: (s: SortState) => void;
   onFiltersChange: (f: FilterState) => void;
   resultCount?: number;
-  // NEW (optional): external control for view mode; if omitted we manage it locally
   view?: 'grid' | 'list';
   onViewChange?: (v: 'grid' | 'list') => void;
 }
@@ -112,8 +83,6 @@ export const defaultFilters: FilterState = {
   favoriteBy: undefined,
 };
 
-// ---------- Toolbar (compact single row)
-
 function GalleryListToolbarInner(props: GalleryListToolbarProps) {
   const {
     className,
@@ -132,8 +101,8 @@ function GalleryListToolbarInner(props: GalleryListToolbarProps) {
     () => ({
       ...defaultFilters,
       ...(filters ?? {}),
-      status: filters?.status ?? new Set(), // Set always exists
-      tags: filters?.tags ?? [], // array always exists
+      status: filters?.status ?? new Set(),
+      tags: filters?.tags ?? [],
     }),
     [filters]
   );
@@ -153,7 +122,6 @@ function GalleryListToolbarInner(props: GalleryListToolbarProps) {
     return () => clearTimeout(id);
   }, [searchDraft, f, onFiltersChange]);
 
-  // View toggle …
   const [localView, setLocalView] = React.useState<'grid' | 'list'>(
     view ?? 'grid'
   );
@@ -168,18 +136,13 @@ function GalleryListToolbarInner(props: GalleryListToolbarProps) {
 
   return (
     <TooltipProvider>
-      <div
-        className={cn(
-          'flex h-10 items-center gap-2 px-1', // slim row
-          className
-        )}
-      >
-        {/* Search (compact) */}
+      <div className={cn('flex h-10 items-center gap-2 px-1', className)}>
+        {/* Search first, left */}
         <Input
           value={searchDraft}
           onChange={(e) => setSearchDraft(e.target.value)}
           placeholder="Search…"
-          className="h-9 max-w-xs"
+          className="h-8 w-[260px] sm:w-[320px] max-w-full"
           aria-label="Search galleries"
         />
 
@@ -191,7 +154,7 @@ function GalleryListToolbarInner(props: GalleryListToolbarProps) {
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9"
+                  className="h-8 w-8 rounded-md"
                   aria-label="Sort"
                 >
                   <ArrowUpDown className="h-4 w-4" />
@@ -248,9 +211,14 @@ function GalleryListToolbarInner(props: GalleryListToolbarProps) {
           availableTags={availableTags}
         >
           <Button
-            variant={activeFilters > 0 ? 'default' : 'outline'}
+            variant="outline"
             size="sm"
-            className="h-8 px-2"
+            aria-pressed={activeFilters > 0}
+            className={cn(
+              'h-8 px-2 rounded-md',
+              activeFilters > 0 &&
+                'bg-muted text-foreground border-border shadow-sm hover:bg-muted/80'
+            )}
           >
             <Filter className="h-4 w-4 mr-1.5" />
             Filters{activeFilters > 0 ? ` (${activeFilters})` : ''}
@@ -260,16 +228,21 @@ function GalleryListToolbarInner(props: GalleryListToolbarProps) {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* View toggle (icon buttons) */}
+        {/* View toggle */}
         <div className="flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={currentView === 'grid' ? 'default' : 'outline'}
+                variant="outline"
                 size="icon"
-                className="h-9 w-9"
-                aria-label="Grid view"
+                aria-pressed={currentView === 'grid'}
                 onClick={() => setView('grid')}
+                className={cn(
+                  'h-8 w-8 rounded-md',
+                  currentView === 'grid' &&
+                    'bg-muted text-foreground border-border shadow-sm hover:bg-muted/80'
+                )}
+                aria-label="Grid view"
               >
                 <LayoutGrid className="h-4 w-4" />
               </Button>
@@ -279,11 +252,16 @@ function GalleryListToolbarInner(props: GalleryListToolbarProps) {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={currentView === 'list' ? 'default' : 'outline'}
+                variant="outline"
                 size="icon"
-                className="h-9 w-9"
-                aria-label="List view"
+                aria-pressed={currentView === 'list'}
                 onClick={() => setView('list')}
+                className={cn(
+                  'h-8 w-8 rounded-md',
+                  currentView === 'list' &&
+                    'bg-muted text-foreground border-border shadow-sm hover:bg-muted/80'
+                )}
+                aria-label="List view"
               >
                 <ListIcon className="h-4 w-4" />
               </Button>
@@ -292,17 +270,18 @@ function GalleryListToolbarInner(props: GalleryListToolbarProps) {
           </Tooltip>
         </div>
 
-        {/* Result count (muted, right-aligned) */}
+        {/* Result count badge */}
         {typeof resultCount === 'number' && (
           <>
             <Separator orientation="vertical" className="mx-1 h-5" />
             <Badge
               variant="secondary"
-              className="h-6 rounded-full px-2 tabular-nums font-medium"
-              aria-label={`${resultCount} results`}
+              className="h-6 rounded-md px-2 tabular-nums font-medium inline-flex items-center gap-1"
+              aria-label={`${resultCount.toLocaleString()} results`}
               title={`${resultCount.toLocaleString()} results`}
             >
               {resultCount.toLocaleString()}
+              <span className="hidden sm:inline">results</span>
             </Badge>
           </>
         )}
@@ -314,8 +293,6 @@ function GalleryListToolbarInner(props: GalleryListToolbarProps) {
 // Memoized export to avoid re-renders on unrelated parent changes
 export const GalleryListToolbar = React.memo(GalleryListToolbarInner);
 
-// ---------- Filter Sheet (moved all filter UI into a right drawer)
-
 function FilterSheet({
   children,
   filters,
@@ -323,7 +300,7 @@ function FilterSheet({
   availableTags,
   tooltip = 'Filter',
 }: {
-  children: React.ReactElement; // ← must be a single element (the Button)
+  children: React.ReactElement;
   filters: FilterState;
   onChange: (f: FilterState) => void;
   availableTags: string[];
@@ -548,8 +525,6 @@ function FilterSheet({
   );
 }
 
-// ---------- Small UI helpers
-
 function ToggleChip({
   pressed,
   onPressedChange,
@@ -582,7 +557,7 @@ function ToggleChip({
 }
 
 function CycleChip({
-  value, // null → Any, true → Yes, false → No
+  value,
   onCycle,
   label,
   icon,
@@ -615,8 +590,6 @@ function CycleChip({
     </button>
   );
 }
-
-// ---------- Utilities
 
 function rangeLabel(r: FilterState['range']) {
   switch (r) {
