@@ -267,3 +267,7 @@ button:focus-visible {
     );
   }
 }
+
+.gallery-container img {
+  cursor: zoom-in;
+}

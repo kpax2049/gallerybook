@@ -66,6 +66,16 @@ export default {
           ring: 'hsl(var(--sidebar-ring))',
         },
       },
+      keyframes: {
+        hue: {
+          '0%': { filter: 'hue-rotate(0deg)' },
+          '100%': { filter: 'hue-rotate(360deg)' },
+        },
+      },
+      animation: {
+        hue: 'hue 16s linear infinite', // idle: very slow
+        'hue-fast': 'hue 6s linear infinite', // hover: a bit faster
+      },
     },
   },
   plugins: [require('tailwindcss-animate')],

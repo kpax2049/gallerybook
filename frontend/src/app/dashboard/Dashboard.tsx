@@ -7,10 +7,9 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { GalleryBreadcrumb } from '../gallery/GalleryBreadcrumb';
-import { Button } from '@/components/ui/button';
-import { ImagePlusIcon } from 'lucide-react';
+import NewGalleryButton from './NewGalleryButton';
 interface DashboardProps {
   user: User | undefined;
   handleLogout: () => void;
@@ -28,11 +27,7 @@ export default function Dashboard({ user, handleLogout }: DashboardProps) {
               <SidebarTrigger className="-ml-1" />
               <Separator orientation="vertical" className="mr-2 h-4" />
               <GalleryBreadcrumb />
-              <Button asChild variant="outline" className="ml-auto px-4 py-2">
-                <NavLink viewTransition to={'/galleries/new'}>
-                  <ImagePlusIcon /> New Gallery
-                </NavLink>
-              </Button>
+              <NewGalleryButton />
             </div>
           </header>
           <main className="h-full">
