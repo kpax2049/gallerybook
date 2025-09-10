@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Gallery, getGallery } from '@/api/gallery';
-// import { EditorContent, useEditor } from '@tiptap/react';
+import { getGallery } from '@/api/gallery';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
-// import ImageResize from 'tiptap-extension-resize-image';
 import TextStyle from '@tiptap/extension-text-style';
 import Comment from './galleryComment/Comment';
 import { useInView } from 'react-intersection-observer';
@@ -19,28 +17,19 @@ import { Color } from 'reactjs-tiptap-editor/color';
 import { Italic } from 'reactjs-tiptap-editor/italic';
 import { FontFamily } from 'reactjs-tiptap-editor/fontfamily';
 import { FontSize } from 'reactjs-tiptap-editor/fontsize';
-// import { Heading } from 'reactjs-tiptap-editor/heading';
 import { Highlight } from 'reactjs-tiptap-editor/highlight';
 import { BulletList } from 'reactjs-tiptap-editor/bulletlist';
 import { ColumnActionButton } from 'reactjs-tiptap-editor/multicolumn';
 import { Emoji } from 'reactjs-tiptap-editor/emoji';
-// import { HorizontalRule } from 'reactjs-tiptap-editor/horizontalrule';
 import { Indent } from 'reactjs-tiptap-editor/indent';
-// import { OrderedList } from 'reactjs-tiptap-editor/orderedlist';
 import { Strike } from 'reactjs-tiptap-editor/strike';
 import { Table } from 'reactjs-tiptap-editor/table';
 import { TextUnderline } from 'reactjs-tiptap-editor/textunderline';
-// const extensions = [
-//   StarterKit,
-//   Image,
-//   ImageResize,
-//   TextAlign,
-//   Color,
-//   FontFamily,
-//   FontSize,
-//   TextStyle,
-//   Highlight,
-// ];
+import Lightbox from 'yet-another-react-lightbox';
+import Zoom from 'yet-another-react-lightbox/plugins/zoom';
+import Thumbnails from 'yet-another-react-lightbox/plugins/thumbnails';
+import 'yet-another-react-lightbox/styles.css';
+import 'yet-another-react-lightbox/plugins/thumbnails.css';
 
 export interface GalleryBlock {
   type: string;
@@ -61,20 +50,11 @@ export default function GalleryPage() {
   const [chunkIndex, setChunkIndex] = useState(0);
   const [isLoadingChunk, setIsLoadingChunk] = useState(false);
   const { ref, inView } = useInView();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [lbIndex, setLbIndex] = useState(0);
+  const [slides, setSlides] = useState<{ src: string; alt?: string }[]>([]);
 
-  // const galleryIdInt =
-  //   galleryId != undefined ? parseInt(galleryId, 10) : undefined;
-
-  // const editor = useEditor({
-  //   editorProps: {
-  //     attributes: {
-  //       class: 'focus:outline-none border-[#C7C7C7]',
-  //     },
-  //   },
-  //   editable: false,
-  //   extensions,
-  //   content,
-  // });
   useEffect(() => {
     setLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,14 +63,10 @@ export default function GalleryPage() {
         setRawBlocks(data?.content?.content || []);
         const firstChunk = data?.content?.content?.slice(0, chunkSize);
         const html = generateHTML({ type: 'doc', content: firstChunk }, [
-          // Document,
-          // Paragraph,
-          // Text,
           Image,
           StarterKit,
           TextStyle,
           FontFamily,
-          // Heading,
           FontSize,
           Bold,
           Italic,
@@ -99,25 +75,18 @@ export default function GalleryPage() {
           Color,
           Highlight,
           BulletList,
-          // OrderedList,
           TextAlign,
           Indent,
-          // HorizontalRule,
           ColumnActionButton,
           Table,
           Emoji,
         ]);
         setHtmlChunks([html]);
         setChunkIndex(1);
-        // editor?.commands.setContent(cdnReadyContent);
       }
       setLoading(false);
     });
   }, []);
-
-  // useEffect(() => {
-  //   console.log('htmlChunks.length changed:', htmlChunks.length);
-  // }, [htmlChunks]);
 
   // Load next chunk when sentinel comes into view
   useEffect(() => {
@@ -148,11 +117,51 @@ export default function GalleryPage() {
     loadNextChunk();
   }, [inView, isLoadingChunk, chunkIndex, rawBlocks]);
 
+  // Build slides whenever chunks change (keeps correct global order)
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    const imgs = Array.from(root.querySelectorAll<HTMLImageElement>('img'));
+    const s = imgs.map((img) => ({
+      // if you provide data-full on <img>, use it; otherwise fall back to src
+      src: img.getAttribute('data-full') || img.src,
+      alt: img.alt || undefined,
+    }));
+    setSlides(s);
+  }, [htmlChunks]);
+
+  // Delegate clicks from images to open lightbox at that index
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    const onClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      const img = t?.closest?.('img') as HTMLImageElement | null;
+      if (!img) return;
+      // prevent clicks from comments or other areas outside container
+      if (!root.contains(img)) return;
+
+      const imgs = Array.from(root.querySelectorAll<HTMLImageElement>('img'));
+      const idx = imgs.indexOf(img);
+      if (idx >= 0) {
+        setLbIndex(idx);
+        setOpen(true);
+      }
+    };
+
+    root.addEventListener('click', onClick);
+    return () => root.removeEventListener('click', onClick);
+  }, []);
+
   return (
     <div className="grid auto-rows-min gap-4 p-4 justify-between">
       <h3>Gallery Item: {galleryId}</h3>
-      {/* <EditorContent editor={editor} /> */}
-      <div className="gallery-container px-4 space-y-8 pb-12">
+      <div
+        className="gallery-container px-4 space-y-8 pb-12 [&_img]:cursor-zoom-in"
+        ref={containerRef}
+      >
         {htmlChunks.map((html, i) => {
           return (
             <div key={i}>
@@ -166,6 +175,14 @@ export default function GalleryPage() {
           );
         })}
       </div>
+      <Lightbox
+        open={open}
+        close={() => setOpen(false)}
+        index={lbIndex}
+        slides={slides}
+        plugins={[Zoom, Thumbnails]}
+        controller={{ closeOnBackdropClick: true }}
+      />
       <Comment galleryId={Number(galleryId)} />
     </div>
   );
