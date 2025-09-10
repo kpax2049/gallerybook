@@ -2,10 +2,10 @@ import * as React from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { MessageSquare, ArrowLeft } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { CommentItem, CommentScope } from '@/api/comment';
 import { useComments } from '@/hooks/use-comments';
 
@@ -49,24 +49,31 @@ export default function CommentsPage() {
   const total = data?.total ?? 0;
 
   return (
-    <div className="space-y-4">
-      {/* Header / toolbar */}
+    <div className="space-y-4 p-2">
+      {/* Minimal toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <Link to="/galleries">
-          <Button variant="ghost" size="sm" className="h-8">
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Back to galleries
-          </Button>
-        </Link>
+        {/* Search (first, left) */}
+        <Input
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          placeholder="Search comments…"
+          className="h-8 w-[260px] sm:w-[320px] max-w-full"
+        />
 
-        {/* Scopes */}
         <div className="flex items-center gap-1">
           {SCOPES.map(({ key, label }) => (
             <Button
               key={key}
-              variant={scope === key ? 'default' : 'outline'}
+              variant="outline"
               size="sm"
-              className="h-8"
+              className={cn(
+                'h-8 px-2 rounded-md',
+                scope === key &&
+                  'bg-muted text-foreground border-border shadow-sm'
+              )}
               onClick={() => {
                 setScope(key);
                 setPage(1);
@@ -80,23 +87,15 @@ export default function CommentsPage() {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Search */}
-        <Input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          placeholder="Search comments…"
-          className="h-9 w-[260px] max-w-full"
-        />
-
-        {/* Count */}
+        {/* Results badge */}
         <Badge
           variant="secondary"
-          className="h-6 rounded-full px-2 tabular-nums"
+          className="h-6 rounded-md px-2 tabular-nums font-medium inline-flex items-center gap-1"
+          aria-label={`${total.toLocaleString()} results`}
+          title={`${total.toLocaleString()} results`}
         >
           {total.toLocaleString()}
+          <span className="hidden sm:inline">results</span>
         </Badge>
       </div>
 
@@ -186,7 +185,7 @@ function CommentRow({ c, fetching }: { c: CommentItem; fetching: boolean }) {
           </div>
         </div>
 
-        {/* Thumbnail + open */}
+        {/* Thumbnail */}
         <Link to={`/galleries/${c.gallery.id}`} className="shrink-0">
           <div className="relative">
             <img
