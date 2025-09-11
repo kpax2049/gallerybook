@@ -106,7 +106,7 @@ export function GalleryExistingEditor() {
   useEffect(() => {
     setLoading(true);
     if (galleryId) {
-      getGallery(galleryId, 'edit').then((data) => {
+      getGallery(Number(galleryId), 'edit').then((data) => {
         setGallery(data);
         if (data.content) {
           setOriginalValue(data.content);

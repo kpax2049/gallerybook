@@ -42,6 +42,21 @@ function GalleriesListPage() {
   >({});
 
   const location = useLocation();
+  const hub =
+    filters.favoriteBy === 'me'
+      ? 'favorites'
+      : filters.owner === 'me' && filters.status?.has('DRAFT')
+        ? 'drafts'
+        : filters.owner === 'me'
+          ? 'my'
+          : 'all';
+
+  React.useEffect(() => {
+    sessionStorage.setItem(
+      'lastGalleryHub',
+      JSON.stringify({ hub, search: location.search })
+    );
+  }, [hub, location.search]);
 
   // helpers (unchanged if you already added them)
   const buildSearchParams = (
@@ -151,7 +166,7 @@ function GalleriesListPage() {
     return (
       <GalleryCard
         key={g.id}
-        to={`/galleries/${g.id}`}
+        to={`/galleries/${g.slug ?? g.id}`}
         item={effectiveItem}
         comments={commentCounts[g.id] ?? 0}
         myReaction={current}

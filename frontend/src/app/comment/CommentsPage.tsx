@@ -27,6 +27,13 @@ export default function CommentsPage() {
     Number(sp.get('pageSize') ?? 24)
   );
 
+  React.useEffect(() => {
+    sessionStorage.setItem(
+      'lastGalleryHub',
+      JSON.stringify({ hub: 'comments', search: location.search })
+    );
+  }, [location.search]);
+
   // keep URL in sync
   React.useEffect(() => {
     const next = new URLSearchParams(sp);

@@ -129,7 +129,7 @@ export async function replaceTags(galleryId: number, tags: string[]) {
 }
 
 export const getGallery = async (
-  galleryId: string | undefined,
+  galleryId: number,
   mode?: 'edit'
 ): Promise<Gallery> => {
   return await apiRequest<Gallery>(
@@ -139,6 +139,18 @@ export const getGallery = async (
     { mode }
   );
 };
+
+export async function getGalleryBySlug(
+  slug: string,
+  mode: 'view' | 'edit' = 'view'
+) {
+  return apiRequest<Gallery>(
+    `/galleries/slug/${encodeURIComponent(slug)}`,
+    'GET',
+    undefined,
+    { mode }
+  );
+}
 
 export const deleteGalleryImages = async (
   deletedKeys: string[],

@@ -110,7 +110,7 @@ const App = () => {
             <Route path="admin/users" element={<UserList />} />
             <Route path="galleries" element={<GalleriesLayout />}>
               <Route index element={<GalleriesPage />} /> {/* /galleries */}
-              <Route path=":galleryId" element={<GalleryPage />} />{' '}
+              <Route path=":slug" element={<GalleryPage />} />
               <Route path="new" element={<GalleryEditor />} />
               <Route
                 path="edit/:galleryId"

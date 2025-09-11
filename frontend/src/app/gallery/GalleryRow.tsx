@@ -84,7 +84,10 @@ export function GalleryRow({
   return (
     <li className="p-3 hover:bg-muted/30">
       <div className="flex items-center gap-3">
-        <Link to={`/galleries/${item.id}`} className="block shrink-0">
+        <Link
+          to={`/galleries/${item.slug ?? item.id}`}
+          className="block shrink-0"
+        >
           <img
             src={item.thumbnail || ''}
             alt={item.title ?? 'cover'}
@@ -97,7 +100,7 @@ export function GalleryRow({
         </Link>
 
         <div className="min-w-0 flex-1">
-          <Link to={`/galleries/${item.id}`} className="block">
+          <Link to={`/galleries/${item.slug ?? item.id}`} className="block">
             <div className="text-sm font-medium leading-tight truncate">
               {item.title ?? 'Untitled gallery'}
             </div>
