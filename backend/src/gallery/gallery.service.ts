@@ -26,6 +26,7 @@ import { extractS3KeysFromContent } from 'src/utils/gallery.utils';
 import { UpdateGalleryDto } from './dto/update-gallery-dto';
 import { ListGalleriesDto, SortDir, SortKey } from './dto/list-galleries.dto';
 import { AssetUrlService } from 'src/common/asset-url.service';
+import { slugify } from 'src/utils/slug.util';
 
 type Mode = 'edit' | 'view';
 
@@ -179,36 +180,6 @@ export class GalleryService {
   private thumbKeyToCdnUrl(key: string | null) {
     return this.assetUrl.thumbKeyToCdnUrl(key);
   }
-  // thumbKeyToCdnUrl(
-  //   key: string | null | undefined,
-  //   params?: Record<string, string | number>,
-  // ): string | null {
-  //   if (!key) return null;
-
-  //   const cloudfrontDomain = this.config.get<string>('CLOUDFRONT_DOMAIN');
-  //   const transformParams = this.config.get<string>(
-  //     'THUMB_IMG_TRANSFORM_PARAMS',
-  //   );
-
-  //   // normalize key (no leading slash)
-  //   const cleanKey = key.replace(/^\/+/, '');
-
-  //   const url = new URL(`${cloudfrontDomain}/${cleanKey}`);
-
-  //   // apply params override or env defaults
-  //   if (params) {
-  //     Object.entries(params).forEach(([k, v]) =>
-  //       url.searchParams.set(k, String(v)),
-  //     );
-  //   } else if (transformParams) {
-  //     transformParams.split('&').forEach((p) => {
-  //       const [k, v = ''] = p.split('=');
-  //       if (k) url.searchParams.set(k, v);
-  //     });
-  //   }
-
-  //   return url.toString();
-  // }
 
   async checkGalleryOwnershipOrAdmin(
     galleryId: number,
@@ -265,6 +236,7 @@ export class GalleryService {
 
   async createDraft(dto: CreateDraftGalleryDto, userId: number) {
     const normalized = this.normalizeTags(dto.tags ?? []);
+    const slug = await this.generateUniqueSlug(dto.title);
 
     return this.prisma.$transaction(async (tx) => {
       const gallery = await tx.gallery.create({
@@ -272,6 +244,7 @@ export class GalleryService {
           title: dto.title,
           description: dto.description,
           thumbnail: dto.thumbnail,
+          slug,
           userId,
         },
       });
@@ -303,9 +276,11 @@ export class GalleryService {
     const { tags: incomingTags, ...fields } = dto;
     const normalized = this.normalizeTags(incomingTags ?? []);
 
+    const slug = await this.generateUniqueSlug(dto.title);
     const created = await this.prisma.gallery.create({
       data: {
         userId,
+        slug,
         ...fields,
         ...(normalized.length > 0 && {
           // "tags" is your explicit join relation (GalleryTag[])
@@ -393,12 +368,29 @@ export class GalleryService {
       throw new ForbiddenException('Access to Resource Denied');
     }
 
-    // split updated fields from tags
-    const { tags: incomingTags, ...updateFields } = dto;
+    // split fields
+    const { tags: incomingTags, title: incomingTitle, ...rest } = dto;
 
     return this.prisma.$transaction(async (tx) => {
-      // 1) update updated fields
-      await tx.gallery.update({ where: { id: galleryId }, data: updateFields });
+      // If caller sent a (non-empty) title, normalize it and derive a unique slug from it.
+      const titleToSet =
+        typeof incomingTitle === 'string' && incomingTitle.trim()
+          ? incomingTitle.trim()
+          : undefined;
+
+      const slugToSet = titleToSet
+        ? await this.generateUniqueSlug(titleToSet, galleryId)
+        : undefined;
+
+      // 1) update fields + optional title/slug
+      await tx.gallery.update({
+        where: { id: galleryId },
+        data: {
+          ...rest,
+          ...(titleToSet ? { title: titleToSet } : {}),
+          ...(slugToSet ? { slug: slugToSet } : {}),
+        },
+      });
 
       // 2) if tags were provided, fully replace them
       if (incomingTags !== undefined) {
@@ -623,6 +615,13 @@ export class GalleryService {
     return { tags: final.map((t) => t.slug || t.name) };
   }
 
+  async getGalleryBySlug(slug: string, mode: 'view' | 'edit') {
+    const gallery = await this.prisma.gallery.findUnique({ where: { slug } });
+    if (!gallery) throw new NotFoundException('Gallery not found');
+    const content = await this.rewriteGalleryImageSrcs(gallery.content, mode);
+    return { ...gallery, content };
+  }
+
   // Helper functions
   private coerceFavUserId(favoriteBy: string | undefined, meId: number | null) {
     if (!favoriteBy) return undefined;
@@ -824,5 +823,22 @@ export class GalleryService {
       ),
     );
     return rows.map((r) => r.id);
+  }
+
+  private async generateUniqueSlug(title: string, excludeId?: number) {
+    const base = slugify(title);
+    let slug = base;
+    let n = 2;
+    // ensure uniqueness; exclude current row when updating
+    // (you can also do this in a single query with a LIKE search if preferred)
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const existing = await this.prisma.gallery.findFirst({
+        where: { slug, ...(excludeId ? { id: { not: excludeId } } : {}) },
+        select: { id: true },
+      });
+      if (!existing) return slug;
+      slug = `${base}-${n++}`;
+    }
   }
 }

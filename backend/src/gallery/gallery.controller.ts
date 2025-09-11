@@ -180,4 +180,12 @@ export class GalleryController {
     const tags = Array.isArray(body?.tags) ? body.tags : [];
     return this.galleryService.replaceTags(user.id, id, tags);
   }
+
+  @Get('slug/:slug')
+  getBySlug(
+    @Param('slug') slug: string,
+    @Query('mode') mode: 'view' | 'edit' = 'view',
+  ): Promise<{ content: any }> {
+    return this.galleryService.getGalleryBySlug(slug, mode);
+  }
 }
