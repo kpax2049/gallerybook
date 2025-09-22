@@ -79,15 +79,12 @@ export const GalleryCard = React.memo(function GalleryCard({
     <figure
       className={cn(
         'block w-full select-none rounded-[14px] p-3',
-        // surface
         'bg-card text-card-foreground border border-border',
-        // elevation & hover
         'shadow-sm hover:shadow-md transition-shadow',
-        // the “polaroid tilt”
         'rotate-[-0.75deg] transition-transform duration-300 group-hover:rotate-0'
       )}
     >
-      {/* Photo */}
+      {/* Photo card */}
       <Card className="relative w-full rounded-[10px] overflow-hidden border border-border/60 bg-background">
         {/* Photo */}
         <div className="relative w-full aspect-[4/3] bg-muted">
@@ -105,13 +102,13 @@ export const GalleryCard = React.memo(function GalleryCard({
           )}
         </div>
 
-        {/* Overlay: show on hover/focus (always visible on mobile) */}
+        {/* Hover overlay (actions + stats/labels) */}
         <div
           className="
-      pointer-events-none absolute inset-0
-      md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100
-      transition-opacity
-    "
+            pointer-events-none absolute inset-0
+            md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100
+            transition-opacity
+          "
         >
           {/* Top-right actions */}
           <div className="pointer-events-auto absolute top-2 right-2 flex gap-1">
@@ -169,7 +166,6 @@ export const GalleryCard = React.memo(function GalleryCard({
                   {item.updatedAt &&
                     new Date(item.updatedAt).toLocaleDateString()}
                 </div>
-                {/* Quick stats + Tags trigger */}
                 <div className="flex items-center gap-3 text-xs">
                   <span className="inline-flex items-center gap-1 opacity-90">
                     <Heart className="h-3.5 w-3.5" aria-hidden />
@@ -193,9 +189,63 @@ export const GalleryCard = React.memo(function GalleryCard({
             </div>
           </div>
         </div>
+        {/* User avatar and username chip; show on hover */}
+        <div
+          className={cn(
+            'absolute top-3 left-3 z-[2]',
+            'md:opacity-0 md:pointer-events-none md:-translate-x-2 md:-translate-y-2 md:scale-95',
+            'md:group-hover:opacity-100 md:group-hover:pointer-events-auto md:group-hover:translate-x-0 md:group-hover:translate-y-0 md:group-hover:scale-100',
+            'md:group-focus-within:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:translate-x-0 md:group-focus-within:translate-y-0 md:group-focus-within:scale-100',
+            'transition duration-300 ease-out will-change-transform will-change-opacity'
+          )}
+        >
+          <div
+            className="
+      relative rounded-xl border border-black/5 ring-1 ring-black/5
+      bg-[#f8f5f0]/95 shadow-sm px-2.5 py-1.5
+      backdrop-blur-[2px]
+    "
+          >
+            <div
+              className="
+        pointer-events-none absolute inset-0 rounded-xl opacity-40
+        [background-image:radial-gradient(rgba(0,0,0,0.06)_1px,transparent_1px)]
+        [background-size:8px_8px]
+      "
+            />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/70 rounded-t-xl" />
+            <div className="relative flex items-center gap-2">
+              {item.author?.avatarUrl ? (
+                <img
+                  src={item.author.avatarUrl}
+                  alt={item.author.displayName ?? item.author.username}
+                  className="w-7 h-7 rounded-full ring-1 ring-black/10 object-cover"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full ring-1 ring-black/10 bg-slate-300 text-slate-700 grid place-items-center text-xs font-semibold">
+                  {(item.author?.displayName ?? item.author?.username ?? 'GB')
+                    .trim()
+                    .split(/\s+/)
+                    .slice(0, 2)
+                    .map((s) => s[0]?.toUpperCase())
+                    .join('') || 'U'}
+                </div>
+              )}
+
+              <div className="leading-tight">
+                <div className="text-[10px] uppercase tracking-[0.15em] text-slate-600">
+                  by
+                </div>
+                <div className="text-[13px] italic tracking-wide text-slate-800">
+                  {item.author?.username ?? item.author?.displayName}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </Card>
 
-      {/* Keep a minimal caption under the photo (optional): just the date */}
+      {/* Caption under the photo */}
       <figcaption className="mt-2 px-2">
         <div className="flex items-center justify-between gap-2">
           <div className="text-[13px] font-medium text-foreground leading-tight line-clamp-1">
@@ -204,16 +254,6 @@ export const GalleryCard = React.memo(function GalleryCard({
           <ThreeDotMenu onEdit={onEdit} onDelete={onDelete} gallery={item} />
         </div>
       </figcaption>
-      {/* Mount the editor once; it will portal itself and open via ref */}
-      {/* <InlineTagsEditor
-        ref={tagsRef}
-        galleryId={item.id}
-        initial={Array.isArray(item.tags) ? item.tags : []}
-        onUpdated={(next) => onTagsChanged?.(next)}
-        editable={canEditTags}
-        renderTriggerRow={false}
-        anchorRef={cardRef}
-      /> */}
     </figure>
   );
 
