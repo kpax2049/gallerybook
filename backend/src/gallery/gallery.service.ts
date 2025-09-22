@@ -46,6 +46,17 @@ interface ProseMirrorNode {
 const SELECT_LIST = {
   tags: { include: { tag: true } },
   _count: { select: { comments: true } },
+  // author fields for the card hover
+  createdBy: {
+    select: {
+      id: true,
+      fullName: true,
+      username: true,
+      profile: {
+        select: { avatarUrl: true },
+      },
+    },
+  },
 } as const;
 
 type ListRow = Prisma.GalleryGetPayload<{ include: typeof SELECT_LIST }>;
@@ -754,6 +765,12 @@ export class GalleryService {
       likesCount: g.likesCount ?? 0,
       favoritesCount: g.favoritesCount ?? 0,
       tags: (g.tags ?? []).map((gt) => gt.tag.slug || gt.tag.name),
+      author: {
+        id: g.createdBy.id,
+        displayName: g.createdBy.fullName ?? null,
+        username: g.createdBy.username ?? null,
+        avatarUrl: g.createdBy.profile?.avatarUrl ?? null,
+      },
     };
   }
 
