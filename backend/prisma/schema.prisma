@@ -72,6 +72,9 @@ model User {
   comments        Comment[]
   GalleryReaction GalleryReaction[]
 
+  following Follow[] @relation("following")
+  followers Follow[] @relation("followers")
+
   @@map("users")
 }
 
@@ -84,6 +87,18 @@ model Profile {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("profiles")
+}
+
+model Follow {
+  followerId  Int
+  followingId Int
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("following", fields: [followerId], references: [id])
+  following User @relation("followers", fields: [followingId], references: [id])
+
+  @@id([followerId, followingId])
+  @@index([followingId])
 }
 
 model Tag {

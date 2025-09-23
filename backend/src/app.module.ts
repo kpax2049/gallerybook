@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { GalleryModule } from './gallery/gallery.module';
 import { CommentModule } from './comment/comment.module';
 import { ProfileModule } from './profile/profile.module';
+import { FollowModule } from './follow/follow.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ProfileModule } from './profile/profile.module';
     PrismaModule,
     CommentModule,
     ProfileModule,
+    FollowModule,
   ],
 })
 export class AppModule {}
