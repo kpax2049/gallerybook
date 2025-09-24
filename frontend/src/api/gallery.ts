@@ -24,13 +24,15 @@ export interface Gallery {
   favoritesCount?: number;
   tags?: string[]; // tag slugs or names
   visibility: Visibility;
-  author: {
-    id: number;
-    username: string;
-    displayName?: string | null;
-    avatarUrl?: string | null;
-    slug?: string | null;
-  };
+  author: Author;
+}
+
+export interface Author {
+  id: number;
+  username: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  slug?: string | null;
 }
 
 interface CreateDraftGalleryRequest {

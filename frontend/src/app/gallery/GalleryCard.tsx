@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { deleteGallery, Gallery, toggleReaction } from '@/api/gallery';
 import { ThreeDotMenu } from '@/components/three-dot-menu';
 import { TagStrip } from '@/components/ui/tags-strip';
+import { UserChip } from '../user/UserChip';
 
 type Props = {
   item: Gallery;
@@ -191,57 +192,19 @@ export const GalleryCard = React.memo(function GalleryCard({
         </div>
         {/* User avatar and username chip; show on hover */}
         <div
-          className={cn(
-            'absolute top-3 left-3 z-[2]',
-            'md:opacity-0 md:pointer-events-none md:-translate-x-2 md:-translate-y-2 md:scale-95',
-            'md:group-hover:opacity-100 md:group-hover:pointer-events-auto md:group-hover:translate-x-0 md:group-hover:translate-y-0 md:group-hover:scale-100',
-            'md:group-focus-within:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:translate-x-0 md:group-focus-within:translate-y-0 md:group-focus-within:scale-100',
-            'transition duration-300 ease-out will-change-transform will-change-opacity'
-          )}
+          className="
+    absolute left-2 top-2 z-20
+    opacity-0 group-hover:opacity-100
+    transition-opacity duration-200
+    pointer-events-none  /* parent ignores events... */
+  "
         >
-          <div
-            className="
-      relative rounded-xl border border-black/5 ring-1 ring-black/5
-      bg-[#f8f5f0]/95 shadow-sm px-2.5 py-1.5
-      backdrop-blur-[2px]
-    "
-          >
-            <div
-              className="
-        pointer-events-none absolute inset-0 rounded-xl opacity-40
-        [background-image:radial-gradient(rgba(0,0,0,0.06)_1px,transparent_1px)]
-        [background-size:8px_8px]
-      "
-            />
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/70 rounded-t-xl" />
-            <div className="relative flex items-center gap-2">
-              {item.author?.avatarUrl ? (
-                <img
-                  src={item.author.avatarUrl}
-                  alt={item.author.displayName ?? item.author.username}
-                  className="w-7 h-7 rounded-full ring-1 ring-black/10 object-cover"
-                />
-              ) : (
-                <div className="w-7 h-7 rounded-full ring-1 ring-black/10 bg-slate-300 text-slate-700 grid place-items-center text-xs font-semibold">
-                  {(item.author?.displayName ?? item.author?.username ?? 'GB')
-                    .trim()
-                    .split(/\s+/)
-                    .slice(0, 2)
-                    .map((s) => s[0]?.toUpperCase())
-                    .join('') || 'U'}
-                </div>
-              )}
-
-              <div className="leading-tight">
-                <div className="text-[10px] uppercase tracking-[0.15em] text-slate-600">
-                  by
-                </div>
-                <div className="text-[13px] italic tracking-wide text-slate-800">
-                  {item.author?.username ?? item.author?.displayName}
-                </div>
-              </div>
-            </div>
-          </div>
+          <UserChip
+            user={item.author}
+            showFollow
+            insideClickableCard
+            className="pointer-events-auto" // ...chip restores them
+          />
         </div>
       </Card>
 

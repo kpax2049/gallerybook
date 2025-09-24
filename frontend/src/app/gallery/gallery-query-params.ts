@@ -19,6 +19,8 @@ export interface FilterState {
   tags: string[];
   search: string;
   favoriteBy?: 'me' | number;
+  followedOnly?: boolean;
+  createdById?: number;
 }
 
 export interface SortState {
@@ -36,12 +38,17 @@ export const defaultFilters: FilterState = {
   hasComments: null,
   tags: [],
   search: '',
+  followedOnly: false,
+  createdById: undefined,
 };
 
 export function filtersToQuery(f: FilterState) {
+  const followedOnly = !!f.followedOnly;
+
   return {
     status: f.status?.size ? Array.from(f.status) : undefined,
-    owner: f.owner !== 'any' ? f.owner : undefined,
+    // When showing followed feed, omit owner/favoriteBy to avoid conflicts (MVP choice)
+    owner: !followedOnly && f.owner !== 'any' ? f.owner : undefined,
     range: f.range !== 'any' ? f.range : undefined,
     // use == null to treat null OR undefined as “omit”
     hasCover: f.hasCover == null ? undefined : String(f.hasCover),
@@ -49,7 +56,10 @@ export function filtersToQuery(f: FilterState) {
     hasComments: f.hasComments == null ? undefined : String(f.hasComments),
     tags: f.tags?.length ? f.tags : undefined,
     search: f.search || undefined,
-    favoriteBy: f.favoriteBy == null ? undefined : String(f.favoriteBy), // if you added this
+    favoriteBy:
+      !followedOnly && f.favoriteBy != null ? String(f.favoriteBy) : undefined,
+    followedOnly: followedOnly ? 'true' : undefined,
+    createdById: f.createdById != null ? String(f.createdById) : undefined,
   };
 }
 
@@ -81,6 +91,12 @@ export function queryToFilters(q: URLSearchParams): FilterState {
           : Number(favoriteByRaw)
         : undefined;
 
+  const createdByIdRaw = q.get('createdById');
+  const createdById =
+    createdByIdRaw != null && !Number.isNaN(Number(createdByIdRaw))
+      ? Number(createdByIdRaw)
+      : undefined;
+
   return {
     status: new Set<GalleryStatus>(status ?? []),
     owner: (q.get('owner') as 'me' | 'any') ?? 'any',
@@ -91,6 +107,8 @@ export function queryToFilters(q: URLSearchParams): FilterState {
     tags,
     search: q.get('search') ?? '',
     favoriteBy,
+    followedOnly: q.get('followedOnly') === 'true',
+    createdById,
   };
 }
 

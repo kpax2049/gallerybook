@@ -29,10 +29,18 @@ export function useGalleries(params: {
     [filters?.tags]
   );
 
+  const followedOnly = !!filters?.followedOnly;
+  const ownerParam =
+    !followedOnly && filters?.owner !== 'any' ? filters?.owner : undefined;
+  const favoriteByParam =
+    !followedOnly && filters?.favoriteBy !== undefined
+      ? String(filters?.favoriteBy)
+      : undefined;
+
   const query = useMemo(() => {
     return serializeParams({
       status: statusList,
-      owner: filters?.owner !== 'any' ? filters?.owner : undefined,
+      owner: ownerParam,
       range: filters?.range !== 'any' ? filters?.range : undefined,
       hasCover:
         filters?.hasCover === null ? undefined : String(filters?.hasCover),
@@ -42,31 +50,31 @@ export function useGalleries(params: {
           ? undefined
           : String(filters?.hasComments),
       tags: tagsList,
-      favoriteBy:
-        filters?.favoriteBy !== undefined
-          ? String(filters?.favoriteBy)
-          : undefined,
+      favoriteBy: favoriteByParam,
       search: filters?.search || undefined,
       sortKey: sort.key,
       sortDir: sort.dir,
       page,
       pageSize,
       includeMyReactions: true,
+      followedOnly: followedOnly ? 'true' : undefined,
     });
   }, [
     sort.key,
     sort.dir,
     page,
     pageSize,
-    filters?.owner,
+    // deps used above:
+    ownerParam,
+    favoriteByParam,
     filters?.range,
     filters?.hasCover,
     filters?.hasTags,
     filters?.hasComments,
     filters?.search,
-    filters?.favoriteBy,
     statusList?.join(','), // stable dep when arrays change
     tagsList?.join(','),
+    followedOnly,
   ]);
 
   useEffect(() => {
