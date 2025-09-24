@@ -59,7 +59,7 @@ const data = {
         },
         {
           title: 'Following',
-          url: '#',
+          url: '/me/following',
         },
       ],
     },
