@@ -648,14 +648,20 @@ export class GalleryService {
     const AND: Prisma.GalleryWhereInput[] = [];
     const OR: Prisma.GalleryWhereInput[] = [];
 
+    // If we're building the "followed feed", ignore owner/favorite filters for MVP
+    const ignoreOwner = !!dto.followedOnly;
+    const ignoreFavorite = !!dto.followedOnly;
+
     // status
     if (dto.status?.length) AND.push({ status: { in: dto.status as any } });
 
     // owner
-    if ((dto.owner ?? 'any') === 'me' && userId) AND.push({ userId });
+    if (!ignoreOwner && (dto.owner ?? 'any') === 'me' && userId) {
+      AND.push({ userId });
+    }
 
     // favorites filter
-    if (dto.favoriteBy !== undefined) {
+    if (!ignoreFavorite && dto.favoriteBy !== undefined) {
       const favUserId = this.coerceFavUserId(dto.favoriteBy, userId);
       if (favUserId) {
         AND.push({
@@ -664,8 +670,23 @@ export class GalleryService {
           },
         });
       } else {
-        // asked for favoriteBy=me but unauthenticated → return empty set
+        // asked for favoriteBy=me; unauthenticated returns empty set
         AND.push({ id: -1 });
+      }
+    }
+
+    // followed-only filter
+    if (dto.followedOnly) {
+      if (!userId) {
+        // unauthenticated followed feed returns empty set
+        AND.push({ id: -1 });
+      } else {
+        AND.push({
+          createdBy: {
+            // creator is someone I (viewer) follow
+            followers: { some: { followerId: userId } },
+          },
+        });
       }
     }
 
@@ -713,6 +734,9 @@ export class GalleryService {
       OR.push({ title: { contains: q, mode: 'insensitive' } });
       OR.push({ description: { contains: q, mode: 'insensitive' } });
     }
+
+    // author filter (single)
+    if (dto.createdById) AND.push({ userId: dto.createdById });
 
     const where: Prisma.GalleryWhereInput = {};
     if (AND.length) where.AND = AND;
