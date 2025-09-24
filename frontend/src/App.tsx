@@ -15,6 +15,7 @@ import { useUserStore } from '@/stores/userStore';
 import GalleriesPage from './app/gallery/GalleriesPage';
 import CommentsPage from './app/comment/CommentsPage';
 import GalleriesLayout from './app/gallery/GalleriesLayout';
+import FollowingPage from './app/following/FollowingPage';
 
 const Landing = () => {
   return <h2>Landing (Public: anyone can access this page)</h2>;
@@ -121,6 +122,7 @@ const App = () => {
             <Route path="galleries/:galleryId" element={<GalleryPage />} /> */}
             {/* <Route path="comments" element={<GalleriesPage />} /> */}
             <Route path="/me/comments" element={<CommentsPage />} />
+            <Route path="/me/following" element={<FollowingPage />} />
             {/* <Route
               path="gallery/minimal-tiptap"
               element={<GalleryMinimalTiptapEditor />}
