@@ -42,4 +42,10 @@ export class FollowController {
     if (!meId) throw new UnauthorizedException();
     return this.followService.listFollowing(meId, dto.q, dto.skip, dto.take);
   }
+
+  @Get('me/following/ids')
+  async followingIds(@Req() req: any) {
+    const meId = req.user.id;
+    return this.followService.followingIds(meId);
+  }
 }

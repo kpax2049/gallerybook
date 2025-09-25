@@ -28,40 +28,50 @@ export class FollowService {
     return { ok: true };
   }
 
-  async listFollowing(meId: number, q?: string, take = 50, skip = 0) {
-    const rows = await this.prisma.follow.findMany({
+  async listFollowing(meId: number, q?: string, skip = 0, take = 50) {
+    const ids = await this.prisma.follow.findMany({
+      where: { followerId: meId },
+      select: { followingId: true },
+    });
+    const followingIds = ids.map((r) => r.followingId);
+    if (followingIds.length === 0) return [];
+
+    const users = await this.prisma.user.findMany({
       where: {
-        followerId: meId,
-        ...(q && {
-          following: {
-            OR: [
-              { fullName: { contains: q, mode: 'insensitive' } },
-              { email: { contains: q, mode: 'insensitive' } },
-            ],
-          },
-        }),
+        id: { in: followingIds },
+        ...(q
+          ? {
+              OR: [
+                { fullName: { contains: q, mode: 'insensitive' } },
+                { email: { contains: q, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
       },
-      include: {
-        following: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            profile: { select: { avatarUrl: true } },
-          },
-        },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        profile: { select: { avatarUrl: true } },
       },
-      orderBy: { createdAt: 'desc' },
-      take,
+      orderBy: { fullName: 'asc' },
       skip,
+      take,
     });
 
-    // flatten to a clean DTO
-    return rows.map((r) => ({
-      id: r.following.id,
-      fullName: r.following.fullName,
-      email: r.following.email,
-      avatarUrl: r.following.profile?.avatarUrl ?? null,
+    return users.map((u) => ({
+      id: u.id,
+      fullName: u.fullName,
+      email: u.email,
+      avatarUrl: u.profile?.avatarUrl ?? null,
     }));
+  }
+
+  async followingIds(meId: number) {
+    const rows = await this.prisma.follow.findMany({
+      where: { followerId: meId },
+      select: { followingId: true },
+    });
+    return rows.map((r) => r.followingId);
   }
 }
