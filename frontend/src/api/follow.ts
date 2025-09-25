@@ -18,3 +18,7 @@ export const follow = async (
 export const meFollowing = async (): Promise<Person[]> => {
   return await apiRequest('/me/following', 'GET');
 };
+
+export const meFollowingIds = async (): Promise<number[]> => {
+  return await apiRequest('/me/following/ids', 'GET');
+};

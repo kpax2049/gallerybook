@@ -1,7 +1,8 @@
 import { UserStatus, UserRole } from '../common/enums';
 import { apiRequest } from '@/lib/apiClient';
-import { Gallery } from './gallery';
+import { Author, Gallery } from './gallery';
 import { Profile } from './profile';
+import { Person } from './follow';
 
 export interface User {
   id: number;
@@ -18,10 +19,17 @@ export interface User {
   galleries?: Gallery[];
 }
 
-export const getUserInitials = (user: User | undefined): string => {
-  if (!user?.fullName) return 'GB';
+export const getUserInitials = (
+  user: User | Author | Person | undefined
+): string => {
+  const name =
+    (user && 'fullName' in user && user.fullName) ||
+    (user && 'displayName' in user && user.displayName) ||
+    (user && 'username' in user && user.username) ||
+    '';
 
-  return user?.fullName
+  if (!name.trim()) return 'GB';
+  return name
     .trim()
     .split(/\s+/) // split by one or more spaces
     .map((word) => word[0].toUpperCase())

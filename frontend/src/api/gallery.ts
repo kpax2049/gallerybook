@@ -30,9 +30,9 @@ export interface Gallery {
 export interface Author {
   id: number;
   username: string;
-  displayName?: string | null;
-  avatarUrl?: string | null;
-  slug?: string | null;
+  displayName?: string | undefined;
+  avatarUrl?: string | undefined;
+  slug?: string | undefined;
 }
 
 interface CreateDraftGalleryRequest {

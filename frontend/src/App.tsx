@@ -16,6 +16,7 @@ import GalleriesPage from './app/gallery/GalleriesPage';
 import CommentsPage from './app/comment/CommentsPage';
 import GalleriesLayout from './app/gallery/GalleriesLayout';
 import FollowingPage from './app/following/FollowingPage';
+import { useFollowStore } from './stores/followStore';
 
 const Landing = () => {
   return <h2>Landing (Public: anyone can access this page)</h2>;
@@ -74,10 +75,41 @@ const App = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getUser().then((user: User) => {
-      setGlobalUser(user);
-    });
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const user: User = await getUser();
+        if (cancelled) return;
+        setGlobalUser(user);
+
+        if (user?.id) {
+          // then load follow
+          await useFollowStore.getState().load();
+        } else {
+          useFollowStore.getState().reset();
+        }
+      } catch {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (!cancelled) setGlobalUser(null as any);
+        useFollowStore.getState().reset();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [setGlobalUser]);
+  // useEffect(() => {
+  //   getUser().then((user: User) => {
+  //     setGlobalUser(user);
+  //   })
+  // }, [setGlobalUser]);
+
+  // const loadFollow = useFollowStore((s) => s.load);
+  // useEffect(() => {
+  //   loadFollow();
+  // }, [loadFollow]);
 
   const handleLogin = (user: User) => {
     setGlobalUser(user);
