@@ -1,7 +1,9 @@
+import * as React from 'react';
 import { Author } from '@/api/gallery';
 import { FollowButton } from '@/components/ui/followButton';
-import * as React from 'react';
 import { Link } from 'react-router-dom';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getUserInitials } from '@/api/user';
 
 type Props = {
   user: Author;
@@ -21,17 +23,16 @@ export function UserChip({
   className = '',
   insideClickableCard = false,
 }: Props) {
-  const chipClasses = [
-    'inline-flex items-center gap-2 rounded-full border px-2 py-1',
-    'bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60',
-    'shadow-sm text-xs transition-colors hover:bg-accent',
-    size === 'md' ? 'text-sm px-3 py-1.5' : '',
-    className,
-  ].join(' ');
+  const name = user.username || user.displayName;
 
-  const avatarClasses = size === 'md' ? 'h-8 w-8' : 'h-6 w-6';
-  const isFollowing = false;
-  // Prevent card click when interacting with the chip
+  const chipClasses =
+    `inline-flex items-center gap-2 rounded-full border px-2 py-1 ` +
+    `bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 ` +
+    `shadow-sm ${size === 'md' ? 'text-sm px-3 py-1.5' : 'text-xs'} ` +
+    `transition-colors hover:bg-accent ${className}`;
+
+  const avatarSize = size === 'md' ? 'h-8 w-8' : 'h-6 w-6';
+
   const stop = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -39,12 +40,11 @@ export function UserChip({
 
   const content = (
     <>
-      <img
-        src={user.avatarUrl || '/avatar-fallback.png'}
-        alt=""
-        className={`${avatarClasses} rounded-full object-cover flex-shrink-0`}
-      />
-      <span className="truncate max-w-[12rem]">{user.displayName}</span>
+      <Avatar className={`${avatarSize}`}>
+        <AvatarImage src={user.avatarUrl || undefined} alt="" />
+        <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
+      </Avatar>
+      <span className="truncate max-w-[12rem]">{name}</span>
     </>
   );
 
@@ -63,9 +63,10 @@ export function UserChip({
           {content}
         </Link>
       )}
+
       {showFollow && user.id !== currentUserId && (
         <div onClick={stop}>
-          <FollowButton userId={user.id} initialIsFollowing={isFollowing} />
+          <FollowButton userId={user.id} iconOnly />
         </div>
       )}
     </div>
