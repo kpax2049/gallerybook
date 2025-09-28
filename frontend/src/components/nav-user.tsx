@@ -34,26 +34,36 @@ interface NavUserProps {
 function SignUpOrInButton() {
   return (
     <SidebarMenuButton
+      asChild
       size="lg"
       className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
     >
-      <NavLink viewTransition to="/">
-        <Button variant="ghost" size="icon">
-          <img
-            src={logo}
-            alt="GB Logo"
-            className="group-data-[state=collapsed]:w-[28px] group-data-[state=collapsed]:h-[28px]"
-          />
+      <div className="flex items-center gap-2">
+        {/* Logo link */}
+        <Button asChild variant="ghost" size="icon">
+          <NavLink viewTransition to="/">
+            <img
+              src={logo}
+              alt="GB Logo"
+              className="group-data-[state=collapsed]:w-[28px] group-data-[state=collapsed]:h-[28px]"
+            />
+          </NavLink>
         </Button>
-      </NavLink>
-      <div className="flex h-5 items-center space-x-4 text-sm data-[state=collapsed]:hidden">
-        <NavLink viewTransition to={'/signup'}>
-          <Button variant="link">Register</Button>
-        </NavLink>
-        <Separator orientation="vertical" />
-        <NavLink viewTransition to={'/login'}>
-          <Button variant="link">Sign in</Button>
-        </NavLink>
+
+        {/* Auth links */}
+        <div className="flex h-5 items-center space-x-4 text-sm data-[state=collapsed]:hidden">
+          <Button asChild variant="link">
+            <NavLink viewTransition to="/signup">
+              Register
+            </NavLink>
+          </Button>
+          <Separator orientation="vertical" />
+          <Button asChild variant="link">
+            <NavLink viewTransition to="/login">
+              Sign in
+            </NavLink>
+          </Button>
+        </div>
       </div>
     </SidebarMenuButton>
   );
