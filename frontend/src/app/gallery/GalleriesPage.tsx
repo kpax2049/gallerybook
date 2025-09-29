@@ -96,13 +96,41 @@ function GalleriesListPage() {
 
   const onList = useMatch({ path: '/galleries', end: true }) != null;
 
-  // A) React to URL changes (only when on /galleries)
-  React.useEffect(() => {
-    // if (location.pathname !== '/galleries') return;
-    if (!onList) return;
-    const desired = buildSearchParams(filters, sort, pager);
-    if (paramsEqual(sp, desired)) return;
+  const initFromUrlRef = React.useRef(false);
+  const lastUrlWriteRef = React.useRef<string | null>(null);
 
+  // A) React to URL changes:
+  // Runs once for initial seed, AND later when the URL changes externally (nav clicks)
+  React.useEffect(() => {
+    if (!onList) return;
+
+    const spStr = sp.toString();
+
+    // If this change came from our own write (Effect B), ignore it.
+    if (lastUrlWriteRef.current === spStr) {
+      lastUrlWriteRef.current = null;
+      return;
+    }
+
+    // First run: seed store from URL (deep link / refresh)
+    if (!initFromUrlRef.current) {
+      const desired = buildSearchParams(filters, sort, pager);
+      if (!paramsEqual(sp, desired)) {
+        const nextSort = queryToSort(sp);
+        const nextFilters = queryToFilters(sp);
+        const page = Number(sp.get('page') ?? 1);
+        const pageSize = Number(sp.get('pageSize') ?? 24);
+
+        setSort(nextSort);
+        setFilters(nextFilters);
+        setPager({ page, pageSize });
+      }
+      initFromUrlRef.current = true; // lock init
+      return;
+    }
+
+    // After init: if user changes URL (via nav link), reflect into store.
+    // (We already filtered out our own writes above.)
     const nextSort = queryToSort(sp);
     const nextFilters = queryToFilters(sp);
     const page = Number(sp.get('page') ?? 1);
@@ -114,12 +142,15 @@ function GalleriesListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onList, sp, location.pathname]);
 
-  // B) Keep URL in sync with state (only when on /galleries)
+  // --- B) Keep URL in sync with state (store to URL)
   React.useEffect(() => {
-    // if (location.pathname !== '/galleries') return;
     if (!onList) return;
+    if (!initFromUrlRef.current) return; // don’t write before first read
+
     const desired = buildSearchParams(filters, sort, pager);
     if (!paramsEqual(sp, desired)) {
+      const desiredStr = desired.toString();
+      lastUrlWriteRef.current = desiredStr; // mark as our write
       setSp(desired, { replace: true });
     }
   }, [onList, filters, sort, pager, setSp, sp, location.pathname]);
