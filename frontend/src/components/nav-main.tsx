@@ -42,11 +42,13 @@ function isSubActiveByUrl(
   pathname: string,
   search: string
 ) {
+  // In case of / or empty route
+  if (!url || url.trim() === '' || url === '#') return false;
+
   const to = new URL(url, window.location.origin);
   const targetPath = to.pathname;
 
   if (pathname !== targetPath) {
-    // Allow Comments to be active for deeper routes under /me/comments
     if (!(title === 'Comments' && pathname.startsWith('/me/comments'))) {
       return false;
     }
@@ -73,7 +75,7 @@ function isSubActiveByUrl(
     case 'Comments':
       return pathname.startsWith('/me/comments');
     default:
-      // Fallback: strict match
+      // strict path + query match
       return pathname === targetPath && search === to.search;
   }
 }
@@ -127,12 +129,8 @@ export function NavMain({ items }: ItemProps) {
                             <NavLink
                               to={subItem.url}
                               end
-                              className={({ isActive }) =>
-                                cn(
-                                  isActive || active
-                                    ? 'data-[active=true]'
-                                    : undefined
-                                )
+                              className={() =>
+                                cn(active ? 'data-[active=true]' : undefined)
                               }
                             >
                               <span>{subItem.title}</span>
