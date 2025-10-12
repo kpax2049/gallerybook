@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { cn, extractImagesFromPM } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Content } from '@tiptap/react';
 import { ThumbnailCarousel } from './ThumbnailCarousel';
 import { TagField } from '@/components/ui/tag-field';
+import { DialogData } from '../GalleryEditor';
 
 export interface FormDataProps {
   title: string;
@@ -36,27 +37,29 @@ export interface FormDataProps {
 }
 
 interface GallerySaveDialogProps {
-  content: Content;
-  onSubmit: (
-    formData: FormDataProps,
-    setOpen: Dispatch<SetStateAction<boolean>>
-  ) => void;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  data: DialogData;
+  submitting: boolean;
+  onSubmit: (formData: FormDataProps) => void;
   initial?: Partial<FormDataProps>;
 }
 
 export function GallerySaveDialog({
-  content,
+  open,
+  onOpenChange,
+  data,
   onSubmit,
   initial,
+  submitting,
 }: GallerySaveDialogProps) {
-  const [open, setOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
   console.info(initial);
   if (isDesktop) {
     return (
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogTrigger asChild>
-          <Button variant="outline">Save</Button>
+          {/* <Button variant="outline">Save</Button> */}
         </DialogTrigger>
         <DialogContent className="sm:max-w-[465px]">
           <DialogHeader>
@@ -66,9 +69,9 @@ export function GallerySaveDialog({
             </DialogDescription>
           </DialogHeader>
           <GallerySaveForm
-            content={content}
+            content={data}
             onSubmit={onSubmit}
-            setOpen={setOpen}
+            submitting={submitting}
             initial={initial}
           />
         </DialogContent>
@@ -77,9 +80,9 @@ export function GallerySaveDialog({
   }
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerTrigger asChild>
-        <Button variant="outline">Edit Gallery</Button>
+        {/* <Button variant="outline">Edit Gallery</Button> */}
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader className="text-left">
@@ -89,10 +92,10 @@ export function GallerySaveDialog({
           </DrawerDescription>
         </DrawerHeader>
         <GallerySaveForm
-          content={content}
+          content={data}
           className="px-4"
           onSubmit={onSubmit}
-          setOpen={setOpen}
+          submitting={submitting}
           initial={initial}
         />
         <DrawerFooter className="pt-2">
@@ -108,11 +111,8 @@ export function GallerySaveDialog({
 interface GallerySaveFormProps {
   content: Content;
   className?: string;
-  setOpen: Dispatch<SetStateAction<boolean>>;
-  onSubmit: (
-    formData: FormDataProps,
-    setOpen: Dispatch<SetStateAction<boolean>>
-  ) => void;
+  submitting: boolean;
+  onSubmit: (formData: FormDataProps) => void;
   initial?: Partial<FormDataProps>;
 }
 
@@ -120,7 +120,7 @@ function GallerySaveForm({
   content,
   className,
   onSubmit,
-  setOpen,
+  submitting,
   initial,
 }: GallerySaveFormProps) {
   const [formData, setFormData] = useState<FormDataProps>({
@@ -155,7 +155,7 @@ function GallerySaveForm({
 
   const handleSubmit = (event: React.SyntheticEvent) => {
     event.preventDefault();
-    onSubmit(formData, setOpen);
+    onSubmit(formData);
   };
   return (
     <form
@@ -200,7 +200,9 @@ function GallerySaveForm({
           })
         }
       />
-      <Button type="submit">Save changes</Button>
+      <Button type="submit" disabled={submitting}>
+        {submitting ? 'Saving...' : 'Save changes'}
+      </Button>
     </form>
   );
 }

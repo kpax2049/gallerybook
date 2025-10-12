@@ -5,13 +5,11 @@ import {
   createGallery,
   editGallery,
   fetchPresignedUrls,
-  Gallery,
   uploadFilesToS3,
 } from '@/api/gallery';
-// import { MinimalTiptapEditor } from '@/components/minimal-tiptap';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
-import RichTextEditor from 'reactjs-tiptap-editor';
+import RichTextEditor, { useEditorState } from 'reactjs-tiptap-editor';
 // import { Image } from '@tiptap/extension-image';
 import { Image } from 'reactjs-tiptap-editor/image';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -38,12 +36,23 @@ import { Table } from 'reactjs-tiptap-editor/table';
 import { TextUnderline } from 'reactjs-tiptap-editor/textunderline';
 
 import { useTheme } from '@/components/theme-provider';
-import { enrich } from '@/lib/galleryUtils';
 import { AnyExtension } from '@tiptap/react';
 import { fileToBase64 } from '@/lib/fileUtils';
-import { extractBase64ImagesFromJson } from '@/lib/utils';
+import {
+  extractBase64ImagesFromJson,
+  extractImagesFromPM,
+  Img,
+} from '@/lib/utils';
 import { useUserStore } from '@/stores/userStore';
 import { useThumbStore } from '@/stores/thumbStore';
+import { Button } from '@/components/ui/button';
+
+export type DialogData = {
+  html: string;
+  json: any;
+  text: string;
+  images: Img[];
+};
 
 const extensions: AnyExtension[] = [
   BaseKit.configure({
@@ -92,13 +101,18 @@ export function GalleryEditor() {
   const [showBubbleMenu, setShowBubbleMenu] = useState<boolean>(false);
   const isDarkMode = useTheme();
   const currentUser = useUserStore((state) => state.user);
+  const { editor, editorRef, isReady } = useEditorState();
+  const [open, setOpen] = useState(false);
+  const [dialogData, setDialogData] = useState<DialogData | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const onSave = async (
-    data: FormDataProps,
-    setOpen: Dispatch<SetStateAction<boolean>>
+    data: FormDataProps
+    // setOpen: Dispatch<SetStateAction<boolean>>
   ) => {
-    if (!currentUser) return;
+    if (!currentUser || !data || submitting) return;
     setLoading(true);
+    setSubmitting(true);
 
     try {
       // Step 1: Create draft gallery and get galleryId
@@ -125,6 +139,9 @@ export function GalleryEditor() {
           })
           .catch(() => {
             setLoading(false);
+          })
+          .finally(() => {
+            setSubmitting(false);
           });
         return;
       }
@@ -156,6 +173,9 @@ export function GalleryEditor() {
         })
         .catch(() => {
           setLoading(false);
+        })
+        .finally(() => {
+          setSubmitting(false);
         });
     } catch (error) {
       console.error('Failed to save gallery:', error);
@@ -167,9 +187,27 @@ export function GalleryEditor() {
     setValue(val);
   };
 
-  const SaveButton = enrich(() => (
-    <GallerySaveDialog onSubmit={onSave} content={value} />
-  ));
+  const handleSaveClick = () => {
+    if (!editor) return;
+    // Step 1: synchronous snapshot
+    const json = editor.getJSON();
+    const html = editor.getHTML();
+    const text = editor.getText();
+
+    // Step 2: derive images synchronously from the snapshot
+    const images = extractImagesFromPM(json);
+
+    // Step 3: commit all at once and allow Dialog to render
+    setDialogData({ html, json, text, images });
+    setOpen(true);
+  };
+
+  const handleOpenChange = (v: boolean) => {
+    // If user manually closes during submission, you can ignore or allow
+    if (submitting) return;
+    setOpen(v);
+    if (!v) setDialogData(null);
+  };
 
   return (
     <div className="container mx-auto p-5 flex justify-center">
@@ -177,32 +215,26 @@ export function GalleryEditor() {
         className={'h-full w-full ' + (!showBubbleMenu && 'bubble-menu-hidden')}
       >
         <RichTextEditor
+          ref={editorRef}
           toolbar={{
-            render: (props, toolbarItems, dom, containerDom) => {
-              // Workaround using render function to pass a custom component to
-              // an array of toolbar items from the extensions. Making sure it's appeneded to
-              // end and updated with latest props on each re-render
-              const isSaveBtnExists = (toolbarItem: any) =>
-                toolbarItem.name === 'SaveButton';
-              const saveBtn = {
-                button: {
-                  component: SaveButton,
-                  componentProps: {},
-                },
-                divider: true,
-                spacer: true,
-                name: 'SaveButton',
-                type: 'Custom',
-              };
-              const saveBtnIdx = toolbarItems.findIndex(isSaveBtnExists);
-              if (saveBtnIdx < 0) {
-                toolbarItems.push(saveBtn);
-              } else {
-                toolbarItems.splice(saveBtnIdx, 1, saveBtn);
-              }
-
-              return containerDom(dom);
-            },
+            render: (_props, _items, dom, containerDom) =>
+              containerDom(
+                <div
+                  className="flex flex-wrap items-center gap-2"
+                  style={{ overflow: 'visible' }}
+                >
+                  {dom}
+                  <span className="grow basis-full sm:basis-0" />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleSaveClick}
+                    disabled={!isReady}
+                  >
+                    Save
+                  </Button>
+                </div>
+              ),
           }}
           output="json"
           content={value}
@@ -218,20 +250,15 @@ export function GalleryEditor() {
           hideBubble={!showBubbleMenu}
         />
       </div>
-      {/* <MinimalTiptapEditor
-        value={value}
-        onChange={setValue}
-        className="h-full w-full"
-        editorContentClassName="p-5"
-        output="json"
-        placeholder="Enter your description..."
-        autofocus={true}
-        editable={true}
-        editorClassName="focus:outline-none"
-        customComponent={
-          <GallerySaveDialog onSubmit={onSave} content={value} />
-        }
-      /> */}
+      {dialogData && (
+        <GallerySaveDialog
+          onSubmit={onSave}
+          data={dialogData}
+          open={open}
+          onOpenChange={handleOpenChange}
+          submitting={submitting}
+        />
+      )}
     </div>
   );
 }

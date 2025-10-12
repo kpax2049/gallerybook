@@ -29,7 +29,7 @@ export type ExtractedImage = {
   mimeType: string;
 };
 
-export type Img = { src: string; alt?: string };
+export type Img = { src: string; alt?: string; title?: string };
 
 export function extractImagesFromPM(content: any): Img[] {
   if (!content) return [];
@@ -39,7 +39,11 @@ export function extractImagesFromPM(content: any): Img[] {
       const val = obj[key];
       if (val && typeof val === 'object') {
         if (val.type === 'image') {
-          images.push({ src: val.attrs?.src, alt: val.attrs?.alt });
+          images.push({
+            src: val.attrs?.src,
+            alt: val.attrs?.alt,
+            title: val.attrs?.title,
+          });
         }
         images = images.concat(traverse(val));
       }
