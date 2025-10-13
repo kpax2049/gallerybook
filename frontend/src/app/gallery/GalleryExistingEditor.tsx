@@ -51,6 +51,7 @@ import {
 } from '@/lib/utils';
 import { useUserStore } from '@/stores/userStore';
 import { useThumbStore } from '@/stores/thumbStore';
+import { DialogData } from './GalleryEditor';
 
 const extensions: AnyExtension[] = [
   BaseKit.configure({
@@ -101,6 +102,9 @@ export function GalleryExistingEditor() {
   const [showBubbleMenu, setShowBubbleMenu] = useState<boolean>(false);
   const isDarkMode = useTheme();
   const { galleryId } = useParams();
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [dialogData, setDialogData] = useState<DialogData | null>(null);
   const currentUser = useUserStore((state) => state.user);
 
   useEffect(() => {
@@ -118,10 +122,7 @@ export function GalleryExistingEditor() {
     }
   }, []);
 
-  const onSave = async (
-    data: FormDataProps,
-    setOpen: Dispatch<SetStateAction<boolean>>
-  ) => {
+  const onSave = async (data: FormDataProps) => {
     if (!currentUser) return;
     setLoading(true);
     // Delete removed images from S3 directly
@@ -216,8 +217,21 @@ export function GalleryExistingEditor() {
     setValue(val);
   };
 
+  const handleOpenChange = (v: boolean) => {
+    // If user manually closes during submission, you can ignore or allow
+    if (submitting) return;
+    setOpen(v);
+    if (!v) setDialogData(null);
+  };
+
   const SaveButton = enrich(() => (
-    <GallerySaveDialog onSubmit={onSave} content={value} initial={gallery} />
+    <GallerySaveDialog
+      onSubmit={onSave}
+      data={value}
+      open={open}
+      onOpenChange={handleOpenChange}
+      submitting={submitting}
+    />
   ));
 
   const EditorSkeleton = () => {
