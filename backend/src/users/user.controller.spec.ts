@@ -27,7 +27,9 @@ describe('UserController', () => {
   it('returns current user via getMe', async () => {
     userService.getUser.mockResolvedValue({ id: 1 });
 
-    await expect(controller.getMe({ id: 1 } as any)).resolves.toEqual({ id: 1 });
+    await expect(controller.getMe({ id: 1 } as any)).resolves.toEqual({
+      id: 1,
+    });
     expect(userService.getUser).toHaveBeenCalledWith(1);
   });
 

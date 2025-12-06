@@ -1,22 +1,25 @@
-import {
-  BadRequestException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { ProfileController } from './profile.controller';
 import { ProfileService } from './profile.service';
 
-const mockUpload = jest.fn();
-const mockUnlink = jest.fn();
+jest.mock('src/cloudinary/cloudinary.config', () => {
+  const upload = jest.fn();
+  return {
+    cloudinary: { uploader: { upload } },
+    __uploadMock: upload,
+  };
+});
 
-jest.mock('src/cloudinary/cloudinary.config', () => ({
-  cloudinary: { uploader: { upload: mockUpload } },
-}));
+jest.mock('fs/promises', () => {
+  const unlink = jest.fn();
+  return { unlink, __unlinkMock: unlink };
+});
 
-jest.mock('fs/promises', () => ({
-  unlink: mockUnlink,
-}));
+const mockUpload = jest.requireMock('src/cloudinary/cloudinary.config')
+  .__uploadMock as jest.Mock;
+const mockUnlink = jest.requireMock('fs/promises').__unlinkMock as jest.Mock;
 
 describe('ProfileController', () => {
   let controller: ProfileController;
