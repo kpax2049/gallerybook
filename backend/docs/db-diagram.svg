@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img" aria-label="GalleryBook ER diagram">
+  <defs>
+    <style>
+      .bg { fill: #0b1220; }
+      .panel { fill: #111827; stroke: #475569; stroke-width: 2.2; rx: 10; }
+      .head { fill: #0f172a; stroke: #475569; stroke-width: 2.2; }
+      .text { fill: #e5e7eb; font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 13px; }
+      .title { font-size: 16px; font-weight: 700; }
+      .pk { fill: #22d3ee; }
+      .fk { fill: #a5b4fc; }
+      .uniq { fill: #fbbf24; }
+      .line { stroke: #8b5cf6; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+      .label { fill: #c7d2fe; font-size: 12px; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b5cf6" />
+    </marker>
+  </defs>
+  <rect class="bg" width="1200" height="820" rx="18" />
+  <text x="32" y="40" class="text title">GalleryBook ER Diagram</text>
+
+  <!-- User -->
+  <g transform="translate(60 80)">
+    <rect class="panel" width="230" height="170" />
+    <rect class="head" width="230" height="36" />
+    <text class="text title" x="16" y="24">User</text>
+    <text class="text pk" x="16" y="66">PK id</text>
+    <text class="text uniq" x="16" y="86">UQ email</text>
+    <text class="text uniq" x="16" y="106">UQ username</text>
+    <text class="text" x="16" y="126">role, status, tokenVersion</text>
+  </g>
+
+  <!-- Profile -->
+  <g transform="translate(60 300)">
+    <rect class="panel" width="230" height="140" />
+    <rect class="head" width="230" height="36" />
+    <text class="text title" x="16" y="24">Profile</text>
+    <text class="text pk" x="16" y="66">PK id</text>
+    <text class="text fk" x="16" y="86">FK userId → User.id</text>
+    <text class="text" x="16" y="106">avatarUrl, configuration</text>
+  </g>
+
+  <!-- Gallery -->
+  <g transform="translate(350 80)">
+    <rect class="panel" width="230" height="190" />
+    <rect class="head" width="230" height="36" />
+    <text class="text title" x="16" y="24">Gallery</text>
+    <text class="text pk" x="16" y="66">PK id</text>
+    <text class="text fk" x="16" y="86">FK userId → User.id</text>
+    <text class="text uniq" x="16" y="106">UQ slug</text>
+    <text class="text" x="16" y="126">status, visibility</text>
+    <text class="text" x="16" y="146">title, description, content</text>
+  </g>
+
+  <!-- GalleryReaction -->
+  <g transform="translate(350 320)">
+    <rect class="panel" width="230" height="150" />
+    <rect class="head" width="230" height="36" />
+    <text class="text title" x="16" y="24">GalleryReaction</text>
+    <text class="text pk" x="16" y="66">PK (userId, galleryId, type)</text>
+    <text class="text fk" x="16" y="86">FK userId → User.id</text>
+    <text class="text fk" x="16" y="106">FK galleryId → Gallery.id</text>
+  </g>
+
+  <!-- GalleryTag -->
+  <g transform="translate(650 80)">
+    <rect class="panel" width="230" height="150" />
+    <rect class="head" width="230" height="36" />
+    <text class="text title" x="16" y="24">GalleryTag</text>
+    <text class="text pk" x="16" y="66">PK (galleryId, tagId)</text>
+    <text class="text fk" x="16" y="86">FK galleryId → Gallery.id</text>
+    <text class="text fk" x="16" y="106">FK tagId → Tag.id</text>
+  </g>
+
+  <!-- Tag -->
+  <g transform="translate(950 80)">
+    <rect class="panel" width="200" height="130" />
+    <rect class="head" width="200" height="36" />
+    <text class="text title" x="16" y="24">Tag</text>
+    <text class="text pk" x="16" y="66">PK id</text>
+    <text class="text uniq" x="16" y="86">UQ name, slug</text>
+  </g>
+
+  <!-- Comment -->
+  <g transform="translate(650 280)">
+    <rect class="panel" width="230" height="190" />
+    <rect class="head" width="230" height="36" />
+    <text class="text title" x="16" y="24">Comment</text>
+    <text class="text pk" x="16" y="66">PK id</text>
+    <text class="text fk" x="16" y="86">FK userId → User.id</text>
+    <text class="text fk" x="16" y="106">FK galleryId → Gallery.id</text>
+    <text class="text fk" x="16" y="126">FK parentId → Comment.id</text>
+  </g>
+
+  <!-- Reaction -->
+  <g transform="translate(950 280)">
+    <rect class="panel" width="200" height="140" />
+    <rect class="head" width="200" height="36" />
+    <text class="text title" x="16" y="24">Reaction</text>
+    <text class="text pk" x="16" y="66">PK id</text>
+    <text class="text fk" x="16" y="86">FK commentId → Comment.id</text>
+    <text class="text" x="16" y="106">type</text>
+  </g>
+
+  <!-- ActionCount -->
+  <g transform="translate(950 480)">
+    <rect class="panel" width="200" height="130" />
+    <rect class="head" width="200" height="36" />
+    <text class="text title" x="16" y="24">ActionCount</text>
+    <text class="text pk" x="16" y="66">PK commentId</text>
+    <text class="text fk" x="16" y="86">FK commentId → Comment.id</text>
+  </g>
+
+  <!-- Follow -->
+  <g transform="translate(60 520)">
+    <rect class="panel" width="230" height="150" />
+    <rect class="head" width="230" height="36" />
+    <text class="text title" x="16" y="24">Follow</text>
+    <text class="text pk" x="16" y="66">PK (followerId, followingId)</text>
+    <text class="text fk" x="16" y="86">FK followerId → User.id</text>
+    <text class="text fk" x="16" y="106">FK followingId → User.id</text>
+  </g>
+
+  <!-- Edges -->
+  <g class="line">
+    <path d="M290 140 L350 140" />
+    <text class="label" x="320" y="125" text-anchor="middle">1:M</text>
+
+    <path d="M290 330 L350 330" />
+    <text class="label" x="320" y="315" text-anchor="middle">1:1</text>
+
+    <path d="M290 365 L350 365" />
+    <text class="label" x="320" y="350" text-anchor="middle">1:1</text>
+
+    <path d="M580 140 L650 140" />
+    <text class="label" x="615" y="125" text-anchor="middle">1:M</text>
+
+    <path d="M880 140 L950 140" />
+    <text class="label" x="915" y="125" text-anchor="middle">1:M</text>
+
+    <path d="M580 360 L650 360" />
+    <text class="label" x="615" y="345" text-anchor="middle">1:M</text>
+
+    <path d="M880 360 L950 360" />
+    <text class="label" x="915" y="345" text-anchor="middle">1:M</text>
+
+    <path d="M880 520 L950 520" />
+    <text class="label" x="915" y="505" text-anchor="middle">1:1</text>
+
+    <path d="M180 250 C180 280 395 280 395 320" />
+    <text class="label" x="250" y="285">1:M</text>
+
+    <path d="M180 560 C180 540 180 450 180 430" marker-end="url(#arrow)" marker-start="url(#arrow)" />
+    <text class="label" x="190" y="505">User ↔ Follow</text>
+  </g>
+</svg>
