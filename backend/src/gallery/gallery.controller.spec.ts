@@ -100,6 +100,35 @@ describe('GalleryController', () => {
     expect(result).toEqual({ 'a.jpg': 'url' });
   });
 
+  it('rejects presigned url requests when gallery belongs to another user', async () => {
+    galleryService.verifyOwnership.mockResolvedValue(undefined);
+    galleryService.findById.mockResolvedValue({ id: 1, userId: 99 });
+
+    await expect(
+      controller.getPresignedUrls(
+        1,
+        { paths: ['a.jpg'] },
+        { id: 1 } as any,
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(galleryService.generatePresignedUrls).not.toHaveBeenCalled();
+  });
+
+  it('does not update content when ownership verification fails', async () => {
+    galleryService.verifyOwnership.mockRejectedValue(new ForbiddenException());
+
+    await expect(
+      controller.updateGalleryContent(
+        10,
+        { content: {} } as any,
+        { id: 2 } as any,
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(galleryService.updateContent).not.toHaveBeenCalled();
+  });
+
   it('creates a draft and returns only the id', async () => {
     galleryService.createDraft.mockResolvedValue({ id: 123 });
     await expect(
