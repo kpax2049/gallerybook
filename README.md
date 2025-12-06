@@ -13,45 +13,51 @@ Before you begin, ensure you have the following installed on your machine:
 
 ## Project Structure
 
-full-stack-app/
-├── backend/
-│ ├── src/
-│ │ ├── auth/
-│ │ │ ├── auth.module.ts
-│ │ │ ├── auth.service.ts
-│ │ │ ├── jwt-auth.guard.ts
-│ │ │ └── jwt.strategy.ts
-│ │ ├── prisma/
-│ │ │ ├── prisma.module.ts
-│ │ │ └── prisma.service.ts
-│ │ ├── users/
-│ │ │ ├── users.controller.ts
-│ │ │ ├── users.module.ts
-│ │ │ └── users.service.ts
-│ │ ├── app.module.ts
-│ │ └── main.ts
-│ ├── prisma/
-│ │ └── schema.prisma
-│ ├── .env
-│ ├── Dockerfile
-│ ├── docker-compose.yml
-│ ├── package.json
-│ └── tsconfig.json
-├── frontend/
-│ ├── public/
-│ ├── src/
-│ │ ├── assets/
-│ │ ├── components/
-│ │ ├── App.tsx
-│ │ ├── index.tsx
-│ │ └── react-app-env.d.ts
-│ ├── .eslintrc.js
-│ ├── .tslint.json
-│ ├── package.json
-│ ├── tsconfig.json
-│ └── tsconfig.node.json
-├── docker-compose.yml
-└── README.md
+## DB Schema
+
+%%{init: { "theme": "dark" }}%%
+graph LR
+subgraph Users
+U[User]
+P[Profile]
+end
+subgraph Galleries
+G[Gallery]
+GT[GalleryTag]
+T[Tag]
+GR[GalleryReaction]
+end
+subgraph Comments
+C[Comment]
+R[Reaction]
+AC[ActionCount]
+end
+F[Follow]
+
+U -->|1:1| P
+U -->|1:M| G
+U -->|1:M| C
+U -->|1:M| GR
+U -->|1:M (follower)| F
+U <-->|1:M (following)| F
+
+G -->|1:M| C
+G -->|1:M| GR
+G -->|1:M| GT
+T -->|1:M| GT
+
+C -->|1:M replies| C
+C -->|1:M selectedActions| R
+C -->|1:1 actions| AC
+
+classDef blue fill:#0ea5e9,stroke:#38bdf8,stroke-width:2px,color:#0b1220;
+classDef purple fill:#3b0764,stroke:#8b5cf6,stroke-width:2px,color:#e5e7eb;
+classDef green fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#e5e7eb;
+classDef grey fill:#111827,stroke:#475569,stroke-width:1.5px,color:#e5e7eb;
+class U,P blue;
+class G,GT,T purple;
+class C,R,AC green;
+class GR,F grey;
 
 ## How to Install and Launch the Project
 
