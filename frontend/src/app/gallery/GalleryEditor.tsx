@@ -3,11 +3,15 @@
 import {
   createDraftGallery,
   createGallery,
+  deleteGalleryImages,
   editGallery,
   fetchPresignedUrls,
+  Gallery,
+  getGallery,
   uploadFilesToS3,
 } from '@/api/gallery';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
 import RichTextEditor, { useEditorState } from '@/lib/tiptapEditorShim';
 // import { Image } from '@tiptap/extension-image';
@@ -34,14 +38,17 @@ import { OrderedList } from 'reactjs-tiptap-editor/orderedlist';
 import { Strike } from 'reactjs-tiptap-editor/strike';
 import { Table } from 'reactjs-tiptap-editor/table';
 import { TextUnderline } from 'reactjs-tiptap-editor/textunderline';
-
 import { useTheme } from '@/components/theme-provider';
+import { Skeleton } from '@/components/ui/skeleton';
 import { AnyExtension } from '@tiptap/react';
 import { fileToBase64 } from '@/lib/fileUtils';
 import {
   extractBase64ImagesFromJson,
+  extractImageKeysFromJSON,
   extractImagesFromPM,
   Img,
+  normalizeAttrs,
+  normalizeImageSrcsToS3Keys,
 } from '@/lib/utils';
 import { useUserStore } from '@/stores/userStore';
 import { useThumbStore } from '@/stores/thumbStore';
@@ -53,6 +60,8 @@ export type DialogData = {
   text: string;
   images: Img[];
 };
+
+type GalleryEditorMode = 'create' | 'edit';
 
 const extensions: AnyExtension[] = [
   BaseKit.configure(
@@ -96,8 +105,23 @@ const extensions: AnyExtension[] = [
   Emoji,
 ] as unknown as AnyExtension[];
 
-export function GalleryEditor() {
-  const [value, setValue] = useState('');
+type GalleryEditorProps = {
+  mode?: GalleryEditorMode;
+  galleryId?: number;
+};
+
+export function GalleryEditor({ mode = 'create', galleryId }: GalleryEditorProps) {
+  const params = useParams();
+  const resolvedGalleryId = useMemo(() => {
+    if (galleryId) return galleryId;
+    if (params.galleryId) return Number(params.galleryId);
+    return undefined;
+  }, [galleryId, params.galleryId]);
+  const isEdit = mode === 'edit' || !!resolvedGalleryId;
+
+  const [gallery, setGallery] = useState<Gallery>();
+  const [value, setValue] = useState<any>('');
+  const [originalValue, setOriginalValue] = useState<any>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [showBubbleMenu, setShowBubbleMenu] = useState<boolean>(false);
   const isDarkMode = useTheme();
@@ -107,82 +131,151 @@ export function GalleryEditor() {
   const [dialogData, setDialogData] = useState<DialogData | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const onSave = async (
-    data: FormDataProps
-    // setOpen: Dispatch<SetStateAction<boolean>>
-  ) => {
+  // Load existing gallery when in edit mode
+  useEffect(() => {
+    if (!isEdit || !resolvedGalleryId) return;
+    setLoading(true);
+    getGallery(resolvedGalleryId, 'edit').then((data) => {
+      setGallery(data);
+      if (data?.content) {
+        setOriginalValue(data.content);
+        const normalizedContent = normalizeAttrs(data.content);
+        setValue(normalizedContent);
+      }
+      setLoading(false);
+    });
+  }, [isEdit, resolvedGalleryId]);
+
+  const saveNewGallery = async (data: FormDataProps) => {
     if (!currentUser || !data || submitting) return;
     setLoading(true);
     setSubmitting(true);
 
     try {
-      // Step 1: Create draft gallery and get galleryId
       const response = await createDraftGallery({
         title: data.title,
         description: data.description,
         tags: data.tags,
       });
 
-      const galleryId = response.id;
-
-      // Step 2: Extract base64 images, generate final S3 paths, and update JSON with real paths
-      const { imageFiles, paths, updatedJson } =
-        await extractBase64ImagesFromJson(value, currentUser.id, galleryId);
+      const draftId = response.id;
+      const { imageFiles, paths, updatedJson } = await extractBase64ImagesFromJson(
+        value,
+        currentUser.id,
+        draftId
+      );
 
       if (imageFiles.length === 0) {
-        // No images to upload; save content directly
-        createGallery({ content: updatedJson }, galleryId)
-          .then((result: any) => {
-            if (result.success) {
-              setLoading(false);
-              setOpen(false);
-            }
-          })
-          .catch(() => {
-            setLoading(false);
-          })
-          .finally(() => {
-            setSubmitting(false);
-          });
+        await createGallery({ content: updatedJson }, draftId);
+        setLoading(false);
+        setOpen(false);
+        setSubmitting(false);
         return;
       }
 
-      // Step 3: Generate S3 keys and get presigned upload URLs
-      const { presignedUrls } = await fetchPresignedUrls(galleryId, paths);
-
-      // Step 4: Upload each image to its presigned S3 URL
+      const { presignedUrls } = await fetchPresignedUrls(draftId, paths);
       await uploadFilesToS3(imageFiles, presignedUrls, paths);
-      // Step 5: Resolve the thumbnail URL safely by index, with fallbacks
+
       const { index } = useThumbStore.getState();
       const thumbnailUrl =
         paths[index] ??
         paths[0] ?? // fallback to first image if needed
         null;
+
+      await editGallery({ thumbnail: thumbnailUrl }, draftId);
+      await createGallery(updatedJson, draftId);
+      setLoading(false);
+      setOpen(false);
+    } catch (error) {
+      console.error('Failed to save gallery:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const saveExistingGallery = async (data: FormDataProps) => {
+    if (!currentUser || !resolvedGalleryId) return;
+    setLoading(true);
+    setSubmitting(true);
+
+    const handleDeletedImages = (updatedJson: any) => {
+      const oldKeys = extractImageKeysFromJSON(originalValue);
+      const newKeys = extractImageKeysFromJSON(updatedJson);
+      const deletedKeys = [...oldKeys].filter((key) => !newKeys.has(key));
+      if (deletedKeys.length > 0) {
+        deleteGalleryImages(deletedKeys, resolvedGalleryId);
+      }
+    };
+
+    const updateGalleryMeta = (updatedJson: any) => {
+      const newPaths: string[] = Array.from(extractImageKeysFromJSON(updatedJson));
+      const { index } = useThumbStore.getState();
+      const thumbnailUrl =
+        newPaths[index] ??
+        newPaths[0] ?? // fallback to first image if needed
+        null;
       editGallery(
         {
           thumbnail: thumbnailUrl,
+          title: data.title,
+          description: data.description,
+          tags: data.tags,
         },
-        galleryId
+        resolvedGalleryId
       );
-      // Step 6: Save gallery content
-      createGallery(updatedJson, galleryId)
+    };
+
+    try {
+      const { imageFiles, paths, updatedJson } = await extractBase64ImagesFromJson(
+        value,
+        currentUser.id,
+        resolvedGalleryId
+      );
+
+      if (imageFiles.length === 0) {
+        normalizeImageSrcsToS3Keys(updatedJson);
+        updateGalleryMeta(updatedJson);
+        createGallery(updatedJson, resolvedGalleryId)
+          .then((result: any) => {
+            if (result.success) {
+              handleDeletedImages(updatedJson);
+              setOpen(false);
+              setOriginalValue(updatedJson);
+            }
+          })
+          .finally(() => {
+            setLoading(false);
+            setSubmitting(false);
+          });
+        return;
+      }
+
+      const { presignedUrls } = await fetchPresignedUrls(resolvedGalleryId, paths);
+      await uploadFilesToS3(imageFiles, presignedUrls, paths);
+      normalizeImageSrcsToS3Keys(updatedJson);
+      updateGalleryMeta(updatedJson);
+
+      createGallery(updatedJson, resolvedGalleryId)
         .then((result: any) => {
           if (result.success) {
-            setLoading(false);
+            handleDeletedImages(updatedJson);
             setOpen(false);
+            setOriginalValue(updatedJson);
           }
         })
-        .catch(() => {
-          setLoading(false);
-        })
         .finally(() => {
+          setLoading(false);
           setSubmitting(false);
         });
     } catch (error) {
       console.error('Failed to save gallery:', error);
+      setLoading(false);
+      setSubmitting(false);
       throw error;
     }
   };
+
+  const onSubmit = isEdit ? saveExistingGallery : saveNewGallery;
 
   const onChangeContent = (val: any) => {
     setValue(val);
@@ -190,79 +283,112 @@ export function GalleryEditor() {
 
   const handleSaveClick = () => {
     if (!editor) return;
-    // Step 1: synchronous snapshot
     const json = editor.getJSON();
     const html = editor.getHTML();
     const text = editor.getText();
-
-    // Step 2: derive images synchronously from the snapshot
     const images = extractImagesFromPM(json);
-
-    // Step 3: commit all at once and allow Dialog to render
     setDialogData({ html, json, text, images });
     setOpen(true);
   };
 
+  const handleEditSaveClick = () => {
+    // In edit mode we already hold the JSON string; just open the dialog
+    setOpen(true);
+  };
+
+  const initialFormData = useMemo(() => {
+    if (!isEdit || !gallery) return {};
+    const images = Array.from(
+      extractImageKeysFromJSON(value || gallery.content || {})
+    );
+    const thumbIdx = gallery.thumbnail
+      ? images.indexOf(gallery.thumbnail)
+      : 0;
+    return {
+      title: gallery.title ?? '',
+      description: gallery.description ?? '',
+      tags: (gallery as any)?.tags ?? [],
+      thumbnailIndex: thumbIdx >= 0 ? thumbIdx : 0,
+    };
+  }, [isEdit, gallery, value]);
+
   const handleOpenChange = (v: boolean) => {
-    // If user manually closes during submission, you can ignore or allow
     if (submitting) return;
     setOpen(v);
     if (!v) setDialogData(null);
   };
+
+  const EditorSkeleton = () => {
+    return (
+      <div className="flex flex-col space-y-3">
+        <Skeleton className="flex items-center flex-col p-4 gap-2 aspect-video rounded-xl bg-muted" />
+      </div>
+    );
+  };
+
+  const renderToolbar = {
+    render: (
+      _props: any,
+      _items: any,
+      dom: any,
+      containerDom: any
+    ) =>
+      containerDom(
+        <div
+          className="flex flex-wrap items-center gap-2"
+          style={{ overflow: 'visible' }}
+        >
+          {dom}
+          <span className="grow basis-full sm:basis-0" />
+          <Button
+            type="button"
+            size="sm"
+            onClick={isEdit ? handleEditSaveClick : handleSaveClick}
+            disabled={!isReady}
+          >
+            Save
+          </Button>
+        </div>
+      ),
+  };
+
+  const showEditor =
+    !isEdit || (isEdit && !loading && value && resolvedGalleryId !== undefined);
 
   return (
     <div className="container mx-auto p-5 flex justify-center">
       <div
         className={'h-full w-full ' + (!showBubbleMenu && 'bubble-menu-hidden')}
       >
-        <RichTextEditor
-          ref={editorRef}
-          toolbar={{
-            render: (
-              _props: any,
-              _items: any,
-              dom: any,
-              containerDom: any
-            ) =>
-              containerDom(
-                <div
-                  className="flex flex-wrap items-center gap-2"
-                  style={{ overflow: 'visible' }}
-                >
-                  {dom}
-                  <span className="grow basis-full sm:basis-0" />
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleSaveClick}
-                    disabled={!isReady}
-                  >
-                    Save
-                  </Button>
-                </div>
-              ),
-          }}
-          output="json"
-          content={value}
-          onChangeContent={onChangeContent}
-          extensions={extensions}
-          dark={isDarkMode.theme === 'dark'}
-          bubbleMenu={{
-            floatingMenuConfig: {
-              hidden: false,
-            },
-          }}
-          disableBubble={!showBubbleMenu}
-          hideBubble={!showBubbleMenu}
-        />
+        {showEditor ? (
+          <RichTextEditor
+            ref={editorRef}
+            toolbar={renderToolbar}
+            output="json"
+            content={value}
+            onChangeContent={onChangeContent}
+            extensions={extensions}
+            dark={isDarkMode.theme === 'dark'}
+            bubbleMenu={{
+              floatingMenuConfig: {
+                hidden: false,
+              },
+            }}
+            disableBubble={!showBubbleMenu}
+            hideBubble={!showBubbleMenu}
+          />
+        ) : (
+          <EditorSkeleton />
+        )}
       </div>
-      {dialogData && (
+      {((isEdit && value) || (!isEdit && dialogData)) && (
         <GallerySaveDialog
-          onSubmit={onSave}
-          data={dialogData}
+          onSubmit={onSubmit}
+          data={isEdit ? value : dialogData}
           open={open}
           onOpenChange={handleOpenChange}
           submitting={submitting}
+          initial={initialFormData}
         />
       )}
     </div>
