@@ -9,13 +9,13 @@ import {
 } from '@/api/gallery';
 import { useState } from 'react';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
-import RichTextEditor, { useEditorState } from 'reactjs-tiptap-editor';
+import RichTextEditor, { useEditorState } from '@/lib/tiptapEditorShim';
 // import { Image } from '@tiptap/extension-image';
 import { Image } from 'reactjs-tiptap-editor/image';
 import 'react-image-crop/dist/ReactCrop.css';
 // Import CSS
 import 'reactjs-tiptap-editor/style.css';
-import { BaseKit } from 'reactjs-tiptap-editor';
+import { BaseKit } from 'reactjs-tiptap-editor/base-kit';
 import { Bold } from 'reactjs-tiptap-editor/bold';
 import { TextAlign } from 'reactjs-tiptap-editor/textalign';
 import { Color } from 'reactjs-tiptap-editor/color';
@@ -55,15 +55,16 @@ export type DialogData = {
 };
 
 const extensions: AnyExtension[] = [
-  BaseKit.configure({
-    // Show placeholder
-    placeholder: {
-      showOnlyCurrent: true,
-    },
-
-    // Character count
-    characterCount: false,
-  }),
+  BaseKit.configure(
+    {
+      // Show placeholder
+      placeholder: {
+        showOnlyCurrent: true,
+      },
+      // Character count
+      characterCount: false,
+    } as any
+  ),
   History,
   // Import Extensions Here
   Image.configure({
@@ -93,7 +94,7 @@ const extensions: AnyExtension[] = [
   ColumnActionButton,
   Table,
   Emoji,
-];
+] as unknown as AnyExtension[];
 
 export function GalleryEditor() {
   const [value, setValue] = useState('');
@@ -217,7 +218,12 @@ export function GalleryEditor() {
         <RichTextEditor
           ref={editorRef}
           toolbar={{
-            render: (_props, _items, dom, containerDom) =>
+            render: (
+              _props: any,
+              _items: any,
+              dom: any,
+              containerDom: any
+            ) =>
               containerDom(
                 <div
                   className="flex flex-wrap items-center gap-2"

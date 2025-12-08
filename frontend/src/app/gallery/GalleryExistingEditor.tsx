@@ -12,13 +12,13 @@ import {
 // import { MinimalTiptapEditor } from '@/components/minimal-tiptap';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
-import RichTextEditor from 'reactjs-tiptap-editor';
+import RichTextEditor from '@/lib/tiptapEditorShim';
 import { Image } from 'reactjs-tiptap-editor/image';
 // import { Image } from '@tiptap/extension-image';
 import 'react-image-crop/dist/ReactCrop.css';
 // Import CSS
 import 'reactjs-tiptap-editor/style.css';
-import { BaseKit } from 'reactjs-tiptap-editor';
+import { BaseKit } from 'reactjs-tiptap-editor/base-kit';
 import { Bold } from 'reactjs-tiptap-editor/bold';
 import { TextAlign } from 'reactjs-tiptap-editor/textalign';
 import { Color } from 'reactjs-tiptap-editor/color';
@@ -54,15 +54,16 @@ import { useThumbStore } from '@/stores/thumbStore';
 import { DialogData } from './GalleryEditor';
 
 const extensions: AnyExtension[] = [
-  BaseKit.configure({
-    // Show placeholder
-    placeholder: {
-      showOnlyCurrent: true,
-    },
-
-    // Character count
-    characterCount: false,
-  }),
+  BaseKit.configure(
+    {
+      // Show placeholder
+      placeholder: {
+        showOnlyCurrent: true,
+      },
+      // Character count
+      characterCount: false,
+    } as any
+  ),
   History,
   // Import Extensions Here
   Image.configure({
@@ -92,7 +93,7 @@ const extensions: AnyExtension[] = [
   ColumnActionButton,
   Table,
   Emoji,
-];
+] as unknown as AnyExtension[];
 
 export function GalleryExistingEditor() {
   const [gallery, setGallery] = useState<Gallery>();
@@ -250,7 +251,12 @@ export function GalleryExistingEditor() {
         {value && galleryId ? (
           <RichTextEditor
             toolbar={{
-              render: (props, toolbarItems, dom, containerDom) => {
+              render: (
+                props: any,
+                toolbarItems: any,
+                dom: any,
+                containerDom: any
+              ) => {
                 // Workaround using render function to pass a custom component to
                 // an array of toolbar items from the extensions. Making sure it's appeneded to
                 // end and updated with latest props on each re-render
