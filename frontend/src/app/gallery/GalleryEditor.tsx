@@ -10,7 +10,7 @@ import {
   getGallery,
   uploadFilesToS3,
 } from '@/api/gallery';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
 import RichTextEditor, { useEditorState } from '@/lib/tiptapEditorShim';
@@ -64,23 +64,17 @@ export type DialogData = {
 type GalleryEditorMode = 'create' | 'edit';
 
 const extensions: AnyExtension[] = [
-  BaseKit.configure(
-    {
-      // Show placeholder
-      placeholder: {
-        showOnlyCurrent: true,
-      },
-      // Character count
-      characterCount: false,
-    } as any
-  ),
+  BaseKit.configure({
+    placeholder: {
+      showOnlyCurrent: true,
+    },
+    characterCount: false,
+  } as any),
   History,
-  // Import Extensions Here
   Image.configure({
     upload: (files: File) => {
       return new Promise((resolve) => {
         setTimeout(() => {
-          // resolve(URL.createObjectURL(files));
           resolve(fileToBase64(files));
         }, 500);
       });
@@ -110,40 +104,49 @@ type GalleryEditorProps = {
   galleryId?: number;
 };
 
-export function GalleryEditor({ mode = 'create', galleryId }: GalleryEditorProps) {
+export function GalleryEditor({
+  mode = 'create',
+  galleryId,
+}: GalleryEditorProps) {
   const params = useParams();
   const resolvedGalleryId = useMemo(() => {
-    if (galleryId) return galleryId;
+    if (galleryId !== undefined) return galleryId;
     if (params.galleryId) return Number(params.galleryId);
     return undefined;
   }, [galleryId, params.galleryId]);
-  const isEdit = mode === 'edit' || !!resolvedGalleryId;
+  const isEdit = mode === 'edit' || resolvedGalleryId !== undefined;
 
   const [gallery, setGallery] = useState<Gallery>();
   const [value, setValue] = useState<any>('');
   const [originalValue, setOriginalValue] = useState<any>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const [showBubbleMenu, setShowBubbleMenu] = useState<boolean>(false);
   const isDarkMode = useTheme();
   const currentUser = useUserStore((state) => state.user);
   const { editor, editorRef, isReady } = useEditorState();
   const [open, setOpen] = useState(false);
   const [dialogData, setDialogData] = useState<DialogData | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Load existing gallery when in edit mode
   useEffect(() => {
     if (!isEdit || !resolvedGalleryId) return;
     setLoading(true);
-    getGallery(resolvedGalleryId, 'edit').then((data) => {
-      setGallery(data);
-      if (data?.content) {
-        setOriginalValue(data.content);
-        const normalizedContent = normalizeAttrs(data.content);
-        setValue(normalizedContent);
-      }
-      setLoading(false);
-    });
+    getGallery(resolvedGalleryId, 'edit')
+      .then((data) => {
+        setGallery(data);
+        if (data?.content) {
+          setOriginalValue(data.content);
+          const normalizedContent = normalizeAttrs(data.content);
+          setValue(normalizedContent);
+        }
+        setError(null);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Failed to load gallery');
+        setLoading(false);
+      });
   }, [isEdit, resolvedGalleryId]);
 
   const saveNewGallery = async (data: FormDataProps) => {
@@ -159,11 +162,8 @@ export function GalleryEditor({ mode = 'create', galleryId }: GalleryEditorProps
       });
 
       const draftId = response.id;
-      const { imageFiles, paths, updatedJson } = await extractBase64ImagesFromJson(
-        value,
-        currentUser.id,
-        draftId
-      );
+      const { imageFiles, paths, updatedJson } =
+        await extractBase64ImagesFromJson(value, currentUser.id, draftId);
 
       if (imageFiles.length === 0) {
         await createGallery({ content: updatedJson }, draftId);
@@ -208,7 +208,9 @@ export function GalleryEditor({ mode = 'create', galleryId }: GalleryEditorProps
     };
 
     const updateGalleryMeta = (updatedJson: any) => {
-      const newPaths: string[] = Array.from(extractImageKeysFromJSON(updatedJson));
+      const newPaths: string[] = Array.from(
+        extractImageKeysFromJSON(updatedJson)
+      );
       const { index } = useThumbStore.getState();
       const thumbnailUrl =
         newPaths[index] ??
@@ -226,11 +228,12 @@ export function GalleryEditor({ mode = 'create', galleryId }: GalleryEditorProps
     };
 
     try {
-      const { imageFiles, paths, updatedJson } = await extractBase64ImagesFromJson(
-        value,
-        currentUser.id,
-        resolvedGalleryId
-      );
+      const { imageFiles, paths, updatedJson } =
+        await extractBase64ImagesFromJson(
+          value,
+          currentUser.id,
+          resolvedGalleryId
+        );
 
       if (imageFiles.length === 0) {
         normalizeImageSrcsToS3Keys(updatedJson);
@@ -250,7 +253,10 @@ export function GalleryEditor({ mode = 'create', galleryId }: GalleryEditorProps
         return;
       }
 
-      const { presignedUrls } = await fetchPresignedUrls(resolvedGalleryId, paths);
+      const { presignedUrls } = await fetchPresignedUrls(
+        resolvedGalleryId,
+        paths
+      );
       await uploadFilesToS3(imageFiles, presignedUrls, paths);
       normalizeImageSrcsToS3Keys(updatedJson);
       updateGalleryMeta(updatedJson);
@@ -281,7 +287,7 @@ export function GalleryEditor({ mode = 'create', galleryId }: GalleryEditorProps
     setValue(val);
   };
 
-  const handleSaveClick = () => {
+  const handleSaveClick = useCallback(() => {
     if (!editor) return;
     const json = editor.getJSON();
     const html = editor.getHTML();
@@ -289,21 +295,18 @@ export function GalleryEditor({ mode = 'create', galleryId }: GalleryEditorProps
     const images = extractImagesFromPM(json);
     setDialogData({ html, json, text, images });
     setOpen(true);
-  };
+  }, [editor]);
 
-  const handleEditSaveClick = () => {
-    // In edit mode we already hold the JSON string; just open the dialog
+  const handleEditSaveClick = useCallback(() => {
     setOpen(true);
-  };
+  }, []);
 
   const initialFormData = useMemo(() => {
     if (!isEdit || !gallery) return {};
     const images = Array.from(
       extractImageKeysFromJSON(value || gallery.content || {})
     );
-    const thumbIdx = gallery.thumbnail
-      ? images.indexOf(gallery.thumbnail)
-      : 0;
+    const thumbIdx = gallery.thumbnail ? images.indexOf(gallery.thumbnail) : 0;
     return {
       title: gallery.title ?? '',
       description: gallery.description ?? '',
@@ -326,40 +329,37 @@ export function GalleryEditor({ mode = 'create', galleryId }: GalleryEditorProps
     );
   };
 
-  const renderToolbar = {
-    render: (
-      _props: any,
-      _items: any,
-      dom: any,
-      containerDom: any
-    ) =>
-      containerDom(
-        <div
-          className="flex flex-wrap items-center gap-2"
-          style={{ overflow: 'visible' }}
-        >
-          {dom}
-          <span className="grow basis-full sm:basis-0" />
-          <Button
-            type="button"
-            size="sm"
-            onClick={isEdit ? handleEditSaveClick : handleSaveClick}
-            disabled={!isReady}
+  const renderToolbar = useMemo(
+    () => ({
+      render: (_props: any, _items: any, dom: any, containerDom: any) =>
+        containerDom(
+          <div
+            className="flex flex-wrap items-center gap-2"
+            style={{ overflow: 'visible' }}
           >
-            Save
-          </Button>
-        </div>
-      ),
-  };
+            {dom}
+            <span className="grow basis-full sm:basis-0" />
+            <Button
+              type="button"
+              size="sm"
+              variant="toolbar"
+              onClick={isEdit ? handleEditSaveClick : handleSaveClick}
+              disabled={!isReady}
+            >
+              Save
+            </Button>
+          </div>
+        ),
+    }),
+    [handleEditSaveClick, handleSaveClick, isEdit, isReady]
+  );
 
   const showEditor =
     !isEdit || (isEdit && !loading && value && resolvedGalleryId !== undefined);
 
   return (
     <div className="container mx-auto p-5 flex justify-center">
-      <div
-        className={'h-full w-full ' + (!showBubbleMenu && 'bubble-menu-hidden')}
-      >
+      <div className="h-full w-full">
         {showEditor ? (
           <RichTextEditor
             ref={editorRef}
@@ -374,8 +374,8 @@ export function GalleryEditor({ mode = 'create', galleryId }: GalleryEditorProps
                 hidden: false,
               },
             }}
-            disableBubble={!showBubbleMenu}
-            hideBubble={!showBubbleMenu}
+            disableBubble={false}
+            hideBubble={false}
           />
         ) : (
           <EditorSkeleton />

@@ -5,10 +5,29 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useGalleryStore } from '@/stores/galleryStore';
+// import {
+//   // applySortAndFilter,
+//   defaultFilters,
+//   defaultSort,
+//   FilterState,
+//   GalleryListToolbar,
+//   SortState,
+// } from '@/components/ui/GalleryListToolbar';
+// import { useUserStore } from '@/stores/userStore';
 
 export default function GalleryList() {
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  // const [sort, setSort] = useState<SortState>(defaultSort);
+  // const [filters, setFilters] = useState<FilterState>({
+  //   ...defaultFilters,
+  // });
+  // const currentUser = useUserStore((state) => state.user);
+  // const visible = useMemo(
+  //   () => applySortAndFilter(galleries, sort, filters, currentUser?.id),
+  //   [galleries, sort, filters]
+  // );
+
   useEffect(() => {
     setLoading(true);
     getGalleries().then((data) => {
@@ -35,6 +54,14 @@ export default function GalleryList() {
 
   return (
     <div className="grid auto-rows-min gap-4 p-4 md:grid-cols-3 justify-between">
+      {/* <GalleryListToolbar
+        sort={sort}
+        filters={filters}
+        onSortChange={setSort}
+        onFiltersChange={setFilters}
+        availableTags={['travel', 'family', 'pets', 'architecture', 'food']}
+        resultCount={visible.length}
+      /> */}
       {!loading ? (
         galleries.map((gallery) => (
           <div key={gallery.id}>
