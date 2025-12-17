@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import type { Editor } from '@tiptap/react';
 import RichTextEditor from 'reactjs-tiptap-editor';
 
 /**
@@ -6,9 +7,9 @@ import RichTextEditor from 'reactjs-tiptap-editor';
  * We only need a ref and a truthy ready flag for the current UI.
  */
 export function useEditorState() {
-  const editorRef = useRef(null);
+  const editorRef = useRef<Editor | null>(null);
   return {
-    editor: null as any,
+    editor: editorRef.current,
     editorRef,
     isReady: true,
   };

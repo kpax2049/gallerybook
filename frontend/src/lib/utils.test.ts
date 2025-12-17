@@ -1,4 +1,5 @@
 import { webcrypto } from 'node:crypto';
+import { File as NodeFile } from 'node:buffer';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const base64Png = 'data:image/png;base64,YWJj'; // "abc"
@@ -15,23 +16,9 @@ function ensureTestGlobals() {
   if (!globalThis.crypto) {
     globalThis.crypto = webcrypto as unknown as Crypto;
   }
-  if (typeof File === 'undefined') {
-    class PolyfillFile extends Blob {
-      name: string;
-      lastModified: number;
-      constructor(
-        bits: BlobPart[],
-        name: string,
-        options?: FilePropertyBag | undefined
-      ) {
-        super(bits, options);
-        this.name = name;
-        this.lastModified = options?.lastModified ?? Date.now();
-      }
-    }
-    // @ts-expect-error: assign to global for test environment
-    globalThis.File = PolyfillFile;
-  }
+  // Use Node's File implementation to ensure arrayBuffer support.
+  // @ts-expect-error: assign to global for test environment
+  globalThis.File = NodeFile;
 }
 
 async function loadUtils() {
