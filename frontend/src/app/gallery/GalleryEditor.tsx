@@ -10,37 +10,36 @@ import {
   getGallery,
   uploadFilesToS3,
 } from '@/api/gallery';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
-import RichTextEditor, { useEditorState } from '@/lib/tiptapEditorShim';
-// import { Image } from '@tiptap/extension-image';
-import { Image } from 'reactjs-tiptap-editor/image';
 import 'react-image-crop/dist/ReactCrop.css';
-// Import CSS
 import 'reactjs-tiptap-editor/style.css';
-import { BaseKit } from 'reactjs-tiptap-editor/base-kit';
-import { Bold } from 'reactjs-tiptap-editor/bold';
-import { TextAlign } from 'reactjs-tiptap-editor/textalign';
-import { Color } from 'reactjs-tiptap-editor/color';
-import { Italic } from 'reactjs-tiptap-editor/italic';
-import { FontFamily } from 'reactjs-tiptap-editor/fontfamily';
-import { FontSize } from 'reactjs-tiptap-editor/fontsize';
-import { Heading } from 'reactjs-tiptap-editor/heading';
-import { Highlight } from 'reactjs-tiptap-editor/highlight';
-import { History } from 'reactjs-tiptap-editor/history';
-import { BulletList } from 'reactjs-tiptap-editor/bulletlist';
-import { ColumnActionButton } from 'reactjs-tiptap-editor/multicolumn';
-import { Emoji } from 'reactjs-tiptap-editor/emoji';
-import { HorizontalRule } from 'reactjs-tiptap-editor/horizontalrule';
-import { Indent } from 'reactjs-tiptap-editor/indent';
-import { OrderedList } from 'reactjs-tiptap-editor/orderedlist';
-import { Strike } from 'reactjs-tiptap-editor/strike';
-import { Table } from 'reactjs-tiptap-editor/table';
-import { TextUnderline } from 'reactjs-tiptap-editor/textunderline';
-import { useTheme } from '@/components/theme-provider';
+import { RichTextProvider } from 'reactjs-tiptap-editor';
+import { Bold, RichTextBold } from 'reactjs-tiptap-editor/bold';
+import { BulletList, RichTextBulletList } from 'reactjs-tiptap-editor/bulletlist';
+import { Column, RichTextColumn } from 'reactjs-tiptap-editor/column';
+import { Color, RichTextColor } from 'reactjs-tiptap-editor/color';
+import { Emoji, RichTextEmoji } from 'reactjs-tiptap-editor/emoji';
+import { FontFamily, RichTextFontFamily } from 'reactjs-tiptap-editor/fontfamily';
+import { FontSize, RichTextFontSize } from 'reactjs-tiptap-editor/fontsize';
+import { Heading, RichTextHeading } from 'reactjs-tiptap-editor/heading';
+import { Highlight, RichTextHighlight } from 'reactjs-tiptap-editor/highlight';
+import { HorizontalRule, RichTextHorizontalRule } from 'reactjs-tiptap-editor/horizontalrule';
+import { Image, RichTextImage } from 'reactjs-tiptap-editor/image';
+import { Indent, RichTextIndent } from 'reactjs-tiptap-editor/indent';
+import { Italic, RichTextItalic } from 'reactjs-tiptap-editor/italic';
+import { OrderedList, RichTextOrderedList } from 'reactjs-tiptap-editor/orderedlist';
+import { Strike, RichTextStrike } from 'reactjs-tiptap-editor/strike';
+import { Table, RichTextTable } from 'reactjs-tiptap-editor/table';
+import { TextAlign, RichTextAlign } from 'reactjs-tiptap-editor/textalign';
+import { TextUnderline, RichTextUnderline } from 'reactjs-tiptap-editor/textunderline';
+import { EditorContent, AnyExtension, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
+import { TextStyle } from '@tiptap/extension-text-style';
+import type { Level } from '@tiptap/extension-heading';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AnyExtension } from '@tiptap/react';
 import { fileToBase64 } from '@/lib/fileUtils';
 import {
   extractBase64ImagesFromJson,
@@ -63,42 +62,6 @@ export type DialogData = {
 
 type GalleryEditorMode = 'create' | 'edit';
 
-const extensions: AnyExtension[] = [
-  BaseKit.configure({
-    placeholder: {
-      showOnlyCurrent: true,
-    },
-    characterCount: false,
-  } as any),
-  History,
-  Image.configure({
-    upload: (files: File) => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(fileToBase64(files));
-        }, 500);
-      });
-    },
-  }),
-  FontFamily,
-  Heading,
-  FontSize,
-  Bold,
-  Italic,
-  TextUnderline,
-  Strike,
-  Color,
-  Highlight,
-  BulletList,
-  OrderedList,
-  TextAlign,
-  Indent,
-  HorizontalRule,
-  ColumnActionButton,
-  Table,
-  Emoji,
-] as unknown as AnyExtension[];
-
 type GalleryEditorProps = {
   mode?: GalleryEditorMode;
   galleryId?: number;
@@ -120,13 +83,64 @@ export function GalleryEditor({
   const [value, setValue] = useState<any>('');
   const [originalValue, setOriginalValue] = useState<any>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const isDarkMode = useTheme();
   const currentUser = useUserStore((state) => state.user);
-  const { editor, editorRef, isReady } = useEditorState();
   const [open, setOpen] = useState(false);
   const [dialogData, setDialogData] = useState<DialogData | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const extensions = useMemo<AnyExtension[]>(
+    () => [
+      StarterKit.configure({
+        bold: false,
+        italic: false,
+        strike: false,
+        bulletList: false,
+        orderedList: false,
+        heading: false,
+      }),
+      TextStyle,
+      Placeholder.configure({
+        placeholder: 'Share your gallery story...',
+      }),
+      Bold,
+      Italic,
+      TextUnderline,
+      Strike,
+      Color,
+      Highlight,
+      FontSize,
+      FontFamily,
+      BulletList,
+      OrderedList,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Indent,
+      HorizontalRule,
+      Table,
+      Column,
+      Emoji,
+      Heading.configure({
+        levels: [1, 2, 3, 4, 5, 6],
+      }),
+      Image.configure({
+        resourceImage: 'upload',
+        upload: async (file: File) => fileToBase64(file),
+      }),
+    ],
+    []
+  );
+
+  const editor = useEditor({
+    extensions,
+    content: value,
+    onUpdate: ({ editor }) => {
+      const json = editor.getJSON();
+      setValue(json);
+    },
+  });
 
   // Load existing gallery when in edit mode
   useEffect(() => {
@@ -148,6 +162,23 @@ export function GalleryEditor({
         setLoading(false);
       });
   }, [isEdit, resolvedGalleryId]);
+
+  useEffect(() => {
+    if (!editor || !value) return;
+    try {
+      const current = editor.getJSON();
+      const incoming = value || '';
+      if (JSON.stringify(current) !== JSON.stringify(incoming)) {
+        if (incoming) {
+          editor.commands.setContent(incoming);
+        } else {
+          editor.commands.clearContent(true);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync editor content', err);
+    }
+  }, [editor, value]);
 
   const saveNewGallery = async (data: FormDataProps) => {
     if (!currentUser || !data || submitting) return;
@@ -283,10 +314,6 @@ export function GalleryEditor({
 
   const onSubmit = isEdit ? saveExistingGallery : saveNewGallery;
 
-  const onChangeContent = (val: any) => {
-    setValue(val);
-  };
-
   const handleSaveClick = useCallback(() => {
     if (!editor) return;
     const json = editor.getJSON();
@@ -321,6 +348,32 @@ export function GalleryEditor({
     if (!v) setDialogData(null);
   };
 
+  const handleImageUpload = useCallback(
+    async (files: FileList | null) => {
+      if (!editor || !files?.length) return;
+      const file = files[0];
+      const src = await fileToBase64(file);
+      editor.chain().focus().setImage({ src }).run();
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    [editor]
+  );
+
+  const [editorRenderKey, setEditorRenderKey] = useState(0);
+
+  useEffect(() => {
+    if (!editor) return;
+    const rerender = () => setEditorRenderKey((k) => k + 1);
+    editor.on('selectionUpdate', rerender);
+    editor.on('transaction', rerender);
+    return () => {
+      editor.off('selectionUpdate', rerender);
+      editor.off('transaction', rerender);
+    };
+  }, [editor]);
+
   const EditorSkeleton = () => {
     return (
       <div className="flex flex-col space-y-3">
@@ -329,54 +382,59 @@ export function GalleryEditor({
     );
   };
 
-  const renderToolbar = useMemo(
-    () => ({
-      render: (_props: any, _items: any, dom: any, containerDom: any) =>
-        containerDom(
-          <div
-            className="flex flex-wrap items-center gap-2"
-            style={{ overflow: 'visible' }}
-          >
-            {dom}
-            <span className="grow basis-full sm:basis-0" />
-            <Button
-              type="button"
-              size="sm"
-              variant="toolbar"
-              onClick={isEdit ? handleEditSaveClick : handleSaveClick}
-              disabled={!isReady}
-            >
-              Save
-            </Button>
-          </div>
-        ),
-    }),
-    [handleEditSaveClick, handleSaveClick, isEdit, isReady]
-  );
+  const toolbar = useMemo(() => {
+    if (!editor) return null;
+    return (
+      <div className="mb-4 richtext-flex richtext-flex-wrap richtext-items-center richtext-gap-2 richtext-rounded-md richtext-border richtext-bg-popover richtext-p-2">
+        <RichTextHeading />
+        <RichTextBold />
+        <RichTextItalic />
+        <RichTextUnderline />
+        <RichTextStrike />
+        <RichTextColor />
+        <RichTextHighlight />
+        <RichTextFontFamily />
+        <RichTextFontSize />
+        <RichTextAlign />
+        <RichTextBulletList />
+        <RichTextOrderedList />
+        <RichTextIndent />
+        <RichTextColumn />
+        <RichTextTable />
+        <RichTextHorizontalRule />
+        <RichTextImage />
+        <RichTextEmoji />
+        <span className="richtext-flex-1" />
+        <Button
+          type="button"
+          size="sm"
+          variant="default"
+          onClick={isEdit ? handleEditSaveClick : handleSaveClick}
+        >
+          Save
+        </Button>
+      </div>
+    );
+  }, [editor, handleEditSaveClick, handleSaveClick, isEdit]);
 
   const showEditor =
-    !isEdit || (isEdit && !loading && value && resolvedGalleryId !== undefined);
+    !!editor && (!isEdit || (isEdit && !loading && resolvedGalleryId !== undefined));
 
   return (
     <div className="container mx-auto p-5 flex justify-center">
       <div className="h-full w-full">
         {showEditor ? (
-          <RichTextEditor
-            ref={editorRef}
-            toolbar={renderToolbar}
-            output="json"
-            content={value}
-            onChangeContent={onChangeContent}
-            extensions={extensions}
-            dark={isDarkMode.theme === 'dark'}
-            bubbleMenu={{
-              floatingMenuConfig: {
-                hidden: false,
-              },
-            }}
-            disableBubble={false}
-            hideBubble={false}
-          />
+          <RichTextProvider editor={editor}>
+            {toolbar}
+            <EditorContent className="min-h-[380px] rounded-lg border bg-card p-4 prose max-w-none focus:outline-none" editor={editor} />
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={(e) => handleImageUpload(e.target.files)}
+            />
+          </RichTextProvider>
         ) : (
           <EditorSkeleton />
         )}

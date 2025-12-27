@@ -4,7 +4,7 @@ import { useParams /*, useNavigate */ } from 'react-router-dom';
 import { getGallery, getGalleryBySlug } from '@/api/gallery';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
-import TextStyle from '@tiptap/extension-text-style';
+import { TextStyle } from '@tiptap/extension-text-style';
 import Comment from './galleryComment/Comment';
 import { useInView } from 'react-intersection-observer';
 import { generateHTML } from '@tiptap/html';
@@ -19,7 +19,7 @@ import { FontFamily } from 'reactjs-tiptap-editor/fontfamily';
 import { FontSize } from 'reactjs-tiptap-editor/fontsize';
 import { Highlight } from 'reactjs-tiptap-editor/highlight';
 import { BulletList } from 'reactjs-tiptap-editor/bulletlist';
-import { ColumnActionButton } from 'reactjs-tiptap-editor/multicolumn';
+import { Column } from 'reactjs-tiptap-editor/column';
 import { Emoji } from 'reactjs-tiptap-editor/emoji';
 import { Indent } from 'reactjs-tiptap-editor/indent';
 import { Strike } from 'reactjs-tiptap-editor/strike';
@@ -111,7 +111,7 @@ export default function GalleryPage() {
           BulletList,
           TextAlign,
           Indent,
-          ColumnActionButton,
+          Column,
           Table,
           Emoji,
         ]);
