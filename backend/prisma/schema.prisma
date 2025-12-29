@@ -68,9 +68,10 @@ model User {
 
   profile Profile?
 
-  galleries       Gallery[]
-  comments        Comment[]
-  GalleryReaction GalleryReaction[]
+  galleries        Gallery[]
+  comments         Comment[]
+  commentReactions Reaction[]
+  GalleryReaction  GalleryReaction[]
 
   following Follow[] @relation("following")
   followers Follow[] @relation("followers")
@@ -187,21 +188,27 @@ model Comment {
 
 model Reaction {
   id        Int        @id @default(autoincrement())
+  createdAt DateTime   @default(now())
   type      ActionType
   commentId Int
-  comment   Comment    @relation("CommentSelectedActions", fields: [commentId], references: [id])
+  userId    Int
+  comment   Comment    @relation("CommentSelectedActions", fields: [commentId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, type])
+  @@index([userId])
 }
 
 model ActionCount {
   commentId Int     @id
-  upvote    Int
-  rocket    Int
-  heart     Int
-  thumbUp   Int
-  thumbDown Int
-  laugh     Int
-  hooray    Int
-  confused  Int
-  eye       Int
-  comment   Comment @relation("CommentActionCount", fields: [commentId], references: [id])
+  upvote    Int     @default(0)
+  rocket    Int     @default(0)
+  heart     Int     @default(0)
+  thumbUp   Int     @default(0)
+  thumbDown Int     @default(0)
+  laugh     Int     @default(0)
+  hooray    Int     @default(0)
+  confused  Int     @default(0)
+  eye       Int     @default(0)
+  comment   Comment @relation("CommentActionCount", fields: [commentId], references: [id], onDelete: Cascade)
 }
