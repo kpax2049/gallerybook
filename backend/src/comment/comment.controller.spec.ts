@@ -9,6 +9,7 @@ describe('CommentController', () => {
   const commentService = {
     getComments: jest.fn(),
     createComment: jest.fn(),
+    toggleReaction: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -31,8 +32,8 @@ describe('CommentController', () => {
 
   it('retrieves comments for a gallery via query param', async () => {
     commentService.getComments.mockResolvedValue([{ id: 1 }]);
-    await controller.getByGallery(10);
-    expect(commentService.getComments).toHaveBeenCalledWith(10);
+    await controller.getByGallery(10, { id: 9 } as any);
+    expect(commentService.getComments).toHaveBeenCalledWith(10, 9);
   });
 
   it('injects the authenticated user id when creating comments', async () => {
@@ -46,5 +47,19 @@ describe('CommentController', () => {
       galleryId: 5,
       userId: 3,
     });
+  });
+
+  it('toggles reactions with the provided payload', async () => {
+    commentService.toggleReaction.mockResolvedValue({ active: true });
+    await controller.toggleReaction(
+      4,
+      15,
+      { type: 'UPVOTE' } as any,
+    );
+    expect(commentService.toggleReaction).toHaveBeenCalledWith(
+      4,
+      15,
+      'UPVOTE',
+    );
   });
 });
