@@ -107,6 +107,23 @@ export const createComment = async (
   );
 };
 
+export type ToggleReactionResponse = {
+  active: boolean;
+  actions: { [key in ACTIONS_TYPE]: number };
+  selectedActions: ACTIONS_TYPE[];
+};
+
+export const toggleCommentReaction = async (
+  commentId: number,
+  type: ACTIONS_TYPE
+): Promise<ToggleReactionResponse> => {
+  return await apiRequest<ToggleReactionResponse>(
+    `/comments/${commentId}/reactions/toggle`,
+    'POST',
+    { type }
+  );
+};
+
 // Function to edit new comment
 export const editComment = async (commentData: Comment): Promise<Comment> => {
   return await apiRequest<Comment>(
