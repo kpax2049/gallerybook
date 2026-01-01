@@ -22,10 +22,7 @@ export default function CommentsPage() {
   const [scope, setScope] = React.useState<CommentScope>(scopeFromUrl);
   const [search, setSearch] = React.useState(sp.get('search') ?? '');
   const [page, setPage] = React.useState(Number(sp.get('page') ?? 1));
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [pageSize, setPageSize] = React.useState(
-    Number(sp.get('pageSize') ?? 24)
-  );
+  const [pageSize] = React.useState(Number(sp.get('pageSize') ?? 24));
 
   React.useEffect(() => {
     sessionStorage.setItem(

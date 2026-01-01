@@ -38,7 +38,6 @@ import { EditorContent, AnyExtension, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
-import type { Level } from '@tiptap/extension-heading';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fileToBase64 } from '@/lib/fileUtils';
 import {
@@ -87,7 +86,6 @@ export function GalleryEditor({
   const [open, setOpen] = useState(false);
   const [dialogData, setDialogData] = useState<DialogData | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const extensions = useMemo<AnyExtension[]>(
@@ -154,11 +152,9 @@ export function GalleryEditor({
           const normalizedContent = normalizeAttrs(data.content);
           setValue(normalizedContent);
         }
-        setError(null);
         setLoading(false);
       })
       .catch(() => {
-        setError('Failed to load gallery');
         setLoading(false);
       });
   }, [isEdit, resolvedGalleryId]);
@@ -360,19 +356,6 @@ export function GalleryEditor({
     },
     [editor]
   );
-
-  const [editorRenderKey, setEditorRenderKey] = useState(0);
-
-  useEffect(() => {
-    if (!editor) return;
-    const rerender = () => setEditorRenderKey((k) => k + 1);
-    editor.on('selectionUpdate', rerender);
-    editor.on('transaction', rerender);
-    return () => {
-      editor.off('selectionUpdate', rerender);
-      editor.off('transaction', rerender);
-    };
-  }, [editor]);
 
   const EditorSkeleton = () => {
     return (
