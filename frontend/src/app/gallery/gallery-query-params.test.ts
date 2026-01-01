@@ -7,12 +7,14 @@ import {
   queryToSort,
   sortToQuery,
 } from './gallery-query-params';
+import type { FilterState } from './gallery-query-params';
+import type { GalleryStatus } from '@/api/gallery';
 
 describe('gallery query params', () => {
   it('serializes filters while omitting defaults', () => {
-    const filters = {
+    const filters: FilterState = {
       ...defaultFilters,
-      status: new Set(['DRAFT', 'PUBLISHED']),
+      status: new Set<GalleryStatus>(['DRAFT', 'PUBLISHED']),
       owner: 'me' as const,
       range: '7d' as const,
       hasCover: true,
@@ -83,11 +85,11 @@ describe('gallery query params', () => {
   });
 
   it('round-trips filters through URLSearchParams', () => {
-    const filters = {
+    const filters: FilterState = {
       ...defaultFilters,
       owner: 'me' as const,
       hasTags: true,
-      status: new Set(['ARCHIVED']),
+      status: new Set<GalleryStatus>(['ARCHIVED']),
       tags: ['x'],
     };
 

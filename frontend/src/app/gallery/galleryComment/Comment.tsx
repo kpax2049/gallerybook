@@ -11,6 +11,9 @@ import {
   ACTIONS_TYPE,
 } from '@/api/comment';
 import { useUserStore } from '@/stores/userStore';
+import type { Comment as UiComment } from 'shadcn-comments';
+import { UserRole } from '@/common/enums';
+import type { User } from '@/api/user';
 
 interface CommentProps {
   galleryId: number;
@@ -33,8 +36,29 @@ export default function CommentList({ galleryId }: CommentProps) {
     [ACTIONS_TYPE.UPVOTE]: 0,
   });
 
-  const normalizeComment = (comment: Comment): Comment => ({
-    ...comment,
+  type UiUser = UiComment['user'];
+
+  const toAppUser = (user?: UiUser | User): User | undefined => {
+    if (!user) return undefined;
+    return {
+      role: (user as User).role ?? UserRole.USER,
+      status: (user as User).status,
+      hash: (user as User).hash,
+      settings: (user as User).settings,
+      galleries: (user as User).galleries,
+      id: user.id,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      email: user.email,
+      fullName: user.fullName,
+      username: user.username,
+      profile: user.profile,
+    };
+  };
+
+  const normalizeComment = (comment: Comment | UiComment): Comment => ({
+    ...(comment as Comment),
+    user: toAppUser((comment as Comment).user ?? comment.user),
     actions: { ...emptyActions(), ...(comment.actions ?? {}) },
     selectedActions: comment.selectedActions ?? [],
     replies: comment.replies?.map(normalizeComment) ?? [],

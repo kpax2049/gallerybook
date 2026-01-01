@@ -17,8 +17,7 @@ export function ThumbnailCarousel({
 }) {
   const [api, setApi] = React.useState<CarouselApi>();
   const setIndex = useThumbStore((s) => s.setIndex);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [idx, setIdx] = React.useState(0);
+  const [, setIdx] = React.useState(0);
 
   return (
     <div>
