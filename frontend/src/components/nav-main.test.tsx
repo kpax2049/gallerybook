@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -15,6 +14,7 @@ vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 const navItems = [
   {
     title: 'Library',
+    url: '#',
     items: [
       { title: 'Galleries', url: '/galleries?owner=me' },
       { title: 'Favorites', url: '/galleries?favoriteBy=me' },

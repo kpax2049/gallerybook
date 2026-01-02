@@ -39,7 +39,9 @@ const markHandlers: TipTapMarkHandlers = {
   code: (props) => <code>{props.children}</code>,
 };
 
-const nodeHandlers: TipTapNodeHandlers = {
+type ImageHandler = TipTapNodeHandlers['doc'];
+
+const nodeHandlers: TipTapNodeHandlers & { image: ImageHandler } = {
   doc: (props) => <>{props.children}</>,
   image: (props) => (
     <img
