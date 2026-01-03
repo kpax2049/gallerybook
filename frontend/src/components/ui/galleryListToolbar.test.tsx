@@ -1,9 +1,9 @@
-import * as React from 'react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 import { GalleryListToolbar } from './galleryListToolbar';
 import type { FilterState, SortState } from '@/app/gallery/gallery-query-params';
+import type { GalleryStatus } from '@/api/gallery';
 
 const baseFilters: FilterState = {
   status: new Set(),
@@ -66,7 +66,7 @@ describe('GalleryListToolbar', () => {
   it('shows active filter count badge when filters are applied', () => {
     const filters: FilterState = {
       ...baseFilters,
-      status: new Set(['DRAFT', 'PUBLISHED']),
+      status: new Set<GalleryStatus>(['DRAFT', 'PUBLISHED']),
       hasCover: true,
       hasTags: false,
       tags: ['x'],

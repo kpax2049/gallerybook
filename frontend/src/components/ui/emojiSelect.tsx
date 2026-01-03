@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { ACTIONS, ACTIONS_TYPE } from '@/types/comment';
 
 interface EmojiSelectProps {
