@@ -1,19 +1,19 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 
 import { useComments } from './use-comments';
 import type { CommentsListResponse } from '@/api/comment';
 
-const getCommentsListMock = vi.fn<
-  [Parameters<typeof import('@/api/comment')['getCommentsList']>[0]],
-  Promise<CommentsListResponse>
->();
+const getCommentsListMock =
+  vi.fn<typeof import('@/api/comment')['getCommentsList']>();
 
 vi.mock('@/api/comment', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/api/comment')>();
   return {
     ...actual,
-    getCommentsList: (...args: any[]) => getCommentsListMock(...args),
+    getCommentsList: (
+      ...args: Parameters<typeof getCommentsListMock>
+    ) => getCommentsListMock(...args),
   };
 });
 

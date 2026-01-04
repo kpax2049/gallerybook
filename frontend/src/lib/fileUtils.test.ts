@@ -27,8 +27,9 @@ function ensureGlobals() {
         this.lastModified = options?.lastModified ?? Date.now();
       }
     }
-    // @ts-expect-error: assign to global for test environment
-    globalThis.File = PolyfillFile;
+    Object.assign(globalThis as Record<string, unknown>, {
+      File: PolyfillFile,
+    });
   }
 }
 
@@ -40,8 +41,7 @@ const base64Png = 'data:image/png;base64,YWJj'; // "abc"
 beforeEach(() => {
   vi.restoreAllMocks();
   vi.resetModules();
-  // @ts-expect-error: cleanup between platform-specific tests
-  delete (globalThis as any).window;
+  delete (globalThis as Record<string, unknown>).window;
   ensureGlobals();
 });
 
@@ -78,7 +78,10 @@ describe('URL helpers', () => {
 
     expect(isUrl('http://example.com', { requireHostname: true })).toBe(true);
     expect(
-      isUrl('data:image/png;base64,YWJj', { allowBase64: true })
+      isUrl('data:image/png;base64,YWJj', {
+        requireHostname: false,
+        allowBase64: true,
+      })
     ).toBe(true);
     expect(isUrl('data:image/png;base64,YWJj')).toBe(false);
     expect(isUrl('javascript:alert(1)')).toBe(false);

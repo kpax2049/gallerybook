@@ -1,9 +1,8 @@
 import React from 'react';
-export function enrich<P extends IntrinsicAttributes & P>(
+
+export function enrich<P extends object>(
   WrappedComponent: React.ComponentType<P>
 ) {
-  function Enrich(props: P) {
-    return <WrappedComponent {...props} />;
-  }
+  const Enrich = (props: P) => <WrappedComponent {...props} />;
   return Enrich;
 }

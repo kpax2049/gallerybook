@@ -3,17 +3,18 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 
 import { useGalleries } from './use-gallery';
 import type { GalleriesListResponse } from '@/api/gallery';
+import type { FilterState } from '@/app/gallery/gallery-query-params';
 
-const getGalleriesListMock = vi.fn<
-  [Record<string, string | number | boolean>],
-  Promise<GalleriesListResponse>
->();
+const getGalleriesListMock =
+  vi.fn<typeof import('@/api/gallery')['getGalleriesList']>();
 
 vi.mock('@/api/gallery', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/api/gallery')>();
   return {
     ...actual,
-    getGalleriesList: (...args: any[]) => getGalleriesListMock(...args),
+    getGalleriesList: (
+      ...args: Parameters<typeof getGalleriesListMock>
+    ) => getGalleriesListMock(...args),
   };
 });
 
@@ -27,10 +28,10 @@ const baseResponse: GalleriesListResponse = {
 };
 
 const defaultSort = { key: 'updatedAt', dir: 'desc' } as const;
-const defaultFilters = {
+const defaultFilters: FilterState = {
   status: new Set(),
-  owner: 'any' as const,
-  range: 'any' as const,
+  owner: 'any',
+  range: 'any',
   hasCover: null,
   hasTags: null,
   hasComments: null,
@@ -63,14 +64,15 @@ describe('useGalleries', () => {
       items: [{ id: 1 } as any],
     });
 
-    const { result } = renderHook((props) =>
-      useGalleries({
-        sort: defaultSort,
-        filters: defaultFilters,
-        page: 1,
-        pageSize: 24,
-        ...props,
-      })
+    const { result } = renderHook(
+      (props: Partial<Parameters<typeof useGalleries>[0]> = {}) =>
+        useGalleries({
+          sort: defaultSort,
+          filters: defaultFilters,
+          page: 1,
+          pageSize: 24,
+          ...props,
+        })
     );
 
     expect(result.current.loading).toBe(true);
