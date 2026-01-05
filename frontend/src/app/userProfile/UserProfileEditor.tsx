@@ -66,6 +66,7 @@ export type PasswordForm = z.infer<typeof passwordSchema>;
 
 export function UserProfileEditor() {
   const initial = useUserStore((s) => s.user);
+  const setUser = useUserStore((s) => s.setUser);
 
   // --- Profile form ---
   const {
@@ -104,8 +105,21 @@ export function UserProfileEditor() {
 
   // --------------- Handlers ---------------
   async function onSubmitProfile(values: ProfileForm) {
-    console.log('profile ->', values);
-    // await fetch('/api/account/profile', { method: 'PUT', body: JSON.stringify(values) })
+    if (!initial) {
+      toast({
+        variant: 'destructive',
+        title: 'Not signed in',
+        description: 'Please sign in again to update your profile.',
+      });
+      return;
+    }
+
+    // TODO: wire up real API once available.
+    setUser({ ...initial, fullName: values.fullName, username: values.username });
+    toast({
+      title: 'Profile saved',
+      description: 'Your profile changes have been saved.',
+    });
   }
 
   async function onSubmitPassword(values: PasswordForm) {
