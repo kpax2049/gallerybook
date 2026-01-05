@@ -30,6 +30,7 @@ import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 import Thumbnails from 'yet-another-react-lightbox/plugins/thumbnails';
 import 'yet-another-react-lightbox/styles.css';
 import 'yet-another-react-lightbox/plugins/thumbnails.css';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export interface GalleryBlock {
   type: string;
@@ -201,11 +202,17 @@ export default function GalleryPage() {
     return () => root.removeEventListener('click', onClick);
   }, []);
 
+  const showSkeleton = loading && htmlChunks.length === 0;
+
   return (
     <div className="grid auto-rows-min gap-4 p-4 justify-between">
       <div className="flex items-baseline gap-2">
-        <h3 className="text-lg font-semibold">{title || 'Gallery'}</h3>
-        {loading && (
+        {showSkeleton ? (
+          <Skeleton className="h-7 w-40" />
+        ) : (
+          <h3 className="text-lg font-semibold">{title || 'Gallery'}</h3>
+        )}
+        {loading && !showSkeleton && (
           <span className="text-xs text-muted-foreground">Loading…</span>
         )}
         {error && <span className="text-xs text-destructive">{error}</span>}
@@ -215,16 +222,29 @@ export default function GalleryPage() {
         className="gallery-container px-4 space-y-8 pb-12 [&_img]:cursor-zoom-in"
         ref={containerRef}
       >
-        {htmlChunks.map((html, i) => (
-          <div key={i}>
-            <div dangerouslySetInnerHTML={{ __html: html }} />
-            {/* Attach ref ONLY to last chunk if more chunks remain */}
-            {i === htmlChunks.length - 1 &&
-              chunkIndex * chunkSize < rawBlocks.length && (
-                <div ref={ref} className="h-16" />
-              )}
+        {showSkeleton ? (
+          <div className="space-y-4">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-11/12" />
+            <Skeleton className="h-4 w-10/12" />
+            <Skeleton className="h-64 w-full rounded-xl" />
+            <Skeleton className="h-4 w-9/12" />
+            <Skeleton className="h-4 w-10/12" />
+            <Skeleton className="h-4 w-7/12" />
           </div>
-        ))}
+        ) : (
+          htmlChunks.map((html, i) => (
+            <div key={i}>
+              <div dangerouslySetInnerHTML={{ __html: html }} />
+              {/* Attach ref ONLY to last chunk if more chunks remain */}
+              {i === htmlChunks.length - 1 &&
+                chunkIndex * chunkSize < rawBlocks.length && (
+                  <div ref={ref} className="h-16" />
+                )}
+            </div>
+          ))
+        )}
       </div>
 
       <Lightbox
