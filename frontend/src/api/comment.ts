@@ -153,6 +153,8 @@ export type CommentAuthor = {
   id: number;
   name: string;
   avatar?: string | null;
+  avatarUrl?: string | null;
+  profile?: { avatarUrl?: string | null } | null;
 };
 
 export type CommentGallery = {

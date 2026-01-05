@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { MDXEditor } from '@mdxeditor/editor';
 
 import { Avatar, AvatarImage, AvatarFallback, Button } from 'shadcn-comments';
-import { User } from '@/api/user';
+import { User, getUserInitials } from '@/api/user';
 
 interface CommentEditorProps {
   value?: string;
@@ -31,7 +31,9 @@ export const CommentEditor = ({
       <div className={`flex gap-4 w-full`}>
         <Avatar className={'w-[32px] h-[32px]'}>
           <AvatarImage src={currentUser?.profile?.avatarUrl} />
-          <AvatarFallback>GB</AvatarFallback>
+          <AvatarFallback className="bg-[linear-gradient(to_bottom,#4967ff,#2ecaff)] text-white font-medium">
+            {getUserInitials(currentUser)}
+          </AvatarFallback>
         </Avatar>
 
         <div className={'w-full flex-1'}>

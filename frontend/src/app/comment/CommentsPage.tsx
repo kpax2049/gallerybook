@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { MessageSquare } from 'lucide-react';
 import { CommentItem, CommentScope } from '@/api/comment';
@@ -14,6 +15,19 @@ const SCOPES: { key: CommentScope; label: string }[] = [
   { key: 'authored', label: 'Authored by me' },
   { key: 'mentions', label: 'Mentions' },
 ];
+
+const getAuthorInitials = (name?: string | null) => {
+  if (!name) return 'GB';
+  const letters = name
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+  return letters || 'GB';
+};
 
 export default function CommentsPage() {
   const [sp, setSp] = useSearchParams();
@@ -151,6 +165,9 @@ export default function CommentsPage() {
 }
 
 function CommentRow({ c, fetching }: { c: CommentItem; fetching: boolean }) {
+  const avatarSrc =
+    c.author.avatarUrl ?? c.author.avatar ?? c.author.profile?.avatarUrl ?? '';
+
   return (
     <li
       className={cn(
@@ -160,14 +177,12 @@ function CommentRow({ c, fetching }: { c: CommentItem; fetching: boolean }) {
     >
       <div className="flex items-start gap-3">
         {/* Avatar */}
-        <img
-          src={c.author.avatar || ''}
-          alt={c.author.name}
-          className={cn(
-            'h-8 w-8 rounded-full object-cover bg-muted',
-            !c.author.avatar && 'opacity-60'
-          )}
-        />
+        <Avatar className="h-8 w-8 ring-1 ring-border/60 overflow-hidden">
+          <AvatarImage src={avatarSrc || undefined} alt={c.author.name} />
+          <AvatarFallback className="bg-[linear-gradient(to_bottom,#4967ff,#2ecaff)] text-white text-xs font-medium uppercase">
+            {getAuthorInitials(c.author.name)}
+          </AvatarFallback>
+        </Avatar>
 
         {/* Body */}
         <div className="min-w-0 flex-1">
