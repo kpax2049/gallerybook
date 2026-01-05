@@ -140,27 +140,34 @@ describe('GalleryService', () => {
   });
 
   describe('buildWhere', () => {
-    const buildWhere = (userId: number | null, dto: Partial<ListGalleriesDto>) =>
-      (service as any).buildWhere(userId, dto);
+    const buildWhere = (
+      userId: number | null,
+      dto: Partial<ListGalleriesDto>,
+      favoriteIds?: number[],
+      likedIds?: number[],
+    ) => (service as any).buildWhere(userId, dto, favoriteIds, likedIds);
 
-    it('includes owner and favorite filters when the viewer is authenticated', () => {
-      const where = buildWhere(7, {
-        owner: 'me',
-        favoriteBy: 'me',
-        status: [GalleryStatus.PUBLISHED],
-        tags: ['nature'],
-        search: 'sun',
-      });
+    it('includes owner + favorites + likes + tag + search filters', () => {
+      const where = buildWhere(
+        7,
+        {
+          owner: 'me',
+          favoriteBy: 'me',
+          likedBy: 'me',
+          status: [GalleryStatus.PUBLISHED],
+          tags: ['nature'],
+          search: 'sun',
+        },
+        [1, 2],
+        [2, 3],
+      );
 
       expect(where.AND).toEqual(
         expect.arrayContaining([
           { userId: 7 },
           { status: { in: [GalleryStatus.PUBLISHED] } },
-          {
-            reactions: {
-              some: { userId: 7, type: 'FAVORITE' },
-            },
-          },
+          { id: { in: [1, 2] } },
+          { id: { in: [2, 3] } }, // intersection will be handled by Prisma
           {
             tags: {
               some: {
@@ -183,9 +190,8 @@ describe('GalleryService', () => {
       );
     });
 
-    it('forces empty sets when favorite or followed filters cannot be satisfied', () => {
+    it('forces empty sets when followed filters cannot be satisfied', () => {
       const where = buildWhere(null, {
-        favoriteBy: 'me',
         followedOnly: true,
         range: '7d',
         hasCover: true,
@@ -207,6 +213,28 @@ describe('GalleryService', () => {
           { userId: 9 },
         ]),
       );
+    });
+  });
+
+  describe('list favorites/likes', () => {
+    it('returns empty favorite set early when user is missing', async () => {
+      const res = await (service as any).list(null, {
+        favoriteBy: 'me',
+        page: 1,
+        pageSize: 24,
+      });
+      expect(res.total).toBe(0);
+      expect(res.items).toEqual([]);
+    });
+
+    it('returns empty liked set early when user is missing', async () => {
+      const res = await (service as any).list(null, {
+        likedBy: 'me',
+        page: 1,
+        pageSize: 24,
+      });
+      expect(res.total).toBe(0);
+      expect(res.items).toEqual([]);
     });
   });
 

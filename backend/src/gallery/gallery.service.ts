@@ -502,7 +502,72 @@ export class GalleryService {
   }
 
   async list(userId: number | null, dto: ListGalleriesDto) {
-    const where = this.buildWhere(userId, dto);
+    let favoriteIds: number[] | undefined;
+    let likedIds: number[] | undefined;
+
+    if (dto.favoriteBy !== undefined) {
+      const favUserId = this.coerceFavUserId(dto.favoriteBy, userId);
+      if (favUserId === undefined) {
+        return {
+          total: 0,
+          page: dto.page ?? 1,
+          pageSize: dto.pageSize ?? 24,
+          items: [],
+          commentCounts: {},
+          myReactions: {},
+        };
+      }
+
+      const favRows = await this.prisma.galleryReaction.findMany({
+        where: { userId: favUserId, type: ReactionType.FAVORITE },
+        select: { galleryId: true },
+      });
+      favoriteIds = favRows.map((r) => r.galleryId);
+
+      if (!favoriteIds.length) {
+        return {
+          total: 0,
+          page: dto.page ?? 1,
+          pageSize: dto.pageSize ?? 24,
+          items: [],
+          commentCounts: {},
+          myReactions: {},
+        };
+      }
+    }
+
+    if (dto.likedBy !== undefined) {
+      const likedUserId = this.coerceFavUserId(dto.likedBy, userId);
+      if (likedUserId === undefined) {
+        return {
+          total: 0,
+          page: dto.page ?? 1,
+          pageSize: dto.pageSize ?? 24,
+          items: [],
+          commentCounts: {},
+          myReactions: {},
+        };
+      }
+
+      const likeRows = await this.prisma.galleryReaction.findMany({
+        where: { userId: likedUserId, type: ReactionType.LIKE },
+        select: { galleryId: true },
+      });
+      likedIds = likeRows.map((r) => r.galleryId);
+
+      if (!likedIds.length) {
+        return {
+          total: 0,
+          page: dto.page ?? 1,
+          pageSize: dto.pageSize ?? 24,
+          items: [],
+          commentCounts: {},
+          myReactions: {},
+        };
+      }
+    }
+
+    const where = this.buildWhere(userId, dto, favoriteIds, likedIds);
     const orderBy = this.buildOrderBy(
       dto.sortKey ?? 'updatedAt',
       dto.sortDir ?? 'desc',
@@ -635,7 +700,7 @@ export class GalleryService {
 
   // Helper functions
   private coerceFavUserId(favoriteBy: string | undefined, meId: number | null) {
-    if (!favoriteBy) return undefined;
+    if (favoriteBy === undefined) return undefined;
     if (favoriteBy === 'me') return meId ?? undefined;
     const n = Number(favoriteBy);
     return Number.isFinite(n) ? n : undefined;
@@ -644,6 +709,8 @@ export class GalleryService {
   private buildWhere(
     userId: number | null,
     dto: ListGalleriesDto,
+    favoriteIds?: number[],
+    likedIds?: number[],
   ): Prisma.GalleryWhereInput {
     const AND: Prisma.GalleryWhereInput[] = [];
     const OR: Prisma.GalleryWhereInput[] = [];
@@ -651,6 +718,7 @@ export class GalleryService {
     // If we're building the "followed feed", ignore owner/favorite filters for MVP
     const ignoreOwner = !!dto.followedOnly;
     const ignoreFavorite = !!dto.followedOnly;
+    const ignoreLiked = !!dto.followedOnly;
 
     // status
     if (dto.status?.length) AND.push({ status: { in: dto.status as any } });
@@ -661,18 +729,12 @@ export class GalleryService {
     }
 
     // favorites filter
-    if (!ignoreFavorite && dto.favoriteBy !== undefined) {
-      const favUserId = this.coerceFavUserId(dto.favoriteBy, userId);
-      if (favUserId) {
-        AND.push({
-          reactions: {
-            some: { userId: favUserId, type: 'FAVORITE' },
-          },
-        });
-      } else {
-        // asked for favoriteBy=me; unauthenticated returns empty set
-        AND.push({ id: -1 });
-      }
+    if (!ignoreFavorite && favoriteIds) {
+      AND.push({ id: { in: favoriteIds } });
+    }
+
+    if (!ignoreLiked && likedIds) {
+      AND.push({ id: { in: likedIds } });
     }
 
     // followed-only filter

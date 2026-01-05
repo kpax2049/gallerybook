@@ -124,6 +124,10 @@ export class ListGalleriesDto {
   favoriteBy?: string; // "me" or a userId
 
   @IsOptional()
+  @IsString()
+  likedBy?: string; // "me" or a userId
+
+  @IsOptional()
   @Transform(({ value }) => value === 'true')
   @IsBoolean()
   followedOnly?: boolean = false;
