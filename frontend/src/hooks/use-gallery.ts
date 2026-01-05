@@ -36,6 +36,10 @@ export function useGalleries(params: {
     !followedOnly && filters?.favoriteBy !== undefined
       ? String(filters?.favoriteBy)
       : undefined;
+  const likedByParam =
+    !followedOnly && filters?.likedBy !== undefined
+      ? String(filters?.likedBy)
+      : undefined;
 
   const query = useMemo(() => {
     return serializeParams({
@@ -51,6 +55,7 @@ export function useGalleries(params: {
           : String(filters?.hasComments),
       tags: tagsList,
       favoriteBy: favoriteByParam,
+      likedBy: likedByParam,
       search: filters?.search || undefined,
       sortKey: sort.key,
       sortDir: sort.dir,
@@ -67,6 +72,7 @@ export function useGalleries(params: {
     // deps used above:
     ownerParam,
     favoriteByParam,
+    likedByParam,
     filters?.range,
     filters?.hasCover,
     filters?.hasTags,

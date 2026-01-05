@@ -37,6 +37,8 @@ const defaultFilters: FilterState = {
   hasComments: null,
   tags: [],
   search: '',
+  favoriteBy: undefined,
+  likedBy: undefined,
 };
 
 const deferred = <T>() => {

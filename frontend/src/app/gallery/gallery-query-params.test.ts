@@ -23,6 +23,7 @@ describe('gallery query params', () => {
       tags: ['tag-a', 'tag-b'],
       search: 'hello',
       favoriteBy: 'me' as const,
+      likedBy: 'me' as const,
       followedOnly: true,
       createdById: 12,
     };
@@ -32,6 +33,7 @@ describe('gallery query params', () => {
     expect(query.status).toEqual(['DRAFT', 'PUBLISHED']);
     expect(query.owner).toBeUndefined(); // followedOnly omits owner
     expect(query.favoriteBy).toBeUndefined(); // followedOnly omits favoriteBy
+    expect(query.likedBy).toBeUndefined(); // followedOnly omits likedBy
     expect(query.range).toBe('7d');
     expect(query.hasCover).toBe('true');
     expect(query.hasTags).toBe('false');
@@ -53,6 +55,7 @@ describe('gallery query params', () => {
       tags: 'one,two',
       search: 'abc',
       favoriteBy: 'me',
+      likedBy: '123',
       followedOnly: 'true',
       createdById: '7',
     });
@@ -68,6 +71,7 @@ describe('gallery query params', () => {
     expect(filters.tags).toEqual(['one', 'two']);
     expect(filters.search).toBe('abc');
     expect(filters.favoriteBy).toBe('me');
+    expect(filters.likedBy).toBe(123);
     expect(filters.followedOnly).toBe(true);
     expect(filters.createdById).toBe(7);
   });
@@ -75,12 +79,14 @@ describe('gallery query params', () => {
   it('handles numeric favoriteBy and invalid createdById', () => {
     const sp = new URLSearchParams({
       favoriteBy: '123',
+      likedBy: 'me',
       createdById: 'not-a-number',
     });
 
     const filters = queryToFilters(sp);
 
     expect(filters.favoriteBy).toBe(123);
+    expect(filters.likedBy).toBe('me');
     expect(filters.createdById).toBeUndefined();
   });
 
@@ -91,6 +97,7 @@ describe('gallery query params', () => {
       hasTags: true,
       status: new Set<GalleryStatus>(['ARCHIVED']),
       tags: ['x'],
+      likedBy: 'me',
     };
 
     const query = filtersToQuery(filters);
@@ -107,6 +114,7 @@ describe('gallery query params', () => {
     expect(parsed.hasTags).toBe(true);
     expect(Array.from(parsed.status)).toEqual(['ARCHIVED']);
     expect(parsed.tags).toEqual(['x']);
+    expect(parsed.likedBy).toBe('me');
   });
 
   it('serializes and parses sort defaults', () => {

@@ -19,6 +19,7 @@ export interface FilterState {
   tags: string[];
   search: string;
   favoriteBy?: 'me' | number;
+  likedBy?: 'me' | number;
   followedOnly?: boolean;
   createdById?: number;
 }
@@ -38,6 +39,7 @@ export const defaultFilters: FilterState = {
   hasComments: null,
   tags: [],
   search: '',
+  likedBy: undefined,
   followedOnly: false,
   createdById: undefined,
 };
@@ -58,6 +60,8 @@ export function filtersToQuery(f: FilterState) {
     search: f.search || undefined,
     favoriteBy:
       !followedOnly && f.favoriteBy != null ? String(f.favoriteBy) : undefined,
+    likedBy:
+      !followedOnly && f.likedBy != null ? String(f.likedBy) : undefined,
     followedOnly: followedOnly ? 'true' : undefined,
     createdById: f.createdById != null ? String(f.createdById) : undefined,
   };
@@ -90,6 +94,15 @@ export function queryToFilters(q: URLSearchParams): FilterState {
           ? undefined
           : Number(favoriteByRaw)
         : undefined;
+  const likedByRaw = q.get('likedBy') ?? undefined;
+  const likedBy =
+    likedByRaw === 'me'
+      ? 'me'
+      : likedByRaw != null
+        ? Number.isNaN(Number(likedByRaw))
+          ? undefined
+          : Number(likedByRaw)
+        : undefined;
 
   const createdByIdRaw = q.get('createdById');
   const createdById =
@@ -107,6 +120,7 @@ export function queryToFilters(q: URLSearchParams): FilterState {
     tags,
     search: q.get('search') ?? '',
     favoriteBy,
+    likedBy,
     followedOnly: q.get('followedOnly') === 'true',
     createdById,
   };
