@@ -8,16 +8,18 @@ import {
 import { Link, useLocation, useMatch, useParams } from 'react-router-dom';
 import { useGalleryStore } from '@/stores/galleryStore';
 
-type Hub = 'my' | 'drafts' | 'favorites' | 'comments' | 'all';
+type Hub = 'my' | 'drafts' | 'favorites' | 'likes' | 'comments' | 'all';
 type LastHubPayload = { hub: Hub; search?: string };
 
 function computeHubFromSearch(search: string): Hub {
   const sp = new URLSearchParams(search);
   const favoriteBy = sp.get('favoriteBy');
+  const likedBy = sp.get('likedBy');
   const owner = sp.get('owner');
   const status = (sp.get('status') || '').toLowerCase();
 
   if (favoriteBy === 'me') return 'favorites';
+  if (likedBy === 'me') return 'likes';
   if (owner === 'me' && status.includes('draft')) return 'drafts';
   if (owner === 'me') return 'my';
   return 'all';
@@ -53,6 +55,8 @@ function hubToCrumb(hub: Hub): { label: string; href: string } {
       return { label: 'Drafts', href: '/galleries?owner=me&status=draft' };
     case 'favorites':
       return { label: 'Favorites', href: '/galleries?favoriteBy=me' };
+    case 'likes':
+      return { label: 'Likes', href: '/galleries?likedBy=me' };
     case 'comments':
       return { label: 'Comments', href: '/me/comments?scope=onMyGalleries' };
     case 'all':

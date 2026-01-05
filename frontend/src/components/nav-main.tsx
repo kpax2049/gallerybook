@@ -64,6 +64,8 @@ function isSubActiveByUrl(
     }
     case 'Favorites':
       return sp.get('favoriteBy') === 'me';
+    case 'Likes':
+      return sp.get('likedBy') === 'me';
     case 'Drafts': {
       const owner = sp.get('owner');
       const statusRaw = sp.get('status');

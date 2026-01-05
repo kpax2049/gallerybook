@@ -18,6 +18,7 @@ const navItems = [
     items: [
       { title: 'Galleries', url: '/galleries?owner=me' },
       { title: 'Favorites', url: '/galleries?favoriteBy=me' },
+      { title: 'Likes', url: '/galleries?likedBy=me' },
       { title: 'Drafts', url: '/galleries?owner=me&status=draft' },
       { title: 'Comments', url: '/me/comments' },
     ],
@@ -57,7 +58,13 @@ describe('NavMain active states', () => {
   it('marks Favorites active when favoriteBy=me', () => {
     renderNav('/galleries?favoriteBy=me');
     expect(isActive('Favorites')).toBe(true);
-    expect(isActive('Galleries')).toBe(false);
+    expect(isActive('Likes')).toBe(false);
+  });
+
+  it('marks Likes active when likedBy=me', () => {
+    renderNav('/galleries?likedBy=me');
+    expect(isActive('Likes')).toBe(true);
+    expect(isActive('Favorites')).toBe(false);
   });
 
   it('marks Drafts active when owner=me and status=draft', () => {

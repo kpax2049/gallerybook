@@ -81,6 +81,7 @@ export const defaultFilters: FilterState = {
   tags: [],
   search: '',
   favoriteBy: undefined,
+  likedBy: undefined,
 };
 
 function GalleryListToolbarInner(props: GalleryListToolbarProps) {
@@ -103,6 +104,7 @@ function GalleryListToolbarInner(props: GalleryListToolbarProps) {
       ...(filters ?? {}),
       status: filters?.status ?? new Set(),
       tags: filters?.tags ?? [],
+      likedBy: filters?.likedBy,
     }),
     [filters]
   );

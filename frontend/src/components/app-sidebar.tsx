@@ -38,6 +38,10 @@ const data = {
           url: '/galleries?favoriteBy=me',
         },
         {
+          title: 'Likes',
+          url: '/galleries?likedBy=me',
+        },
+        {
           title: 'Drafts',
           url: '/galleries?owner=me&status=draft',
         },

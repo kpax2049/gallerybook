@@ -45,11 +45,13 @@ function GalleriesListPage() {
   const hub =
     filters.favoriteBy === 'me'
       ? 'favorites'
-      : filters.owner === 'me' && filters.status?.has('DRAFT')
-        ? 'drafts'
-        : filters.owner === 'me'
-          ? 'my'
-          : 'all';
+      : filters.likedBy === 'me'
+        ? 'likes'
+        : filters.owner === 'me' && filters.status?.has('DRAFT')
+          ? 'drafts'
+          : filters.owner === 'me'
+            ? 'my'
+            : 'all';
 
   React.useEffect(() => {
     sessionStorage.setItem(
