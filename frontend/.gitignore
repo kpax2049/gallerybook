@@ -24,6 +24,8 @@ dist-ssr
 *.sln
 *.sw?
 
+.tmp
+
 # Lambda Image Transformer
 
 A serverless AWS Lambda@Edge function for image transformation using [Sharp](https://github.com/lovell/sharp). Deployed behind CloudFront, it dynamically resizes and converts images stored in S3 via URL query parameters.
