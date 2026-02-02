@@ -3,19 +3,43 @@ import { toast } from '@/hooks/use-toast';
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL ?? '';
-const token = localStorage.getItem('ACCESS_TOKEN');
-const headers = token
-  ? {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+
+const safeStorage = () => {
+  try {
+    return typeof window !== 'undefined' ? window.localStorage : null;
+  } catch {
+    return null;
+  }
+};
+
+const getAccessToken = () => {
+  const storage = safeStorage();
+  if (!storage || typeof storage.getItem !== 'function') return null;
+  try {
+    return storage.getItem('ACCESS_TOKEN');
+  } catch {
+    return null;
+  }
+};
+
+const clearAccessToken = () => {
+  const storage = safeStorage();
+  if (storage && typeof storage.removeItem === 'function') {
+    try {
+      storage.removeItem('ACCESS_TOKEN');
+    } catch {
+      // no-op
     }
-  : {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    };
+  }
+};
+
+const headers = {
+  'Content-Type': 'application/x-www-form-urlencoded',
+};
 
 export const errorHandler = (error: AxiosError | undefined) => {
   if (error?.status === 401) {
-    localStorage.removeItem('ACCESS_TOKEN');
+    clearAccessToken();
     //TODO: redirect back to root/login page
     toast({
       variant: 'destructive',
@@ -42,7 +66,7 @@ const client = axios.create({
 });
 
 client.interceptors.request.use((config: any) => {
-  const token = localStorage.getItem('ACCESS_TOKEN');
+  const token = getAccessToken();
   config.headers = config.headers || {};
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
