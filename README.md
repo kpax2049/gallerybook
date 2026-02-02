@@ -2,6 +2,17 @@
 
 This project is a full-stack web application built with React (v19) for the frontend and NestJS for the backend. The database used is PostgreSQL, and the ORM is Prisma. The project includes authentication using JSON Web Tokens (JWT).
 
+## Product Overview
+
+Gallerybook is a gallery publishing app where users create rich, image-heavy galleries and share them with a feed-driven community. Core capabilities include:
+
+- Create and publish galleries with a rich-text editor and embedded images.
+- Upload images directly to S3 with presigned URLs; serve via CloudFront.
+- Organize work with tags, drafts, and search/sort filters.
+- Social engagement: likes, favorites, threaded comments, and reactions.
+- Follow other users to build a personalized gallery feed.
+- Profile management with avatar uploads.
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your machine:

@@ -62,6 +62,10 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+### Test env note
+
+Before running e2e tests, create `backend/.env.test` from `backend/.env.test.example` and set `DATABASE_URL` to match the `test_db` container in `docker-compose.yml` (defaults: host `localhost`, port `5435`, user `postgres`, password `secret`, db `nest_db`). Set `JWT_SECRET` to any non-empty value.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
