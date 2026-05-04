@@ -2,7 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { ListCommentsDto } from './dto/list-comments.dto';
-import { ActionType, Prisma, ActionCount as ActionCountModel } from '@prisma/client';
+import {
+  ActionType,
+  Prisma,
+  ActionCount as ActionCountModel,
+} from '@prisma/client';
 import { AssetUrlService } from 'src/common/asset-url.service';
 
 const ACTION_FIELD: Record<ActionType, keyof Prisma.ActionCountUpdateInput> = {
