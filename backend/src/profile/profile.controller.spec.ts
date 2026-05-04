@@ -1,4 +1,7 @@
-import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { ProfileController } from './profile.controller';
@@ -70,6 +73,9 @@ describe('ProfileController', () => {
   });
 
   it('throws internal error when upload fails but still cleans up', async () => {
+    const consoleError = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
     mockUpload.mockRejectedValue(new Error('cloudinary down'));
     mockUnlink.mockResolvedValue(undefined);
 
@@ -81,5 +87,7 @@ describe('ProfileController', () => {
 
     expect(profileService.updateAvatarUrl).not.toHaveBeenCalled();
     expect(mockUnlink).toHaveBeenCalledWith(file.path);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 });

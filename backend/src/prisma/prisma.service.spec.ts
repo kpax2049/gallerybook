@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { PrismaClient } from '@prisma/client';
 import { PrismaService } from './prisma.service';
 
 // Mock PrismaClient so we don't hit a real database
@@ -32,18 +33,13 @@ describe('PrismaService', () => {
     jest.clearAllMocks();
     config = { get: jest.fn().mockReturnValue(dbUrl) } as any;
     service = new PrismaService(config);
-    const prismaModule = require('@prisma/client');
-    const ctor = prismaModule.PrismaClient as any;
+    const ctor = PrismaClient as any;
     mockDeleteMany = ctor.__deleteMany;
     mockTransaction = ctor.__transaction;
   });
 
   it('passes database url from ConfigService into PrismaClient', () => {
-    const prismaModule = require('@prisma/client');
-    const ctor = prismaModule.PrismaClient as any;
-    expect(ctor.__options).toEqual({
-      datasources: { db: { url: dbUrl } },
-    });
+    const ctor = PrismaClient as any;
     expect(ctor.__options).toEqual({
       datasources: { db: { url: dbUrl } },
     });

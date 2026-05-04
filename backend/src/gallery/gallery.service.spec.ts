@@ -69,9 +69,9 @@ describe('GalleryService', () => {
       prisma.gallery.findUnique.mockResolvedValue({ userId: 1 });
       const user = { id: 1, role: Role.USER } as any;
 
-      await expect(service.checkGalleryOwnershipOrAdmin(10, user)).resolves.toBe(
-        true,
-      );
+      await expect(
+        service.checkGalleryOwnershipOrAdmin(10, user),
+      ).resolves.toBe(true);
       expect(prisma.gallery.findUnique).toHaveBeenCalledWith({
         where: { id: 10 },
         select: { userId: true },
