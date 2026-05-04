@@ -54,10 +54,14 @@ describe('AuthController', () => {
       });
       const res = { cookie: jest.fn() } as any;
 
-      await expect(controller.signin(res, { email: 'e', password: 'p' } as any))
-        .resolves.toEqual({ accessToken: 'access' });
+      await expect(
+        controller.signin(res, { email: 'e', password: 'p' } as any),
+      ).resolves.toEqual({ accessToken: 'access' });
 
-      expect(authService.signin).toHaveBeenCalledWith({ email: 'e', password: 'p' });
+      expect(authService.signin).toHaveBeenCalledWith({
+        email: 'e',
+        password: 'p',
+      });
       expect(res.cookie).toHaveBeenCalledWith(
         'refreshToken',
         'refresh',
@@ -83,7 +87,10 @@ describe('AuthController', () => {
       const user = { id: 1, email: 'u@example.com' } as any;
 
       await expect(
-        controller.changePassword(user, { currentPassword: 'a', newPassword: 'b' } as any),
+        controller.changePassword(user, {
+          currentPassword: 'a',
+          newPassword: 'b',
+        } as any),
       ).resolves.toEqual({ success: true, accessToken: 'newAccess' });
 
       expect(authService.changePassword).toHaveBeenCalledWith(1, 'a', 'b');
@@ -119,7 +126,11 @@ describe('AuthController', () => {
       expect(res.cookie).toHaveBeenCalledWith(
         'refreshToken',
         'newRefresh',
-        expect.objectContaining({ httpOnly: true, secure: true, path: '/auth/refresh' }),
+        expect.objectContaining({
+          httpOnly: true,
+          secure: true,
+          path: '/auth/refresh',
+        }),
       );
     });
   });

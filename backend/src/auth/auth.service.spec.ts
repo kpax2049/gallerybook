@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
@@ -34,7 +31,7 @@ describe('AuthService', () => {
     ({
       JWT_SECRET: 'access-secret',
       JWT_REFRESH_SECRET: 'refresh-secret',
-    }[key]);
+    })[key];
 
   beforeEach(() => {
     prisma = {
@@ -224,9 +221,9 @@ describe('AuthService', () => {
       (argon.verify as jest.Mock).mockResolvedValue(true);
       (argon.hash as jest.Mock).mockResolvedValue('new-hash');
 
-      await expect(
-        service.changePassword(1, 'old', 'new'),
-      ).resolves.toEqual({ success: true });
+      await expect(service.changePassword(1, 'old', 'new')).resolves.toEqual({
+        success: true,
+      });
       expect(users.updatePasswordAfterChange).toHaveBeenCalledWith(
         1,
         'new-hash',
@@ -244,18 +241,17 @@ describe('AuthService', () => {
     });
 
     it('verifies the password and handles failures gracefully', async () => {
-      users.findByIdWithPasswordHash.mockResolvedValue({ id: 1, hash: 'stored' });
+      users.findByIdWithPasswordHash.mockResolvedValue({
+        id: 1,
+        hash: 'stored',
+      });
       (argon.verify as jest.Mock).mockResolvedValue(true);
 
-      await expect(
-        service.verifyCurrentPassword(1, 'ok'),
-      ).resolves.toBe(true);
+      await expect(service.verifyCurrentPassword(1, 'ok')).resolves.toBe(true);
 
       (argon.verify as jest.Mock).mockRejectedValue(new Error('boom'));
 
-      await expect(
-        service.verifyCurrentPassword(1, 'ok'),
-      ).resolves.toBe(false);
+      await expect(service.verifyCurrentPassword(1, 'ok')).resolves.toBe(false);
     });
   });
 });

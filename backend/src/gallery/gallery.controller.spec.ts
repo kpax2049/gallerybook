@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { GalleryController } from './gallery.controller';
 import { GalleryService } from './gallery.service';
@@ -55,10 +51,12 @@ describe('GalleryController', () => {
       const gallery = { id: 1, content: {} };
       galleryService.getGalleryById.mockResolvedValue(gallery);
 
-      await expect(
-        controller.getGalleryById(user, 5, 'view'),
-      ).resolves.toBe(gallery);
-      expect(galleryService.checkGalleryOwnershipOrAdmin).not.toHaveBeenCalled();
+      await expect(controller.getGalleryById(user, 5, 'view')).resolves.toBe(
+        gallery,
+      );
+      expect(
+        galleryService.checkGalleryOwnershipOrAdmin,
+      ).not.toHaveBeenCalled();
     });
 
     it('requires authenticated owner/admin for edit mode', async () => {
@@ -76,9 +74,9 @@ describe('GalleryController', () => {
       ).rejects.toBeInstanceOf(UnauthorizedException);
 
       galleryService.checkGalleryOwnershipOrAdmin.mockResolvedValue(false);
-      await expect(controller.getGalleryById(user, 5, 'edit')).rejects.toBeInstanceOf(
-        ForbiddenException,
-      );
+      await expect(
+        controller.getGalleryById(user, 5, 'edit'),
+      ).rejects.toBeInstanceOf(ForbiddenException);
     });
   });
 
@@ -89,14 +87,14 @@ describe('GalleryController', () => {
       'a.jpg': 'url',
     });
 
-    const result = await controller.getPresignedUrls(
-      1,
-      { paths: ['a.jpg'] },
-      { id: 1 } as any,
-    );
+    const result = await controller.getPresignedUrls(1, { paths: ['a.jpg'] }, {
+      id: 1,
+    } as any);
 
     expect(galleryService.verifyOwnership).toHaveBeenCalledWith(1, 1);
-    expect(galleryService.generatePresignedUrls).toHaveBeenCalledWith(['a.jpg']);
+    expect(galleryService.generatePresignedUrls).toHaveBeenCalledWith([
+      'a.jpg',
+    ]);
     expect(result).toEqual({ 'a.jpg': 'url' });
   });
 
@@ -105,11 +103,7 @@ describe('GalleryController', () => {
     galleryService.findById.mockResolvedValue({ id: 1, userId: 99 });
 
     await expect(
-      controller.getPresignedUrls(
-        1,
-        { paths: ['a.jpg'] },
-        { id: 1 } as any,
-      ),
+      controller.getPresignedUrls(1, { paths: ['a.jpg'] }, { id: 1 } as any),
     ).rejects.toBeInstanceOf(ForbiddenException);
 
     expect(galleryService.generatePresignedUrls).not.toHaveBeenCalled();
@@ -132,16 +126,17 @@ describe('GalleryController', () => {
   it('creates a draft and returns only the id', async () => {
     galleryService.createDraft.mockResolvedValue({ id: 123 });
     await expect(
-      controller.createDraftGallery({ title: 'Draft' } as any, { id: 1 } as any),
+      controller.createDraftGallery(
+        { title: 'Draft' } as any,
+        { id: 1 } as any,
+      ),
     ).resolves.toEqual({ id: 123 });
   });
 
   it('rejects deleting images that are not under the gallery prefix', async () => {
-    const result = await controller.deleteUnusedImages(
-      7,
-      9,
-      { keys: ['uploads/users/7/galleries/9/photo.jpg', 'evil/path'] },
-    );
+    const result = await controller.deleteUnusedImages(7, 9, {
+      keys: ['uploads/users/7/galleries/9/photo.jpg', 'evil/path'],
+    });
 
     expect(galleryService.deleteImagesFromS3).toHaveBeenCalledWith([
       'uploads/users/7/galleries/9/photo.jpg',
@@ -169,7 +164,9 @@ describe('GalleryController', () => {
     galleryService.getMyReactions.mockResolvedValue({ like: true });
     galleryService.replaceTags.mockResolvedValue({ tags: [] });
 
-    await controller.toggleReaction({ id: 1 } as any, 2, { type: 'LIKE' } as any);
+    await controller.toggleReaction({ id: 1 } as any, 2, {
+      type: 'LIKE',
+    } as any);
     expect(galleryService.toggleReaction).toHaveBeenCalledWith(1, 2, 'LIKE');
 
     await controller.myReactions({ id: 3 } as any, 4);
@@ -182,6 +179,9 @@ describe('GalleryController', () => {
   it('fetches galleries by slug using the provided mode', async () => {
     galleryService.getGalleryBySlug.mockResolvedValue({ id: 1 });
     await controller.getBySlug('test', 'edit');
-    expect(galleryService.getGalleryBySlug).toHaveBeenCalledWith('test', 'edit');
+    expect(galleryService.getGalleryBySlug).toHaveBeenCalledWith(
+      'test',
+      'edit',
+    );
   });
 });

@@ -201,7 +201,13 @@ describe('CommentService', () => {
 
     const result2 = await service.toggleReaction(4, 10, ActionType.UPVOTE);
     expect(prisma.reaction.delete).toHaveBeenCalledWith({
-      where: { commentId_userId_type: { commentId: 10, userId: 4, type: ActionType.UPVOTE } },
+      where: {
+        commentId_userId_type: {
+          commentId: 10,
+          userId: 4,
+          type: ActionType.UPVOTE,
+        },
+      },
     });
     expect(prisma.actionCount.update).toHaveBeenCalledWith({
       where: { commentId: 10 },

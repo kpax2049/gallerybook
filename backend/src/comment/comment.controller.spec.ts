@@ -1,4 +1,3 @@
-import { UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { CommentController } from './comment.controller';
 import { CommentService } from './comment.service';
@@ -51,15 +50,7 @@ describe('CommentController', () => {
 
   it('toggles reactions with the provided payload', async () => {
     commentService.toggleReaction.mockResolvedValue({ active: true });
-    await controller.toggleReaction(
-      4,
-      15,
-      { type: 'UPVOTE' } as any,
-    );
-    expect(commentService.toggleReaction).toHaveBeenCalledWith(
-      4,
-      15,
-      'UPVOTE',
-    );
+    await controller.toggleReaction(4, 15, { type: 'UPVOTE' } as any);
+    expect(commentService.toggleReaction).toHaveBeenCalledWith(4, 15, 'UPVOTE');
   });
 });
