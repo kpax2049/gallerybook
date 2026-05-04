@@ -167,7 +167,10 @@ function GalleriesListPage() {
 
   const items = data?.items ?? [];
   const commentCounts = data?.commentCounts ?? {};
-  const serverReactions = data?.myReactions ?? {};
+  const serverReactions = React.useMemo(
+    () => data?.myReactions ?? {},
+    [data?.myReactions]
+  );
 
   // Stable callbacks
   const handleReactionChanged = React.useCallback(

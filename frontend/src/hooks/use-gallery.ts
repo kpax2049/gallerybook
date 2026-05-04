@@ -78,8 +78,8 @@ export function useGalleries(params: {
     filters?.hasTags,
     filters?.hasComments,
     filters?.search,
-    statusList?.join(','), // stable dep when arrays change
-    tagsList?.join(','),
+    statusList,
+    tagsList,
     followedOnly,
   ]);
 

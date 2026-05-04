@@ -132,21 +132,24 @@ const getRootError = (
 ) => {
   const errors = errorCodes.map((error) => {
     switch (error) {
-      case 'file-invalid-type':
+      case 'file-invalid-type': {
         const acceptedTypes = Object.values(limits.accept ?? {})
           .flat()
           .join(', ');
         return `only ${acceptedTypes} are allowed`;
-      case 'file-too-large':
+      }
+      case 'file-too-large': {
         const maxMb = limits.maxSize
           ? (limits.maxSize / (1024 * 1024)).toFixed(2)
           : 'infinite?';
         return `max size is ${maxMb}MB`;
-      case 'file-too-small':
+      }
+      case 'file-too-small': {
         const roundedMinSize = limits.minSize
           ? (limits.minSize / (1024 * 1024)).toFixed(2)
           : 'negative?';
         return `min size is ${roundedMinSize}MB`;
+      }
       case 'too-many-files':
         return `max ${limits.maxFiles} files`;
     }
@@ -333,11 +336,8 @@ const useDropzone = <TUploadRes, TUploadError = string>(
           ? Infinity
           : validation?.maxFiles - fileCount;
 
-      if (maxNewFiles < newFiles.length) {
-        if (shiftOnMaxFiles === true) {
-        } else {
-          setRootError(getRootError(['too-many-files'], validation ?? {}));
-        }
+      if (maxNewFiles < newFiles.length && shiftOnMaxFiles !== true) {
+        setRootError(getRootError(['too-many-files'], validation ?? {}));
       }
 
       const slicedNewFiles =
@@ -422,7 +422,7 @@ const Dropzone = <TUploadRes, TUploadError>(
 };
 Dropzone.displayName = 'Dropzone';
 
-interface DropZoneAreaProps extends React.HTMLAttributes<HTMLDivElement> {}
+type DropZoneAreaProps = React.HTMLAttributes<HTMLDivElement>;
 const DropZoneArea = forwardRef<HTMLDivElement, DropZoneAreaProps>(
   ({ className, children, ...props }, forwardedRef) => {
     const context = useDropzoneContext();
@@ -436,7 +436,6 @@ const DropZoneArea = forwardRef<HTMLDivElement, DropZoneAreaProps>(
 
     return (
       // A11y behavior is handled through Trigger. All of these are only relevant to drag and drop which means this should be fine?
-      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
       <div
         ref={(instance) => {
           // TODO: test if this actually works?
@@ -468,8 +467,8 @@ const DropZoneArea = forwardRef<HTMLDivElement, DropZoneAreaProps>(
 );
 DropZoneArea.displayName = 'DropZoneArea';
 
-export interface DropzoneDescriptionProps
-  extends React.HTMLAttributes<HTMLParagraphElement> {}
+export type DropzoneDescriptionProps =
+  React.HTMLAttributes<HTMLParagraphElement>;
 
 const DropzoneDescription = forwardRef<
   HTMLParagraphElement,
@@ -516,8 +515,7 @@ const useDropzoneFileListContext = () => {
   return useContext(DropzoneFileListContext);
 };
 
-interface DropZoneFileListProps
-  extends React.OlHTMLAttributes<HTMLOListElement> {}
+type DropZoneFileListProps = React.OlHTMLAttributes<HTMLOListElement>;
 
 const DropzoneFileList = forwardRef<HTMLOListElement, DropZoneFileListProps>(
   (props, ref) => {
@@ -592,8 +590,7 @@ const DropzoneFileListItem = forwardRef<
 });
 DropzoneFileListItem.displayName = 'DropzoneFileListItem';
 
-interface DropzoneFileMessageProps
-  extends React.HTMLAttributes<HTMLParagraphElement> {}
+type DropzoneFileMessageProps = React.HTMLAttributes<HTMLParagraphElement>;
 
 const DropzoneFileMessage = forwardRef<
   HTMLParagraphElement,
@@ -626,8 +623,7 @@ const DropzoneFileMessage = forwardRef<
   );
 });
 DropzoneFileMessage.displayName = 'DropzoneFileMessage';
-interface DropzoneMessageProps
-  extends React.HTMLAttributes<HTMLParagraphElement> {}
+type DropzoneMessageProps = React.HTMLAttributes<HTMLParagraphElement>;
 
 const DropzoneMessage = forwardRef<HTMLParagraphElement, DropzoneMessageProps>(
   (props, ref) => {
@@ -655,7 +651,7 @@ const DropzoneMessage = forwardRef<HTMLParagraphElement, DropzoneMessageProps>(
 );
 DropzoneMessage.displayName = 'DropzoneMessage';
 
-interface DropzoneRemoveFileProps extends ButtonProps {}
+type DropzoneRemoveFileProps = ButtonProps;
 
 const DropzoneRemoveFile = forwardRef<
   HTMLButtonElement,
@@ -686,7 +682,7 @@ const DropzoneRemoveFile = forwardRef<
 });
 DropzoneRemoveFile.displayName = 'DropzoneRemoveFile';
 
-interface DropzoneRetryFileProps extends ButtonProps {}
+type DropzoneRetryFileProps = ButtonProps;
 
 const DropzoneRetryFile = forwardRef<HTMLButtonElement, DropzoneRetryFileProps>(
   ({ className, ...props }, ref) => {
@@ -722,8 +718,7 @@ const DropzoneRetryFile = forwardRef<HTMLButtonElement, DropzoneRetryFileProps>(
 );
 DropzoneRetryFile.displayName = 'DropzoneRetryFile';
 
-interface DropzoneTriggerProps
-  extends React.LabelHTMLAttributes<HTMLLabelElement> {}
+type DropzoneTriggerProps = React.LabelHTMLAttributes<HTMLLabelElement>;
 
 const DropzoneTrigger = forwardRef<HTMLLabelElement, DropzoneTriggerProps>(
   ({ className, children, ...props }, ref) => {

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { useEffect, useRef, useState } from 'react';
 import { useParams /*, useNavigate */ } from 'react-router-dom';
 import { getGallery, getGalleryBySlug } from '@/api/gallery';

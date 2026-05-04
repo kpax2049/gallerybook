@@ -129,23 +129,28 @@ function GallerySaveForm({
     thumbnailIndex: 0,
     tags: [],
   });
+  const initialTitle = initial?.title;
+  const initialDescription = initial?.description;
+  const initialThumbnailIndex = initial?.thumbnailIndex;
+  const initialTags = initial?.tags;
 
   // When editing, hydrate state from initial once data is available/changes
   useEffect(() => {
-    if (!initial) return;
+    if (
+      initialTitle === undefined &&
+      initialDescription === undefined &&
+      initialThumbnailIndex === undefined &&
+      initialTags === undefined
+    ) {
+      return;
+    }
     setFormData((prev) => ({
-      title: initial.title ?? prev.title,
-      description: initial.description ?? prev.description,
-      thumbnailIndex: initial.thumbnailIndex ?? prev.thumbnailIndex,
-      tags: initial.tags ?? prev.tags,
+      title: initialTitle ?? prev.title,
+      description: initialDescription ?? prev.description,
+      thumbnailIndex: initialThumbnailIndex ?? prev.thumbnailIndex,
+      tags: initialTags ?? prev.tags,
     }));
-    // Depend on individual fields to avoid re-running on new object identity
-  }, [
-    initial?.title,
-    initial?.description,
-    initial?.thumbnailIndex,
-    initial?.tags,
-  ]);
+  }, [initialTitle, initialDescription, initialThumbnailIndex, initialTags]);
 
   // Only recompute when `content` changes
   const imageArray = useMemo(() => {

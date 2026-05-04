@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { apiRequest } from '@/lib/apiClient';
 import { User } from './user';
 import qs from 'qs';

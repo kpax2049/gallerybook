@@ -37,13 +37,15 @@ export default function CommentsPage() {
   const [search, setSearch] = React.useState(sp.get('search') ?? '');
   const [page, setPage] = React.useState(Number(sp.get('page') ?? 1));
   const [pageSize] = React.useState(Number(sp.get('pageSize') ?? 24));
+  const currentSearch = sp.toString();
 
   React.useEffect(() => {
+    const searchValue = currentSearch ? `?${currentSearch}` : '';
     sessionStorage.setItem(
       'lastGalleryHub',
-      JSON.stringify({ hub: 'comments', search: location.search })
+      JSON.stringify({ hub: 'comments', search: searchValue })
     );
-  }, [location.search]);
+  }, [currentSearch]);
 
   // keep URL in sync
   React.useEffect(() => {

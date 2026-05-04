@@ -19,65 +19,65 @@ interface CommentProps {
   galleryId: number;
 }
 
+const emptyActions = () => ({
+  [ACTIONS_TYPE.THUMB_UP]: 0,
+  [ACTIONS_TYPE.THUMB_DOWN]: 0,
+  [ACTIONS_TYPE.LAUGH]: 0,
+  [ACTIONS_TYPE.HOORAY]: 0,
+  [ACTIONS_TYPE.CONFUSED]: 0,
+  [ACTIONS_TYPE.HEART]: 0,
+  [ACTIONS_TYPE.ROCKET]: 0,
+  [ACTIONS_TYPE.EYE]: 0,
+  [ACTIONS_TYPE.UPVOTE]: 0,
+});
+
+type UiUser = UiComment['user'];
+
+const toAppUser = (user?: UiUser | User): User | undefined => {
+  if (!user) return undefined;
+  return {
+    role: (user as User).role ?? UserRole.USER,
+    status: (user as User).status,
+    hash: (user as User).hash,
+    settings: (user as User).settings,
+    galleries: (user as User).galleries,
+    id: user.id,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    email: user.email,
+    fullName: user.fullName,
+    username: user.username,
+    profile: user.profile,
+  };
+};
+
+const normalizeComment = (comment: Comment | UiComment): Comment => ({
+  ...(comment as Comment),
+  user: toAppUser((comment as Comment).user ?? comment.user),
+  actions: { ...emptyActions(), ...(comment.actions ?? {}) },
+  selectedActions: comment.selectedActions ?? [],
+  replies: comment.replies?.map(normalizeComment) ?? [],
+});
+
+const updateCommentById = (
+  list: Comment[],
+  id: number,
+  updater: (c: Comment) => Comment
+): Comment[] => {
+  return list.map((c) => {
+    if (c.id === id) return updater(c);
+    if (c.replies?.length) {
+      const nextReplies = updateCommentById(c.replies, id, updater);
+      if (nextReplies !== c.replies) return { ...c, replies: nextReplies };
+    }
+    return c;
+  });
+};
+
 export default function CommentList({ galleryId }: CommentProps) {
   const { theme } = useTheme();
   const [value, setValue] = useState<Comment[]>([]);
   const currentUser = useUserStore((state) => state.user);
-
-  const emptyActions = () => ({
-    [ACTIONS_TYPE.THUMB_UP]: 0,
-    [ACTIONS_TYPE.THUMB_DOWN]: 0,
-    [ACTIONS_TYPE.LAUGH]: 0,
-    [ACTIONS_TYPE.HOORAY]: 0,
-    [ACTIONS_TYPE.CONFUSED]: 0,
-    [ACTIONS_TYPE.HEART]: 0,
-    [ACTIONS_TYPE.ROCKET]: 0,
-    [ACTIONS_TYPE.EYE]: 0,
-    [ACTIONS_TYPE.UPVOTE]: 0,
-  });
-
-  type UiUser = UiComment['user'];
-
-  const toAppUser = (user?: UiUser | User): User | undefined => {
-    if (!user) return undefined;
-    return {
-      role: (user as User).role ?? UserRole.USER,
-      status: (user as User).status,
-      hash: (user as User).hash,
-      settings: (user as User).settings,
-      galleries: (user as User).galleries,
-      id: user.id,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      email: user.email,
-      fullName: user.fullName,
-      username: user.username,
-      profile: user.profile,
-    };
-  };
-
-  const normalizeComment = (comment: Comment | UiComment): Comment => ({
-    ...(comment as Comment),
-    user: toAppUser((comment as Comment).user ?? comment.user),
-    actions: { ...emptyActions(), ...(comment.actions ?? {}) },
-    selectedActions: comment.selectedActions ?? [],
-    replies: comment.replies?.map(normalizeComment) ?? [],
-  });
-
-  const updateCommentById = (
-    list: Comment[],
-    id: number,
-    updater: (c: Comment) => Comment
-  ): Comment[] => {
-    return list.map((c) => {
-      if (c.id === id) return updater(c);
-      if (c.replies?.length) {
-        const nextReplies = updateCommentById(c.replies, id, updater);
-        if (nextReplies !== c.replies) return { ...c, replies: nextReplies };
-      }
-      return c;
-    });
-  };
 
   useEffect(() => {
     getComments(galleryId).then((data) => {

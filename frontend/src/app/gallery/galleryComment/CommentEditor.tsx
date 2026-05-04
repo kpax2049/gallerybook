@@ -17,7 +17,7 @@ export const CommentEditor = ({
   onChange = () => {},
   placeholder = 'Add your comment here...',
   theme,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   currentUser,
 }: CommentEditorProps) => {
   const [tempValue, setTempValue] = useState('');
