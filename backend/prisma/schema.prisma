@@ -23,6 +23,11 @@ enum UserStatus {
   inactive
 }
 
+enum OAuthProvider {
+  GOOGLE
+  GITHUB
+}
+
 enum ActionType {
   THUMB_UP
   THUMB_DOWN
@@ -68,6 +73,8 @@ model User {
 
   profile Profile?
 
+  oauthAccounts OauthAccount[]
+
   galleries        Gallery[]
   comments         Comment[]
   commentReactions Reaction[]
@@ -77,6 +84,22 @@ model User {
   followers Follow[] @relation("followers")
 
   @@map("users")
+}
+
+model OauthAccount {
+  id                Int           @id @default(autoincrement())
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  provider          OAuthProvider
+  providerAccountId String
+  email             String?
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
 }
 
 model Profile {

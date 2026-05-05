@@ -74,6 +74,18 @@ JWT_SECRET="your-access-token-secret"
 JWT_REFRESH_SECRET="your-refresh-token-secret"
 COOKIE_SECRET="your-cookie-secret"
 PORT=3333
+BACKEND_URL="http://localhost:3333"
+FRONTEND_URL="http://localhost:5173"
+
+# OAuth
+GOOGLE_OAUTH_CLIENT_ID="..."
+GOOGLE_OAUTH_CLIENT_SECRET="..."
+GITHUB_OAUTH_CLIENT_ID="..."
+GITHUB_OAUTH_CLIENT_SECRET="..."
+
+# Optional if your provider callback differs from BACKEND_URL defaults:
+# GOOGLE_OAUTH_CALLBACK_URL="http://localhost:3333/auth/oauth/google/callback"
+# GITHUB_OAUTH_CALLBACK_URL="http://localhost:3333/auth/oauth/github/callback"
 
 # AWS / S3 / CloudFront
 AWS_REGION="us-east-1"
