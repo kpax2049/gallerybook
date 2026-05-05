@@ -1,6 +1,6 @@
 import { Navigate, Outlet, Route, Routes, useNavigate } from 'react-router';
 import './App.css';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { getUser, User } from './api/user';
 import { UserRole } from './common/enums';
 import Dashboard from './app/dashboard/Dashboard';
@@ -48,15 +48,21 @@ const Admin = () => {
 
 type ProtectedRouteProps = {
   isAllowed: boolean;
+  isLoading?: boolean;
   redirectPath?: string;
   children?: React.ReactNode;
 };
 
 const ProtectedRoute = ({
   isAllowed,
+  isLoading = false,
   redirectPath = '/',
   children,
 }: ProtectedRouteProps) => {
+  if (isLoading) {
+    return null;
+  }
+
   if (!isAllowed) {
     return <Navigate to={redirectPath} replace />;
   }
@@ -74,6 +80,7 @@ const App = () => {
   const setGlobalUser = useUserStore((state) => state.setUser);
   const user = useUserStore((state) => state.user);
   const navigate = useNavigate();
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,6 +101,8 @@ const App = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (!cancelled) setGlobalUser(null as any);
         useFollowStore.getState().reset();
+      } finally {
+        if (!cancelled) setAuthReady(true);
       }
     })();
 
@@ -134,9 +143,11 @@ const App = () => {
 
           <Route
             element={
-              //TODO: temporarly disable authentication
-              <ProtectedRoute isAllowed={true} redirectPath="/login" />
-              // <ProtectedRoute isAllowed={!!user} redirectPath="/login" />
+              <ProtectedRoute
+                isAllowed={!!user}
+                isLoading={!authReady}
+                redirectPath="/login"
+              />
             }
           >
             <Route path="home" element={<Home />} />
