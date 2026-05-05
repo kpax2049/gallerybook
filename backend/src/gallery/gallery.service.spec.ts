@@ -1,6 +1,6 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GalleryStatus, Role } from '@prisma/client';
+import { GalleryStatus, Role, Visibility } from '@prisma/client';
 import { AssetUrlService } from 'src/common/asset-url.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GalleryService } from './gallery.service';
@@ -102,6 +102,22 @@ describe('GalleryService', () => {
         ForbiddenException,
       );
     });
+
+    it('allows admins to manage any gallery', async () => {
+      prisma.gallery.findUnique.mockResolvedValueOnce({ userId: 99 });
+
+      await expect(
+        service.verifyManageAccess(1, { id: 1, role: Role.ADMIN }),
+      ).resolves.toBeUndefined();
+    });
+
+    it('rejects non-admin management of another user gallery', async () => {
+      prisma.gallery.findUnique.mockResolvedValueOnce({ userId: 99 });
+
+      await expect(
+        service.verifyManageAccess(1, { id: 1, role: Role.USER }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
   });
 
   it('maps thumbnails through AssetUrlService when listing my galleries', async () => {
@@ -139,13 +155,54 @@ describe('GalleryService', () => {
     ]);
   });
 
+  describe('read access', () => {
+    it('hides draft galleries from non-admin registered users', async () => {
+      prisma.gallery.findUnique.mockResolvedValue({
+        id: 1,
+        status: GalleryStatus.DRAFT,
+        visibility: Visibility.PUBLIC,
+        content: { type: 'doc', content: [] },
+        tags: [],
+      });
+
+      await expect(
+        service.getGalleryById(1, 'view', { id: 2, role: Role.USER }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('allows registered users to open published unlisted galleries by slug', async () => {
+      const gallery = {
+        id: 1,
+        status: GalleryStatus.PUBLISHED,
+        visibility: Visibility.UNLISTED,
+        content: { type: 'doc', content: [] },
+      };
+      prisma.gallery.findUnique.mockResolvedValue(gallery);
+
+      await expect(
+        service.getGalleryBySlug('family-trip', 'view', {
+          id: 2,
+          role: Role.USER,
+        }),
+      ).resolves.toEqual(gallery);
+    });
+  });
+
   describe('buildWhere', () => {
     const buildWhere = (
       userId: number | null,
       dto: Partial<ListGalleriesDto>,
       favoriteIds?: number[],
       likedIds?: number[],
-    ) => (service as any).buildWhere(userId, dto, favoriteIds, likedIds);
+      canManageGalleries = false,
+    ) =>
+      (service as any).buildWhere(
+        userId,
+        dto,
+        favoriteIds,
+        likedIds,
+        canManageGalleries,
+      );
 
     it('includes owner + favorites + likes + tag + search filters', () => {
       const where = buildWhere(
@@ -160,6 +217,7 @@ describe('GalleryService', () => {
         },
         [1, 2],
         [2, 3],
+        true,
       );
 
       expect(where.AND).toEqual(
@@ -206,6 +264,8 @@ describe('GalleryService', () => {
       expect(idFilters).toHaveLength(1);
       expect(where.AND).toEqual(
         expect.arrayContaining([
+          { status: GalleryStatus.PUBLISHED },
+          { visibility: Visibility.PUBLIC },
           { updatedAt: { gte: expect.any(Date) } },
           { thumbnail: { not: null } },
           { tags: { none: {} } },

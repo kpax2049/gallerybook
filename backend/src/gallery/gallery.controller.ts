@@ -20,7 +20,7 @@ import { GalleryService } from './gallery.service';
 import { GetUser } from 'src/auth/decorator';
 import { CreateGalleryDto } from './dto';
 import { PresignRequestDto } from './dto/presign-request.dto';
-import { User } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import { CreateDraftGalleryDto } from './dto/create-draft-gallery.dto';
 import { UpdateGalleryContentDto } from './dto/update-gallery-content.dto';
 import { UpdateGalleryDto } from './dto/update-gallery-dto';
@@ -47,22 +47,14 @@ export class GalleryController {
     const validatedMode = mode === 'edit' ? 'edit' : 'view';
 
     if (validatedMode === 'edit') {
-      if (!user?.id) {
-        throw new UnauthorizedException('User required for edit mode');
-      }
-
-      const allowed = await this.galleryService.checkGalleryOwnershipOrAdmin(
-        galleryId,
-        user,
-      );
-      if (!allowed) {
-        throw new ForbiddenException(
-          'You are not allowed to edit this gallery',
-        );
-      }
+      this.requireAdmin(user);
     }
 
-    return this.galleryService.getGalleryById(galleryId, validatedMode);
+    return this.galleryService.getGalleryById(
+      galleryId,
+      validatedMode,
+      user,
+    );
   }
 
   @Post(':id/presigned-urls')
@@ -71,13 +63,8 @@ export class GalleryController {
     @Body() body: PresignRequestDto,
     @GetUser() user: User,
   ) {
-    await this.galleryService.verifyOwnership(galleryId, user.id);
-
-    const gallery = await this.galleryService.findById(galleryId);
-
-    if (gallery.userId !== user.id) {
-      throw new ForbiddenException();
-    }
+    this.requireAdmin(user);
+    await this.galleryService.verifyManageAccess(galleryId, user);
 
     return this.galleryService.generatePresignedUrls(body.paths);
   }
@@ -87,13 +74,15 @@ export class GalleryController {
     @Body() dto: CreateDraftGalleryDto,
     @GetUser() user: User,
   ) {
+    this.requireAdmin(user);
     const gallery = await this.galleryService.createDraft(dto, user.id);
     return { id: gallery.id };
   }
 
   @Post()
-  createGallery(@GetUser('id') userId: number, @Body() dto: CreateGalleryDto) {
-    return this.galleryService.createGallery(userId, dto);
+  createGallery(@GetUser() user: User, @Body() dto: CreateGalleryDto) {
+    this.requireAdmin(user);
+    return this.galleryService.createGallery(user.id, dto);
   }
 
   @Put(':id/content')
@@ -102,7 +91,8 @@ export class GalleryController {
     @Body() dto: UpdateGalleryContentDto,
     @GetUser() user: User,
   ) {
-    await this.galleryService.verifyOwnership(galleryId, user.id);
+    this.requireAdmin(user);
+    await this.galleryService.verifyManageAccess(galleryId, user);
 
     await this.galleryService.updateContent(galleryId, dto.content);
     return { success: true };
@@ -110,29 +100,34 @@ export class GalleryController {
 
   @Patch(':id')
   editGalleryById(
-    @GetUser('id') userId: number,
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) galleryId: number,
     @Body() dto: UpdateGalleryDto,
   ) {
-    return this.galleryService.editGalleryById(userId, galleryId, dto);
+    this.requireAdmin(user);
+    return this.galleryService.editGalleryById(user, galleryId, dto);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   deleteGalleryById(
-    @GetUser('id') userId: number,
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) galleryId: number,
   ) {
-    return this.galleryService.deleteGalleryById(userId, galleryId);
+    this.requireAdmin(user);
+    return this.galleryService.deleteGalleryById(user, galleryId);
   }
 
   @Delete(':id/images')
   async deleteUnusedImages(
-    @GetUser('id') userId: number,
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) galleryId: number,
     @Body() body: { keys: string[] },
   ) {
+    this.requireAdmin(user);
     // Validate keys start with correct gallery prefix
+    const gallery = await this.galleryService.findById(galleryId);
+    const userId = gallery.userId;
     const galleryPrefix = `uploads/users/${userId}/galleries/${galleryId}/`;
     const safeKeys = body.keys.filter((key) => key.startsWith(galleryPrefix));
 
@@ -148,7 +143,7 @@ export class GalleryController {
   @Get()
   async list(@GetUser() user: User, @Query() dto: ListGalleriesDto) {
     const userId = user?.id ?? null;
-    return this.galleryService.list(userId, dto);
+    return this.galleryService.list(userId, dto, user?.role);
   }
 
   @UseGuards(JwtGuard)
@@ -177,15 +172,30 @@ export class GalleryController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: UpsertTagsDto,
   ) {
+    this.requireAdmin(user);
     const tags = Array.isArray(body?.tags) ? body.tags : [];
     return this.galleryService.replaceTags(user.id, id, tags);
   }
 
   @Get('slug/:slug')
   getBySlug(
+    @GetUser() user: User,
     @Param('slug') slug: string,
     @Query('mode') mode: 'view' | 'edit' = 'view',
   ): Promise<{ content: any }> {
-    return this.galleryService.getGalleryBySlug(slug, mode);
+    const validatedMode = mode === 'edit' ? 'edit' : 'view';
+    if (validatedMode === 'edit') {
+      this.requireAdmin(user);
+    }
+    return this.galleryService.getGalleryBySlug(slug, validatedMode, user);
+  }
+
+  private requireAdmin(user?: User) {
+    if (!user?.id) {
+      throw new UnauthorizedException('User required');
+    }
+    if (user.role !== Role.ADMIN) {
+      throw new ForbiddenException('Admin access required');
+    }
   }
 }

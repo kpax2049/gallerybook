@@ -4,8 +4,12 @@ import { CreateCommentDto } from './dto/create-comment.dto';
 import { ListCommentsDto } from './dto/list-comments.dto';
 import {
   ActionType,
+  GalleryStatus,
   Prisma,
+  Role,
   ActionCount as ActionCountModel,
+  User,
+  Visibility,
 } from '@prisma/client';
 import { AssetUrlService } from 'src/common/asset-url.service';
 
@@ -28,11 +32,21 @@ export class CommentService {
     private assetUrl: AssetUrlService,
   ) {}
 
-  async getComments(galleryId: number, userId?: number) {
+  async getComments(galleryId: number, user?: Pick<User, 'id' | 'role'>) {
+    const userId = user?.id;
+    const canViewPrivate = user?.role === Role.ADMIN;
     const comments = await this.prisma.comment.findMany({
       where: {
         galleryId,
         parentId: null,
+        ...(canViewPrivate
+          ? {}
+          : {
+              gallery: {
+                status: GalleryStatus.PUBLISHED,
+                visibility: { not: Visibility.PRIVATE },
+              },
+            }),
       },
       include: {
         user: true,

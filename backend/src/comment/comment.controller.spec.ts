@@ -30,9 +30,10 @@ describe('CommentController', () => {
   });
 
   it('retrieves comments for a gallery via query param', async () => {
+    const user = { id: 9, role: 'USER' } as any;
     commentService.getComments.mockResolvedValue([{ id: 1 }]);
-    await controller.getByGallery(10, { id: 9 } as any);
-    expect(commentService.getComments).toHaveBeenCalledWith(10, 9);
+    await controller.getByGallery(10, user);
+    expect(commentService.getComments).toHaveBeenCalledWith(10, user);
   });
 
   it('injects the authenticated user id when creating comments', async () => {

@@ -9,6 +9,7 @@ describe('GalleryController', () => {
   let controller: GalleryController;
   const galleryService = {
     checkGalleryOwnershipOrAdmin: jest.fn(),
+    verifyManageAccess: jest.fn(),
     getGalleryById: jest.fn(),
     verifyOwnership: jest.fn(),
     findById: jest.fn(),
@@ -45,7 +46,8 @@ describe('GalleryController', () => {
   });
 
   describe('getGalleryById', () => {
-    const user = { id: 1 } as any;
+    const user = { id: 1, role: 'USER' } as any;
+    const admin = { id: 1, role: 'ADMIN' } as any;
 
     it('allows view mode without ownership check', async () => {
       const gallery = { id: 1, content: {} };
@@ -57,23 +59,27 @@ describe('GalleryController', () => {
       expect(
         galleryService.checkGalleryOwnershipOrAdmin,
       ).not.toHaveBeenCalled();
+      expect(galleryService.getGalleryById).toHaveBeenCalledWith(
+        5,
+        'view',
+        user,
+      );
     });
 
-    it('requires authenticated owner/admin for edit mode', async () => {
-      galleryService.checkGalleryOwnershipOrAdmin.mockResolvedValue(true);
+    it('requires admin for edit mode', async () => {
       galleryService.getGalleryById.mockResolvedValue({ id: 1 });
 
-      await controller.getGalleryById(user, 5, 'edit');
-      expect(galleryService.checkGalleryOwnershipOrAdmin).toHaveBeenCalledWith(
+      await controller.getGalleryById(admin, 5, 'edit');
+      expect(galleryService.getGalleryById).toHaveBeenCalledWith(
         5,
-        user,
+        'edit',
+        admin,
       );
 
       await expect(
         controller.getGalleryById({ id: null } as any, 5, 'edit'),
       ).rejects.toBeInstanceOf(UnauthorizedException);
 
-      galleryService.checkGalleryOwnershipOrAdmin.mockResolvedValue(false);
       await expect(
         controller.getGalleryById(user, 5, 'edit'),
       ).rejects.toBeInstanceOf(ForbiddenException);
@@ -81,60 +87,62 @@ describe('GalleryController', () => {
   });
 
   it('verifies ownership before generating presigned URLs', async () => {
-    galleryService.verifyOwnership.mockResolvedValue(undefined);
-    galleryService.findById.mockResolvedValue({ id: 1, userId: 1 });
+    const admin = { id: 1, role: 'ADMIN' } as any;
+    galleryService.verifyManageAccess.mockResolvedValue(undefined);
     galleryService.generatePresignedUrls.mockResolvedValue({
       'a.jpg': 'url',
     });
 
-    const result = await controller.getPresignedUrls(1, { paths: ['a.jpg'] }, {
-      id: 1,
-    } as any);
+    const result = await controller.getPresignedUrls(
+      1,
+      { paths: ['a.jpg'] },
+      admin,
+    );
 
-    expect(galleryService.verifyOwnership).toHaveBeenCalledWith(1, 1);
+    expect(galleryService.verifyManageAccess).toHaveBeenCalledWith(1, admin);
     expect(galleryService.generatePresignedUrls).toHaveBeenCalledWith([
       'a.jpg',
     ]);
     expect(result).toEqual({ 'a.jpg': 'url' });
   });
 
-  it('rejects presigned url requests when gallery belongs to another user', async () => {
-    galleryService.verifyOwnership.mockResolvedValue(undefined);
-    galleryService.findById.mockResolvedValue({ id: 1, userId: 99 });
+  it('rejects presigned url requests for non-admin users', async () => {
+    const user = { id: 1, role: 'USER' } as any;
 
     await expect(
-      controller.getPresignedUrls(1, { paths: ['a.jpg'] }, { id: 1 } as any),
+      controller.getPresignedUrls(1, { paths: ['a.jpg'] }, user),
     ).rejects.toBeInstanceOf(ForbiddenException);
 
+    expect(galleryService.verifyManageAccess).not.toHaveBeenCalled();
     expect(galleryService.generatePresignedUrls).not.toHaveBeenCalled();
   });
 
   it('does not update content when ownership verification fails', async () => {
-    galleryService.verifyOwnership.mockRejectedValue(new ForbiddenException());
+    const admin = { id: 2, role: 'ADMIN' } as any;
+    galleryService.verifyManageAccess.mockRejectedValue(
+      new ForbiddenException(),
+    );
 
     await expect(
-      controller.updateGalleryContent(
-        10,
-        { content: {} } as any,
-        { id: 2 } as any,
-      ),
+      controller.updateGalleryContent(10, { content: {} } as any, admin),
     ).rejects.toBeInstanceOf(ForbiddenException);
 
     expect(galleryService.updateContent).not.toHaveBeenCalled();
   });
 
   it('creates a draft and returns only the id', async () => {
+    const admin = { id: 1, role: 'ADMIN' } as any;
     galleryService.createDraft.mockResolvedValue({ id: 123 });
     await expect(
-      controller.createDraftGallery(
-        { title: 'Draft' } as any,
-        { id: 1 } as any,
-      ),
+      controller.createDraftGallery({ title: 'Draft' } as any, admin),
     ).resolves.toEqual({ id: 123 });
   });
 
   it('rejects deleting images that are not under the gallery prefix', async () => {
-    const result = await controller.deleteUnusedImages(7, 9, {
+    const admin = { id: 1, role: 'ADMIN' } as any;
+    galleryService.findById.mockResolvedValue({ id: 9, userId: 7 });
+
+    const result = await controller.deleteUnusedImages(admin, 9, {
       keys: ['uploads/users/7/galleries/9/photo.jpg', 'evil/path'],
     });
 
@@ -144,7 +152,7 @@ describe('GalleryController', () => {
     expect(result).toEqual({ deleted: 1 });
 
     await expect(
-      controller.deleteUnusedImages(7, 9, { keys: ['evil/path'] }),
+      controller.deleteUnusedImages(admin, 9, { keys: ['evil/path'] }),
     ).resolves.toEqual({ deleted: 0 });
   });
 
@@ -152,11 +160,11 @@ describe('GalleryController', () => {
     const dto = new ListGalleriesDto();
     galleryService.list.mockResolvedValue({ items: [] });
 
-    await controller.list({ id: 5 } as any, dto);
-    expect(galleryService.list).toHaveBeenCalledWith(5, dto);
+    await controller.list({ id: 5, role: 'USER' } as any, dto);
+    expect(galleryService.list).toHaveBeenCalledWith(5, dto, 'USER');
 
     await controller.list({} as any, dto);
-    expect(galleryService.list).toHaveBeenCalledWith(null, dto);
+    expect(galleryService.list).toHaveBeenCalledWith(null, dto, undefined);
   });
 
   it('delegates reaction endpoints to the service', async () => {
@@ -172,16 +180,20 @@ describe('GalleryController', () => {
     await controller.myReactions({ id: 3 } as any, 4);
     expect(galleryService.getMyReactions).toHaveBeenCalledWith(3, 4);
 
-    await controller.replaceTags({ id: 5 } as any, 6, { tags: ['a'] });
+    await controller.replaceTags({ id: 5, role: 'ADMIN' } as any, 6, {
+      tags: ['a'],
+    });
     expect(galleryService.replaceTags).toHaveBeenCalledWith(5, 6, ['a']);
   });
 
   it('fetches galleries by slug using the provided mode', async () => {
+    const admin = { id: 1, role: 'ADMIN' } as any;
     galleryService.getGalleryBySlug.mockResolvedValue({ id: 1 });
-    await controller.getBySlug('test', 'edit');
+    await controller.getBySlug(admin, 'test', 'edit');
     expect(galleryService.getGalleryBySlug).toHaveBeenCalledWith(
       'test',
       'edit',
+      admin,
     );
   });
 });

@@ -1,7 +1,7 @@
 import { CommentService } from './comment.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AssetUrlService } from 'src/common/asset-url.service';
-import { ActionType } from '@prisma/client';
+import { ActionType, GalleryStatus, Role, Visibility } from '@prisma/client';
 
 describe('CommentService', () => {
   let service: CommentService;
@@ -115,9 +115,16 @@ describe('CommentService', () => {
       { commentId: 1, type: ActionType.UPVOTE },
     ]);
 
-    const result = await service.getComments(10, 5);
+    const result = await service.getComments(10, { id: 5, role: Role.USER });
     expect(prisma.comment.findMany).toHaveBeenCalledWith({
-      where: { galleryId: 10, parentId: null },
+      where: {
+        galleryId: 10,
+        parentId: null,
+        gallery: {
+          status: GalleryStatus.PUBLISHED,
+          visibility: { not: Visibility.PRIVATE },
+        },
+      },
       include: {
         user: true,
         replies: {
@@ -129,6 +136,22 @@ describe('CommentService', () => {
     expect(result[0].actions[ActionType.THUMB_UP]).toBe(1);
     expect(result[0].selectedActions).toEqual([ActionType.UPVOTE]);
     expect(result[0].replies[0].actions[ActionType.UPVOTE]).toBe(0);
+  });
+
+  it('does not constrain comment reads for admins', async () => {
+    prisma.comment.findMany.mockResolvedValue([]);
+
+    await service.getComments(10, { id: 1, role: Role.ADMIN });
+
+    expect(prisma.comment.findMany).toHaveBeenCalledWith({
+      where: { galleryId: 10, parentId: null },
+      include: {
+        user: true,
+        replies: {
+          include: { user: true, replies: true },
+        },
+      },
+    });
   });
 
   it('creates comments with the provided payload', async () => {

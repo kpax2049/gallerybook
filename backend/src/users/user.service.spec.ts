@@ -12,6 +12,18 @@ type MockedPrisma = {
 describe('UserService', () => {
   let service: UserService;
   let prisma: MockedPrisma;
+  const safeUserSelect = {
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+    role: true,
+    email: true,
+    fullName: true,
+    username: true,
+    settings: true,
+    status: true,
+    profile: { select: { avatarUrl: true } },
+  };
 
   beforeEach(() => {
     prisma = {
@@ -36,12 +48,12 @@ describe('UserService', () => {
     await expect(service.getUser(1)).resolves.toBe(user);
     expect(prisma.user.findUnique).toHaveBeenCalledWith({
       where: { id: 1 },
-      include: { profile: { select: { avatarUrl: true } } },
+      select: safeUserSelect,
     });
   });
 
-  it('updates the user and strips the hash when calling editUser', async () => {
-    const updatedUser = { id: 1, email: 'new@example.com', hash: 'secret' };
+  it('updates the user and selects only safe fields when calling editUser', async () => {
+    const updatedUser = { id: 1, email: 'new@example.com' };
     prisma.user.update.mockResolvedValue(updatedUser);
 
     const result = await service.editUser(1, { email: 'new@example.com' });
@@ -49,16 +61,18 @@ describe('UserService', () => {
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: 1 },
       data: { email: 'new@example.com' },
+      select: safeUserSelect,
     });
     expect(result).toEqual({ id: 1, email: 'new@example.com' });
-    expect(result.hash).toBeUndefined();
   });
 
-  it('returns all users from getUsers', async () => {
+  it('returns all users with only safe fields from getUsers', async () => {
     prisma.user.findMany.mockResolvedValue([{ id: 1 }]);
 
     await expect(service.getUsers()).resolves.toEqual([{ id: 1 }]);
-    expect(prisma.user.findMany).toHaveBeenCalledWith();
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      select: safeUserSelect,
+    });
   });
 
   it('returns id and hash when finding by id', async () => {

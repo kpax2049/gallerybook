@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { ForbiddenException } from '@nestjs/common';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
@@ -36,8 +37,16 @@ describe('UserController', () => {
   it('returns all users via getUsers', async () => {
     userService.getUsers.mockResolvedValue([{ id: 1 }]);
 
-    await controller.getUsers();
+    await controller.getUsers({ id: 1, role: 'ADMIN' } as any);
     expect(userService.getUsers).toHaveBeenCalled();
+  });
+
+  it('rejects non-admin getUsers calls', async () => {
+    expect(() =>
+      controller.getUsers({ id: 2, role: 'USER' } as any),
+    ).toThrow(ForbiddenException);
+
+    expect(userService.getUsers).not.toHaveBeenCalled();
   });
 
   it('edits user with authenticated id', async () => {

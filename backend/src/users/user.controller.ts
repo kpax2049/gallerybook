@@ -1,5 +1,12 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
-import { User } from '@prisma/client';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
+import { Role, User } from '@prisma/client';
 import { EditUserDto } from './dto';
 import { UserService } from './user.service';
 import { GetUser } from 'src/auth/decorator/get-user.decorator';
@@ -15,12 +22,19 @@ export class UserController {
   }
 
   @Get()
-  getUsers() {
+  getUsers(@GetUser() user: User) {
+    this.requireAdmin(user);
     return this.userService.getUsers();
   }
 
   @Patch()
   editUser(@GetUser('id') userId: number, @Body() dto: EditUserDto) {
     return this.userService.editUser(userId, dto);
+  }
+
+  private requireAdmin(user: User) {
+    if (user.role !== Role.ADMIN) {
+      throw new ForbiddenException('Admin access required');
+    }
   }
 }

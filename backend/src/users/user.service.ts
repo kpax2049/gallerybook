@@ -2,6 +2,23 @@ import { Injectable } from '@nestjs/common';
 import { EditUserDto } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
+const SAFE_USER_SELECT = {
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  role: true,
+  email: true,
+  fullName: true,
+  username: true,
+  settings: true,
+  status: true,
+  profile: {
+    select: {
+      avatarUrl: true,
+    },
+  },
+} as const;
+
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
@@ -9,13 +26,7 @@ export class UserService {
   async getUser(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        profile: {
-          select: {
-            avatarUrl: true,
-          },
-        },
-      },
+      select: SAFE_USER_SELECT,
     });
     return user;
   }
@@ -26,14 +37,16 @@ export class UserService {
       data: {
         ...dto,
       },
+      select: SAFE_USER_SELECT,
     });
 
-    delete user.hash;
     return user;
   }
 
   async getUsers() {
-    const users = await this.prisma.user.findMany();
+    const users = await this.prisma.user.findMany({
+      select: SAFE_USER_SELECT,
+    });
     return users;
   }
 

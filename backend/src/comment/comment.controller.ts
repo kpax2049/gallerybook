@@ -15,6 +15,7 @@ import { User } from '@prisma/client';
 import { JwtGuard } from 'src/auth/guard';
 import { ToggleReactionDto } from './dto/toggle-reaction.dto';
 
+@UseGuards(JwtGuard)
 @Controller('comments')
 export class CommentController {
   constructor(private commentService: CommentService) {}
@@ -24,16 +25,14 @@ export class CommentController {
     @Query('galleryId', ParseIntPipe) galleryId: number,
     @GetUser() user?: User,
   ) {
-    return this.commentService.getComments(galleryId, user?.id);
+    return this.commentService.getComments(galleryId, user);
   }
 
-  @UseGuards(JwtGuard)
   @Post()
   createComment(@GetUser() user: User, @Body() dto: CreateCommentDto) {
     return this.commentService.createComment({ ...dto, userId: user.id });
   }
 
-  @UseGuards(JwtGuard)
   @Post(':id/reactions/toggle')
   toggleReaction(
     @GetUser('id') userId: number,

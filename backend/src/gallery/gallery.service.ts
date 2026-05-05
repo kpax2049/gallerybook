@@ -17,8 +17,14 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 // import { ProseMirrorDocSchema } from './zod/prosemirror.schema';
 import { ConfigService } from '@nestjs/config';
-import { GalleryStatus, Prisma, ReactionType, User } from '@prisma/client';
-import { Role } from '@prisma/client';
+import {
+  GalleryStatus,
+  Prisma,
+  ReactionType,
+  Role,
+  User,
+  Visibility,
+} from '@prisma/client';
 import { extname } from 'path';
 import { lookup as mimeLookup } from 'mime-types';
 import { CreateDraftGalleryDto } from './dto/create-draft-gallery.dto';
@@ -217,6 +223,21 @@ export class GalleryService {
     if (gallery.userId !== userId) throw new ForbiddenException();
   }
 
+  async verifyManageAccess(
+    galleryId: number,
+    user: Pick<User, 'id' | 'role'>,
+  ) {
+    const gallery = await this.prisma.gallery.findUnique({
+      where: { id: galleryId },
+      select: { userId: true },
+    });
+
+    if (!gallery) throw new NotFoundException();
+    if (user.role !== Role.ADMIN && gallery.userId !== user.id) {
+      throw new ForbiddenException();
+    }
+  }
+
   async getGalleries(userId: number) {
     const galleries = await this.prisma.gallery.findMany({
       where: {
@@ -319,7 +340,11 @@ export class GalleryService {
     return { ...created, tags: tagList };
   }
 
-  async getGalleryById(galleryId: number, mode: 'view' | 'edit') {
+  async getGalleryById(
+    galleryId: number,
+    mode: 'view' | 'edit',
+    user?: Pick<User, 'id' | 'role'>,
+  ) {
     const gallery = await this.prisma.gallery.findUnique({
       where: {
         id: galleryId,
@@ -332,8 +357,9 @@ export class GalleryService {
       },
     });
     if (!gallery) {
-      throw new Error('Gallery not found');
+      throw new NotFoundException('Gallery not found');
     }
+    this.assertCanReadGallery(gallery, mode, user);
     const tagList = gallery.tags.map((row) => row.tag.slug ?? row.tag.name);
     const rewritten = await this.rewriteGalleryImageSrcs(
       gallery.content,
@@ -367,7 +393,7 @@ export class GalleryService {
   }
 
   async editGalleryById(
-    userId: number,
+    user: Pick<User, 'id' | 'role'>,
     galleryId: number,
     dto: UpdateGalleryDto,
   ) {
@@ -375,7 +401,10 @@ export class GalleryService {
     const existing = await this.prisma.gallery.findUnique({
       where: { id: galleryId },
     });
-    if (!existing || existing.userId !== userId) {
+    if (!existing) {
+      throw new NotFoundException('Gallery not found');
+    }
+    if (user.role !== Role.ADMIN && existing.userId !== user.id) {
       throw new ForbiddenException('Access to Resource Denied');
     }
 
@@ -450,7 +479,7 @@ export class GalleryService {
     });
   }
 
-  async deleteGalleryById(userId: number, galleryId: number) {
+  async deleteGalleryById(user: Pick<User, 'id' | 'role'>, galleryId: number) {
     // get gallery by id
     const gallery = await this.prisma.gallery.findUnique({
       where: {
@@ -458,7 +487,10 @@ export class GalleryService {
       },
     });
     // check if user owns gallery
-    if (!gallery || gallery.userId !== userId) {
+    if (!gallery) {
+      throw new NotFoundException('Gallery not found');
+    }
+    if (user.role !== Role.ADMIN && gallery.userId !== user.id) {
       throw new ForbiddenException('Access to Resource Denied');
     }
 
@@ -501,9 +533,14 @@ export class GalleryService {
     }
   }
 
-  async list(userId: number | null, dto: ListGalleriesDto) {
+  async list(
+    userId: number | null,
+    dto: ListGalleriesDto,
+    role?: Role | null,
+  ) {
     let favoriteIds: number[] | undefined;
     let likedIds: number[] | undefined;
+    const canManageGalleries = role === Role.ADMIN;
 
     if (dto.favoriteBy !== undefined) {
       const favUserId = this.coerceFavUserId(dto.favoriteBy, userId);
@@ -567,7 +604,13 @@ export class GalleryService {
       }
     }
 
-    const where = this.buildWhere(userId, dto, favoriteIds, likedIds);
+    const where = this.buildWhere(
+      userId,
+      dto,
+      favoriteIds,
+      likedIds,
+      canManageGalleries,
+    );
     const orderBy = this.buildOrderBy(
       dto.sortKey ?? 'updatedAt',
       dto.sortDir ?? 'desc',
@@ -691,9 +734,14 @@ export class GalleryService {
     return { tags: final.map((t) => t.slug || t.name) };
   }
 
-  async getGalleryBySlug(slug: string, mode: 'view' | 'edit') {
+  async getGalleryBySlug(
+    slug: string,
+    mode: 'view' | 'edit',
+    user?: Pick<User, 'id' | 'role'>,
+  ) {
     const gallery = await this.prisma.gallery.findUnique({ where: { slug } });
     if (!gallery) throw new NotFoundException('Gallery not found');
+    this.assertCanReadGallery(gallery, mode, user);
     const content = await this.rewriteGalleryImageSrcs(gallery.content, mode);
     return { ...gallery, content };
   }
@@ -711,6 +759,7 @@ export class GalleryService {
     dto: ListGalleriesDto,
     favoriteIds?: number[],
     likedIds?: number[],
+    canManageGalleries = false,
   ): Prisma.GalleryWhereInput {
     const AND: Prisma.GalleryWhereInput[] = [];
     const OR: Prisma.GalleryWhereInput[] = [];
@@ -720,8 +769,13 @@ export class GalleryService {
     const ignoreFavorite = !!dto.followedOnly;
     const ignoreLiked = !!dto.followedOnly;
 
-    // status
-    if (dto.status?.length) AND.push({ status: { in: dto.status as any } });
+    // Non-admin users only see published public galleries in browsable lists.
+    if (!canManageGalleries) {
+      AND.push({ status: GalleryStatus.PUBLISHED });
+      AND.push({ visibility: Visibility.PUBLIC });
+    } else if (dto.status?.length) {
+      AND.push({ status: { in: dto.status as any } });
+    }
 
     // owner
     if (!ignoreOwner && (dto.owner ?? 'any') === 'me' && userId) {
@@ -896,6 +950,23 @@ export class GalleryService {
   private async ensureGallery(id: number) {
     const exists = await this.prisma.gallery.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException('Gallery not found');
+  }
+
+  private assertCanReadGallery(
+    gallery: { status: GalleryStatus; visibility: Visibility },
+    mode: Mode,
+    user?: Pick<User, 'id' | 'role'>,
+  ) {
+    if (user?.role === Role.ADMIN) return;
+
+    const viewableByRegisteredUser =
+      mode === 'view' &&
+      gallery.status === GalleryStatus.PUBLISHED &&
+      gallery.visibility !== Visibility.PRIVATE;
+
+    if (!viewableByRegisteredUser) {
+      throw new NotFoundException('Gallery not found');
+    }
   }
 
   private slugify(s: string) {
