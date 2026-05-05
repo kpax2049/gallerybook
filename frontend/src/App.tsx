@@ -6,6 +6,7 @@ import { UserRole } from './common/enums';
 import Dashboard from './app/dashboard/Dashboard';
 import UserList from './app/user/UserList';
 import { LoginForm } from './app/login/LoginForm';
+import { OAuthCallback } from './app/login/OAuthCallback';
 import { SignupForm } from './app/signup/SignupForm';
 import { GalleryEditor } from './app/gallery/GalleryEditor';
 // import GalleryList from './app/gallery/GalleryList';
@@ -190,6 +191,10 @@ const App = () => {
         <Route
           path="/login"
           element={<LoginForm handleLogin={handleLogin} />}
+        />
+        <Route
+          path="/auth/oauth/callback"
+          element={<OAuthCallback handleLogin={handleLogin} />}
         />
         <Route path="/signup" element={<SignupForm />} />
 

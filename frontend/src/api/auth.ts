@@ -28,6 +28,13 @@ interface AuthUserResponse {
   accessToken: string;
 }
 
+export type OAuthProvider = 'google' | 'github';
+
+export const getOAuthLoginUrl = (provider: OAuthProvider): string => {
+  const baseUrl = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+  return `${baseUrl}/auth/oauth/${provider}`;
+};
+
 // Function to create a new user
 export const authUser = async (
   authData: AuthUserRequest
