@@ -4,6 +4,9 @@ import { AuthService } from './auth.service';
 import { JwtGuard } from './guard';
 import { JwtRefreshGuard } from './guard/jwt-refresh.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { OAuthService } from './oauth.service';
+import { ConfigService } from '@nestjs/config';
+import { OAuthProvider } from '@prisma/client';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -16,11 +19,22 @@ describe('AuthController', () => {
     signRefreshToken: jest.fn(),
     verifyCurrentPassword: jest.fn(),
   } as Record<string, jest.Mock>;
+  const oauthService = {
+    getAuthorizationUrl: jest.fn(),
+    authenticate: jest.fn(),
+  } as Record<string, jest.Mock>;
+  const configService = {
+    get: jest.fn(),
+  } as Record<string, jest.Mock>;
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [{ provide: AuthService, useValue: authService }],
+      providers: [
+        { provide: AuthService, useValue: authService },
+        { provide: OAuthService, useValue: oauthService },
+        { provide: ConfigService, useValue: configService },
+      ],
     })
       .overrideGuard(JwtGuard)
       .useValue({ canActivate: () => true })
@@ -32,6 +46,8 @@ describe('AuthController', () => {
 
     controller = module.get(AuthController);
     Object.values(authService).forEach((mock) => mock.mockReset());
+    Object.values(oauthService).forEach((mock) => mock.mockReset());
+    Object.values(configService).forEach((mock) => mock.mockReset());
   });
 
   describe('signup', () => {
@@ -77,6 +93,62 @@ describe('AuthController', () => {
       expect(res.clearCookie).toHaveBeenCalledWith('refreshToken', {
         path: '/auth/refresh',
       });
+    });
+  });
+
+  describe('oauth', () => {
+    it('sets state cookie and redirects to provider', async () => {
+      oauthService.getAuthorizationUrl.mockReturnValue('https://oauth.test');
+      const res = { cookie: jest.fn(), redirect: jest.fn() } as any;
+
+      await controller.loginWithGithub(res);
+
+      expect(res.cookie).toHaveBeenCalledWith(
+        'oauthState_github',
+        expect.any(String),
+        expect.objectContaining({
+          httpOnly: true,
+          path: '/auth/oauth',
+        }),
+      );
+      expect(oauthService.getAuthorizationUrl).toHaveBeenCalledWith(
+        OAuthProvider.GITHUB,
+        expect.any(String),
+      );
+      expect(res.redirect).toHaveBeenCalledWith('https://oauth.test');
+    });
+
+    it('exchanges callback code and redirects with an access token', async () => {
+      oauthService.authenticate.mockResolvedValue({
+        id: 1,
+        email: 'user@example.com',
+        tokenVersion: 4,
+      });
+      authService.signToken.mockResolvedValue('access');
+      authService.signRefreshToken.mockResolvedValue('refresh');
+      configService.get.mockReturnValue('http://frontend.test');
+      const req = { cookies: { oauthState_google: 'state' } } as any;
+      const res = {
+        clearCookie: jest.fn(),
+        cookie: jest.fn(),
+        redirect: jest.fn(),
+      } as any;
+
+      await controller.googleCallback(req, res, 'code', 'state');
+
+      expect(oauthService.authenticate).toHaveBeenCalledWith(
+        OAuthProvider.GOOGLE,
+        'code',
+      );
+      expect(authService.signRefreshToken).toHaveBeenCalledWith(1, 4);
+      expect(res.cookie).toHaveBeenCalledWith(
+        'refreshToken',
+        'refresh',
+        expect.objectContaining({ path: '/auth/refresh' }),
+      );
+      expect(res.redirect).toHaveBeenCalledWith(
+        'http://frontend.test/auth/oauth/callback#accessToken=access',
+      );
     });
   });
 

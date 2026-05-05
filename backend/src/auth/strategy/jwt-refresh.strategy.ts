@@ -30,6 +30,6 @@ export class JwtRefreshStrategy extends PassportStrategy(
     if (!user || payload.tv !== user.tokenVersion) {
       throw new UnauthorizedException('Refresh token invalid.');
     }
-    return { sub: payload.sub };
+    return user;
   }
 }

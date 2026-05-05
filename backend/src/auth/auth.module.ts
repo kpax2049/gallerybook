@@ -10,6 +10,8 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserService } from 'src/users/user.service';
 import { ThrottlerModule, seconds } from '@nestjs/throttler';
+import { OAuthService } from './oauth.service';
+import { JwtRefreshStrategy } from './strategy/jwt-refresh.strategy';
 
 @Module({
   imports: [
@@ -26,7 +28,9 @@ import { ThrottlerModule, seconds } from '@nestjs/throttler';
   providers: [
     ConfigService,
     JwtStrategy,
+    JwtRefreshStrategy,
     AuthService,
+    OAuthService,
     PrismaService,
     UserService,
   ],

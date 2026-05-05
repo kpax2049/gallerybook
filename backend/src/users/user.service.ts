@@ -66,7 +66,7 @@ export class UserService {
   getTokenVersion(id: number) {
     return this.prisma.user.findUnique({
       where: { id },
-      select: { id: true, tokenVersion: true },
+      select: { id: true, email: true, tokenVersion: true },
     });
   }
 }

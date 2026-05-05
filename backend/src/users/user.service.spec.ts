@@ -100,13 +100,13 @@ describe('UserService', () => {
   });
 
   it('fetches token version', async () => {
-    const row = { id: 1, tokenVersion: 3 };
+    const row = { id: 1, email: 'user@example.com', tokenVersion: 3 };
     prisma.user.findUnique.mockResolvedValue(row);
 
     await expect(service.getTokenVersion(1)).resolves.toBe(row);
     expect(prisma.user.findUnique).toHaveBeenCalledWith({
       where: { id: 1 },
-      select: { id: true, tokenVersion: true },
+      select: { id: true, email: true, tokenVersion: true },
     });
   });
 });
