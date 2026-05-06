@@ -15,14 +15,21 @@ jest.mock('src/cloudinary/cloudinary.config', () => {
   };
 });
 
-jest.mock('fs/promises', () => {
+jest.mock('fs', () => {
+  const actual = jest.requireActual('fs');
   const unlink = jest.fn();
-  return { unlink, __unlinkMock: unlink };
+  const mkdirSync = jest.fn();
+  return {
+    ...actual,
+    mkdirSync,
+    promises: { ...actual.promises, unlink },
+    __unlinkMock: unlink,
+  };
 });
 
 const mockUpload = jest.requireMock('src/cloudinary/cloudinary.config')
   .__uploadMock as jest.Mock;
-const mockUnlink = jest.requireMock('fs/promises').__unlinkMock as jest.Mock;
+const mockUnlink = jest.requireMock('fs').__unlinkMock as jest.Mock;
 
 describe('ProfileController', () => {
   let controller: ProfileController;

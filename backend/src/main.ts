@@ -12,6 +12,7 @@ async function bootstrap() {
       'http://localhost:5175',
     ], // Match your frontend's address
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], // Specify the allowed HTTP methods
+    credentials: true,
   };
   const app = await NestFactory.create(AppModule);
   app.enableCors(corsOptions);

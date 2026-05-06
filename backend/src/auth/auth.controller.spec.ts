@@ -200,7 +200,7 @@ describe('AuthController', () => {
         'newRefresh',
         expect.objectContaining({
           httpOnly: true,
-          secure: true,
+          secure: false,
           path: '/auth/refresh',
         }),
       );

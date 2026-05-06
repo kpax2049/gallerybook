@@ -12,7 +12,7 @@ import { cloudinary } from 'src/cloudinary/cloudinary.config';
 import { v4 as uuidv4 } from 'uuid';
 import { GetUser } from 'src/auth/decorator';
 import { diskStorage } from 'multer';
-import * as fs from 'fs/promises';
+import * as fs from 'fs';
 import {
   BadRequestException,
   InternalServerErrorException,
@@ -28,12 +28,29 @@ export class ProfileController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './temp_uploads',
+        destination: (req, file, cb) => {
+          try {
+            fs.mkdirSync('./temp_uploads', { recursive: true });
+            cb(null, './temp_uploads');
+          } catch (err) {
+            cb(err as Error, './temp_uploads');
+          }
+        },
         filename: (req, file, cb) => {
           const uniqueName = `${Date.now()}-${file.originalname}`;
           cb(null, uniqueName);
         },
       }),
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          cb(new BadRequestException('Avatar must be an image'), false);
+          return;
+        }
+        cb(null, true);
+      },
+      limits: {
+        fileSize: 1024 * 1024,
+      },
     }),
   )
   async uploadAvatar(
@@ -68,7 +85,7 @@ export class ProfileController {
     } finally {
       // Cleanup local disk uploads
       try {
-        await fs.unlink(file.path);
+        await fs.promises.unlink(file.path);
       } catch (cleanupErr) {
         console.warn('Failed to delete temp file:', file.path, cleanupErr);
       }

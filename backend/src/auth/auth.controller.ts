@@ -151,7 +151,7 @@ export class AuthController {
     res.cookie('refreshToken', refresh, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       path: '/auth/refresh',
       maxAge: 1000 * 60 * 60 * 24 * 30,
     });
