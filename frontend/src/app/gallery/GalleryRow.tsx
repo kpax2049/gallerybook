@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Heart,
   Star,
@@ -15,7 +15,9 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { Gallery, toggleReaction } from '@/api/gallery';
+import { deleteGallery, Gallery, toggleReaction } from '@/api/gallery';
+import { useUserStore } from '@/stores/userStore';
+import { isAdmin } from '@/lib/authz';
 
 // tiny read-only tag strip (or import your TagStrip)
 const TagStrip = ({ tags = [] as string[] }) => (
@@ -53,6 +55,9 @@ export function GalleryRow({
   likesCountOverride,
   favoritesCountOverride,
 }: RowProps) {
+  const navigate = useNavigate();
+  const currentUser = useUserStore((state) => state.user);
+  const canManage = isAdmin(currentUser);
   const [busyLike, setBusyLike] = React.useState(false);
   const [busyFav, setBusyFav] = React.useState(false);
   const liked = !!myReaction?.like;
@@ -162,30 +167,30 @@ export function GalleryRow({
             )}
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
-                aria-label="More"
-              >
-                <MoreHorizontal className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" sideOffset={6}>
-              <DropdownMenuItem
-                onSelect={(e) => e.preventDefault() /* navigate/edit */}
-              >
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={(e) => e.preventDefault() /* delete */}
-              >
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canManage && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  aria-label="More"
+                >
+                  <MoreHorizontal className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={6}>
+                <DropdownMenuItem
+                  onSelect={() => navigate(`/galleries/edit/${item.id}`)}
+                >
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => void deleteGallery(item.id)}>
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
     </li>

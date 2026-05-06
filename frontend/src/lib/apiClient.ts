@@ -22,6 +22,17 @@ const getAccessToken = () => {
   }
 };
 
+const setAccessToken = (token: string) => {
+  const storage = safeStorage();
+  if (storage && typeof storage.setItem === 'function') {
+    try {
+      storage.setItem('ACCESS_TOKEN', token);
+    } catch {
+      // no-op
+    }
+  }
+};
+
 const clearAccessToken = () => {
   const storage = safeStorage();
   if (storage && typeof storage.removeItem === 'function') {
@@ -31,10 +42,6 @@ const clearAccessToken = () => {
       // no-op
     }
   }
-};
-
-const headers = {
-  'Content-Type': 'application/x-www-form-urlencoded',
 };
 
 export const errorHandler = (error: AxiosError | undefined) => {
@@ -60,10 +67,36 @@ export const errorHandler = (error: AxiosError | undefined) => {
 
 const client = axios.create({
   baseURL: VITE_API_URL,
-  headers,
   timeout: 60000,
-  withCredentials: false,
+  withCredentials: true,
 });
+
+let refreshPromise: Promise<string> | null = null;
+
+const refreshAccessToken = async () => {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post<{ accessToken: string }>(
+        '/auth/refresh',
+        undefined,
+        {
+          baseURL: VITE_API_URL,
+          timeout: 60000,
+          withCredentials: true,
+        }
+      )
+      .then((response) => {
+        const token = response.data.accessToken;
+        setAccessToken(token);
+        return token;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+};
 
 client.interceptors.request.use((config: any) => {
   const token = getAccessToken();
@@ -71,12 +104,46 @@ client.interceptors.request.use((config: any) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  } else if (typeof config.data === 'string') {
+    config.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+  } else if (config.data !== undefined) {
+    config.headers['Content-Type'] = 'application/json';
+  }
+
   return config;
 });
 
 client.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    const originalRequest = error.config as
+      | (AxiosRequestConfig & { _retry?: boolean })
+      | undefined;
+    const status = error.response?.status ?? error.status;
+    const requestUrl = originalRequest?.url ?? '';
+
+    if (
+      status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !requestUrl.includes('/auth/refresh') &&
+      !requestUrl.includes('/auth/signin') &&
+      !requestUrl.includes('/auth/signup')
+    ) {
+      originalRequest._retry = true;
+      try {
+        const token = await refreshAccessToken();
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return client.request(originalRequest);
+      } catch {
+        clearAccessToken();
+      }
+    }
+
     try {
       errorHandler(error);
     } catch (e) {

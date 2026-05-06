@@ -9,7 +9,18 @@ export interface Profile {
   configuration?: { [key: string]: unknown }[];
 }
 
+export interface AvatarUploadResponse {
+  url: string;
+  public_id: string;
+}
+
 // Upload User avatar
-export const uploadAvatar = async (data: FormData): Promise<Profile> => {
-  return await apiRequest<Profile>('/profile/upload-avatar', 'POST', data);
+export const uploadAvatar = async (
+  data: FormData
+): Promise<AvatarUploadResponse> => {
+  return await apiRequest<AvatarUploadResponse>(
+    '/profile/upload-avatar',
+    'POST',
+    data
+  );
 };

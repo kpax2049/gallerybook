@@ -27,7 +27,7 @@ export default function Dashboard({ user, handleLogout }: DashboardProps) {
               <SidebarTrigger className="-ml-1" />
               <Separator orientation="vertical" className="mr-2 h-4" />
               <GalleryBreadcrumb />
-              <NewGalleryButton />
+              <NewGalleryButton user={user} />
             </div>
           </header>
           <main className="h-full">

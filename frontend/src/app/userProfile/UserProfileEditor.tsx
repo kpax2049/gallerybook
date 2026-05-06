@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AvatarUpload } from './AvatarUpload';
 import { useUserStore } from '@/stores/userStore';
+import { updateUser } from '@/api/user';
 import {
   changePassword,
   ChangePasswordResponse,
@@ -114,12 +115,23 @@ export function UserProfileEditor() {
       return;
     }
 
-    // TODO: wire up real API once available.
-    setUser({ ...initial, fullName: values.fullName, username: values.username });
-    toast({
-      title: 'Profile saved',
-      description: 'Your profile changes have been saved.',
-    });
+    try {
+      const updated = await updateUser({
+        fullName: values.fullName,
+        username: values.username,
+      });
+      setUser(updated);
+      toast({
+        title: 'Profile saved',
+        description: 'Your profile changes have been saved.',
+      });
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Could not save profile',
+        description: 'Please try again.',
+      });
+    }
   }
 
   async function onSubmitPassword(values: PasswordForm) {

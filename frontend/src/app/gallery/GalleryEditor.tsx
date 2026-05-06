@@ -193,7 +193,7 @@ export function GalleryEditor({
         await extractBase64ImagesFromJson(value, currentUser.id, draftId);
 
       if (imageFiles.length === 0) {
-        await createGallery({ content: updatedJson }, draftId);
+        await createGallery(updatedJson, draftId);
         setLoading(false);
         setOpen(false);
         setSubmitting(false);

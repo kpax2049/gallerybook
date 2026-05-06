@@ -1,8 +1,12 @@
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
+import { User } from '@/api/user';
+import { isAdmin } from '@/lib/authz';
 
-export default function NewGalleryButton() {
+export default function NewGalleryButton({ user }: { user?: User | null }) {
+  if (!isAdmin(user)) return null;
+
   return (
     <Button
       asChild

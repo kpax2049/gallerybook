@@ -18,10 +18,7 @@ import CommentsPage from './app/comment/CommentsPage';
 import GalleriesLayout from './app/gallery/GalleriesLayout';
 import FollowingPage from './app/following/FollowingPage';
 import { useFollowStore } from './stores/followStore';
-
-const Landing = () => {
-  return <h2>Landing (Public: anyone can access this page)</h2>;
-};
+import { signout } from './api/auth';
 
 const Home = () => {
   return <h2>Home (Protected: authenticated user required)</h2>;
@@ -125,7 +122,12 @@ const App = () => {
     setGlobalUser(user);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await signout();
+    } catch {
+      // Continue local logout even if the server session is already gone.
+    }
     // Clear user in Zustand store and reset local storage
     useUserStore.getState().clearUser();
     localStorage.removeItem('ACCESS_TOKEN');
@@ -139,7 +141,18 @@ const App = () => {
           path="/"
           element={<Dashboard user={user} handleLogout={handleLogout} />}
         >
-          <Route index element={<Landing />} />
+          <Route
+            index
+            element={
+              <ProtectedRoute
+                isAllowed={!!user}
+                isLoading={!authReady}
+                redirectPath="/login"
+              >
+                <Navigate to="/galleries" replace />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             element={
@@ -152,14 +165,44 @@ const App = () => {
           >
             <Route path="home" element={<Home />} />
             <Route path="dashboard" element={<Dashboard1 />} />
-            <Route path="admin/users" element={<UserList />} />
+            <Route
+              path="admin/users"
+              element={
+                <ProtectedRoute
+                  isAllowed={!!user && user.role === UserRole.ADMIN}
+                  isLoading={!authReady}
+                  redirectPath="/galleries"
+                >
+                  <UserList />
+                </ProtectedRoute>
+              }
+            />
             <Route path="galleries" element={<GalleriesLayout />}>
               <Route index element={<GalleriesPage />} /> {/* /galleries */}
               <Route path=":slug" element={<GalleryPage />} />
-              <Route path="new" element={<GalleryEditor />} />
+              <Route
+                path="new"
+                element={
+                  <ProtectedRoute
+                    isAllowed={!!user && user.role === UserRole.ADMIN}
+                    isLoading={!authReady}
+                    redirectPath="/galleries"
+                  >
+                    <GalleryEditor />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="edit/:galleryId"
-                element={<GalleryExistingEditor />}
+                element={
+                  <ProtectedRoute
+                    isAllowed={!!user && user.role === UserRole.ADMIN}
+                    isLoading={!authReady}
+                    redirectPath="/galleries"
+                  >
+                    <GalleryExistingEditor />
+                  </ProtectedRoute>
+                }
               />
             </Route>
             {/* <Route path="galleries" element={<GalleriesPage />} />

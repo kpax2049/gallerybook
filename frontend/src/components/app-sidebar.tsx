@@ -20,6 +20,7 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 import { User } from '@/api/user';
+import { isAdmin } from '@/lib/authz';
 
 const data = {
   navMain: [
@@ -122,13 +123,22 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ handleLogout, user, ...props }: AppSidebarProps) {
+  const navMain = React.useMemo(() => {
+    if (isAdmin(user)) return data.navMain;
+
+    return data.navMain.map((group) => ({
+      ...group,
+      items: group.items?.filter((item) => item.title !== 'Drafts'),
+    }));
+  }, [user]);
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <NavUser user={user} handleLogout={handleLogout} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
         <NavProjects projects={data.galleries} />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>

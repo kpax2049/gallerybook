@@ -14,7 +14,8 @@ import { useUserStore } from '@/stores/userStore';
 import { uploadAvatar } from '@/api/profile';
 
 export function AvatarUpload() {
-  const { user, setUser } = useUserStore.getState();
+  const user = useUserStore((state) => state.user);
+  const setUser = useUserStore((state) => state.setUser);
 
   const dropzone = useDropzone({
     onDropFile: async (file: File) => {
@@ -22,8 +23,7 @@ export function AvatarUpload() {
       formData.append('file', file);
 
       uploadAvatar(formData)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .then((data: any) => {
+        .then((data) => {
           if (!user) return;
 
           setUser({

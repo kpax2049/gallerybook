@@ -65,3 +65,7 @@ export const verifyCurrentPassword = async (
     qs.stringify(requestData)
   );
 };
+
+export const signout = async (): Promise<{ success: true }> => {
+  return await apiRequest<{ success: true }>('/auth/signout', 'POST');
+};

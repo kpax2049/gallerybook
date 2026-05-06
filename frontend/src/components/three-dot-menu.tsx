@@ -27,7 +27,8 @@ export function ThreeDotMenu({
   ...props
 }: ThreeDotMenuProps) {
   const [copied, setCopied] = React.useState(false);
-  const shareUrl = `${location.origin}/galleries/${gallery.id}`;
+  const shareTarget = gallery.slug ?? String(gallery.id);
+  const shareUrl = `${location.origin}/galleries/${shareTarget}`;
 
   const copy = async () => {
     try {

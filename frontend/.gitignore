@@ -12,6 +12,7 @@ local_modules
 dist
 dist-ssr
 *.local
+.env.development
 
 # Editor directories and files
 .vscode/*
@@ -25,3 +26,4 @@ dist-ssr
 *.sw?
 
 .tmp
+src/app/project_todo_list.txt

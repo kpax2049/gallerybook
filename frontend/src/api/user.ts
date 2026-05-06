@@ -45,3 +45,9 @@ export const getUsers = async (): Promise<User[]> => {
 export const getUser = async (): Promise<User> => {
   return await apiRequest<User>('/users/me', 'GET');
 };
+
+export const updateUser = async (
+  data: Pick<User, 'fullName' | 'username'>
+): Promise<User> => {
+  return await apiRequest<User>('/users', 'PATCH', data);
+};

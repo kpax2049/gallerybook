@@ -8,6 +8,8 @@ import { deleteGallery, Gallery, toggleReaction } from '@/api/gallery';
 import { ThreeDotMenu } from '@/components/three-dot-menu';
 import { TagStrip } from '@/components/ui/tags-strip';
 import { UserChip } from '../user/UserChip';
+import { useUserStore } from '@/stores/userStore';
+import { isAdmin } from '@/lib/authz';
 
 type Props = {
   item: Gallery;
@@ -29,6 +31,8 @@ export const GalleryCard = React.memo(function GalleryCard({
   to = '#',
 }: Props) {
   const navigate = useNavigate();
+  const currentUser = useUserStore((state) => state.user);
+  const canManage = isAdmin(currentUser);
 
   const onEdit = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (e && e.stopPropagation) e.stopPropagation();
@@ -214,7 +218,9 @@ export const GalleryCard = React.memo(function GalleryCard({
           <div className="text-[13px] font-medium text-foreground leading-tight line-clamp-1">
             {item.title ?? 'Untitled gallery'}
           </div>
-          <ThreeDotMenu onEdit={onEdit} onDelete={onDelete} gallery={item} />
+          {canManage && (
+            <ThreeDotMenu onEdit={onEdit} onDelete={onDelete} gallery={item} />
+          )}
         </div>
       </figcaption>
     </figure>
