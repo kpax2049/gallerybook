@@ -16,9 +16,7 @@ function ensureTestGlobals() {
   if (!globalThis.crypto) {
     globalThis.crypto = webcrypto as unknown as Crypto;
   }
-  // Use Node's File implementation to ensure arrayBuffer support.
-  // @ts-expect-error: assign to global for test environment
-  globalThis.File = NodeFile;
+  globalThis.File = NodeFile as unknown as typeof File;
 }
 
 async function loadUtils() {
