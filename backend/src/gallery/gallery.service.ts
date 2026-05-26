@@ -223,10 +223,7 @@ export class GalleryService {
     if (gallery.userId !== userId) throw new ForbiddenException();
   }
 
-  async verifyManageAccess(
-    galleryId: number,
-    user: Pick<User, 'id' | 'role'>,
-  ) {
+  async verifyManageAccess(galleryId: number, user: Pick<User, 'id' | 'role'>) {
     const gallery = await this.prisma.gallery.findUnique({
       where: { id: galleryId },
       select: { userId: true },
@@ -533,11 +530,7 @@ export class GalleryService {
     }
   }
 
-  async list(
-    userId: number | null,
-    dto: ListGalleriesDto,
-    role?: Role | null,
-  ) {
+  async list(userId: number | null, dto: ListGalleriesDto, role?: Role | null) {
     let favoriteIds: number[] | undefined;
     let likedIds: number[] | undefined;
     const canManageGalleries = role === Role.ADMIN;
@@ -1005,7 +998,6 @@ export class GalleryService {
     let n = 2;
     // ensure uniqueness; exclude current row when updating
     // (you can also do this in a single query with a LIKE search if preferred)
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const existing = await this.prisma.gallery.findFirst({
         where: { slug, ...(excludeId ? { id: { not: excludeId } } : {}) },

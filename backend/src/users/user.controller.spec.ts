@@ -42,9 +42,9 @@ describe('UserController', () => {
   });
 
   it('rejects non-admin getUsers calls', async () => {
-    expect(() =>
-      controller.getUsers({ id: 2, role: 'USER' } as any),
-    ).toThrow(ForbiddenException);
+    expect(() => controller.getUsers({ id: 2, role: 'USER' } as any)).toThrow(
+      ForbiddenException,
+    );
 
     expect(userService.getUsers).not.toHaveBeenCalled();
   });

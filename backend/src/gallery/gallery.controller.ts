@@ -50,11 +50,7 @@ export class GalleryController {
       this.requireAdmin(user);
     }
 
-    return this.galleryService.getGalleryById(
-      galleryId,
-      validatedMode,
-      user,
-    );
+    return this.galleryService.getGalleryById(galleryId, validatedMode, user);
   }
 
   @Post(':id/presigned-urls')
