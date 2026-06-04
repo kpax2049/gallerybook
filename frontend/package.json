@@ -68,7 +68,7 @@
     "react-medium-image-zoom": "^5.4.0",
     "react-router-dom": "^7.12.0",
     "reactjs-tiptap-editor": "^1.0.22",
-    "shadcn-comments": "file:./local_modules/shadcn-comments",
+    "shadcn-comments": "file:local_modules/shadcn-comments",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
@@ -105,6 +105,8 @@
     "vitest": "^4.1.7"
   },
   "overrides": {
-    "@tiptap/extension-highlight": "^3.22.5"
+    "@tiptap/extension-highlight": "^3.22.5",
+    "lodash-es": "^4.18.1",
+    "nanoid": "^5.1.11"
   }
 }

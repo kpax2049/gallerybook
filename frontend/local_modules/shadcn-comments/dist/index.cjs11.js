@@ -1,0 +1,2 @@
+"use strict";Object.defineProperties(exports,{__esModule:{value:!0},[Symbol.toStringTag]:{value:"Module"}});const e=require("react"),t=require("./index.cjs16.js"),o=require("@mdx-js/mdx"),l={jsx:t.jsxRuntimeExports.jsx,jsxs:t.jsxRuntimeExports.jsxs,Fragment:t.jsxRuntimeExports.Fragment},x=({source:n="hêlo"})=>{const[s,u]=e.useState(()=>()=>null);return e.useEffect(()=>{o.evaluate(n,l).then(r=>{u(()=>r.default)})},[n]),e.createElement(s,null)};exports.default=x;
+//# sourceMappingURL=index.cjs11.js.map

@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+test-results
+.env
+.env.*
+!.env.example
+local_modules/**/node_modules
+local_modules/**/.git
+npm-debug.log

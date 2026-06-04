@@ -8,7 +8,10 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-local_modules
+local_modules/*
+!local_modules/shadcn-comments/
+local_modules/shadcn-comments/.git
+local_modules/shadcn-comments/node_modules
 dist
 dist-ssr
 *.local

@@ -1,0 +1,42 @@
+{
+  "name": "shadcn-comments",
+  "description": "Shadcn React component library for a functioning comments section",
+  "private": false,
+  "version": "1.0.5",
+  "type": "module",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tecklens/shadcn-comments"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && npm run build:styles",
+    "build:styles": "postcss ./src/index.css -o ./dist/style.css && postcss ./src/mdx-style.css -o ./dist/mdx-style.css",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "dependencies": {
+    "@mdx-js/mdx": "^3.0.1",
+    "@mdx-js/react": "^3.0.1",
+    "@mdxeditor/editor": "^3.11.3",
+    "@radix-ui/react-avatar": "^1.0.3",
+    "@radix-ui/react-popover": "^1.1.2",
+    "@radix-ui/react-slot": "^1.0.2",
+    "class-variance-authority": "^0.6.0",
+    "clsx": "^1.2.1",
+    "date-fns": "^3.6.0",
+    "lucide-react": "^0.453.0",
+    "tailwind-merge": "^1.12.0",
+    "tailwindcss-animate": "^1.0.5"
+  }
+}

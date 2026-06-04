@@ -1,17 +1,24 @@
-# Stage 1: Build stage with Node and npm
-FROM node:18 AS build-stage
+FROM node:20-alpine AS build-stage
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
+
+ARG VITE_API_URL
+ARG VITE_S3_DOMAIN
+ARG VITE_S3_FOLDER
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_S3_DOMAIN=$VITE_S3_DOMAIN
+ENV VITE_S3_FOLDER=$VITE_S3_FOLDER
+
 RUN npm run build
 
-# Stage 2: Serve static files with nginx
-FROM nginx:alpine as production-stage
+FROM nginx:alpine AS production-stage
 
 COPY --from=build-stage /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

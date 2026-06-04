@@ -1,0 +1,1 @@
+{"version":3,"file":"EditorCommentStyle2.d.ts","sourceRoot":"","sources":["../../../src/components/EditorCommentStyle2.tsx"],"names":[],"mappings":"AAIA,OAAO,EAAE,IAAI,EAAE,MAAM,eAAe,CAAC;AAmBrC,UAAU,wBAAwB;IAChC,KAAK,CAAC,EAAE,MAAM,CAAC;IACf,QAAQ,CAAC,EAAE,CAAC,GAAG,EAAE,MAAM,KAAK,IAAI,CAAC;IACjC,WAAW,CAAC,EAAE,IAAI,CAAC;CACpB;AAED,eAAO,MAAM,mBAAmB,sCAI7B,wBAAwB,gDA8B1B,CAAC"}

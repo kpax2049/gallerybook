@@ -1,0 +1,12 @@
+import { User } from '../types/user';
+interface EditorCommentProps {
+    value?: string;
+    onChange?: (val: string) => void;
+    placeholder?: string;
+    onUpload?: (image: File) => Promise<string>;
+    theme: 'light' | 'dark' | 'system';
+    currentUser?: User;
+}
+export declare const EditorComment: ({ value, onChange, placeholder, onUpload, theme, currentUser, }: EditorCommentProps) => import("react/jsx-dev-runtime").JSX.Element;
+export {};
+//# sourceMappingURL=EditorComment.d.ts.map
