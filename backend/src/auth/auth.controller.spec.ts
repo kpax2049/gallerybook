@@ -90,9 +90,12 @@ describe('AuthController', () => {
     it('clears refresh cookie', () => {
       const res = { clearCookie: jest.fn() } as any;
       expect(controller.logout(res)).toEqual({ success: true });
-      expect(res.clearCookie).toHaveBeenCalledWith('refreshToken', {
-        path: '/auth/refresh',
-      });
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        'refreshToken',
+        expect.objectContaining({
+          path: '/auth/refresh',
+        }),
+      );
     });
   });
 

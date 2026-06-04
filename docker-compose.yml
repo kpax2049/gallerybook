@@ -1,8 +1,13 @@
 services:
   backend:
     build: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:secret@postgres_db:5432/nest_db?schema=public
+      PORT: 3333
     ports:
-      - 4000:4000
+      - 3333:3333
     depends_on:
       - postgres_db
     networks:

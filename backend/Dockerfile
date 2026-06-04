@@ -1,20 +1,31 @@
-# Use an official Node runtime as a parent image
-FROM node:20
+FROM node:20-alpine AS deps
 
-# Set the working directory in the container
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json into the container at /usr/src/app
-COPY ["package*.json", "./"]
+COPY package*.json ./
+RUN npm ci
 
-# Install any needed packages specified in package.json
-RUN npm install
+COPY prisma ./prisma
+RUN npx prisma generate
 
-# Bundle app source inside Docker image
+FROM deps AS build
+
 COPY . .
+RUN npm run build
 
-# Make port 4000 available to the world outside this container
-EXPOSE 4000
+FROM node:20-alpine AS production
 
-# Run app.js when the container launches
-CMD ["npm", "run", "start:dev"]
+WORKDIR /usr/src/app
+ENV NODE_ENV=production
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY --from=build /usr/src/app/dist ./dist
+COPY --from=build /usr/src/app/prisma ./prisma
+
+RUN npx prisma generate
+
+EXPOSE 3333
+
+CMD ["sh", "-c", "npm run prisma:dev:deploy && npm run start:prod"]

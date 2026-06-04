@@ -18,14 +18,14 @@ import { GetUser } from './decorator';
 import { User } from '@prisma/client';
 import { Response } from 'express';
 import { JwtRefreshGuard } from './guard/jwt-refresh.guard';
-import { Throttle, ThrottlerGuard, seconds } from '@nestjs/throttler';
+import { Throttle, seconds } from '@nestjs/throttler';
 import { VerifyPasswordDto } from 'src/dto/verify-password.dto';
 import { JwtGuard } from './guard';
 import { OAuthProvider } from '@prisma/client';
 import { OAuthService } from './oauth.service';
 import { randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
-import { Request } from 'express';
+import { CookieOptions, Request } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -37,6 +37,7 @@ export class AuthController {
 
   @HttpCode(HttpStatus.CREATED)
   @Post('signup')
+  @Throttle({ default: { limit: 3, ttl: seconds(60) } })
   async signup(@Body() dto: SignupDto) {
     const accessToken = await this.authService.signup(dto);
     return { success: true, accessToken };
@@ -44,6 +45,7 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('signin')
+  @Throttle({ default: { limit: 5, ttl: seconds(60) } })
   async signin(
     @Res({ passthrough: true }) res: Response,
     @Body() dto: AuthDto,
@@ -51,13 +53,7 @@ export class AuthController {
     const { accessToken, refreshToken } = await this.authService.signin(dto);
     // Send refresh as HTTP-only cookie
     if (refreshToken) {
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        sameSite: 'lax', // 'strict' if same-site only; 'none' + secure for cross-site
-        secure: process.env.NODE_ENV === 'production',
-        path: '/auth/refresh', // limit cookie to the refresh route
-        maxAge: 1000 * 60 * 60 * 24 * 30, // 30d
-      });
+      res.cookie('refreshToken', refreshToken, this.refreshCookieOptions());
     }
     // Let Nest serialize the body you return
     return { accessToken };
@@ -65,16 +61,18 @@ export class AuthController {
 
   @Post('signout')
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('refreshToken', { path: '/auth/refresh' });
+    res.clearCookie('refreshToken', this.clearRefreshCookieOptions());
     return { success: true };
   }
 
   @Get('oauth/google')
+  @Throttle({ default: { limit: 10, ttl: seconds(60) } })
   async loginWithGoogle(@Res() res: Response) {
     return this.redirectToProvider(res, OAuthProvider.GOOGLE);
   }
 
   @Get('oauth/github')
+  @Throttle({ default: { limit: 10, ttl: seconds(60) } })
   async loginWithGithub(@Res() res: Response) {
     return this.redirectToProvider(res, OAuthProvider.GITHUB);
   }
@@ -129,7 +127,7 @@ export class AuthController {
 
   @Post('password/verify')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtGuard, ThrottlerGuard) // local guard for this route
+  @UseGuards(JwtGuard)
   @Throttle({ default: { limit: 5, ttl: seconds(60) } })
   async verifyPassword(@GetUser() user: User, @Body() dto: VerifyPasswordDto) {
     const valid = await this.authService.verifyCurrentPassword(
@@ -148,13 +146,7 @@ export class AuthController {
     const access = this.authService.signToken(user.id, user.email);
     // (optional) rotate refresh token each time:
     const refresh = await this.authService.signRefreshToken(user.id);
-    res.cookie('refreshToken', refresh, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/auth/refresh',
-      maxAge: 1000 * 60 * 60 * 24 * 30,
-    });
+    res.cookie('refreshToken', refresh, this.refreshCookieOptions());
     return { accessToken: access };
   }
 
@@ -202,13 +194,7 @@ export class AuthController {
         user.tokenVersion,
       );
 
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        path: '/auth/refresh',
-        maxAge: 1000 * 60 * 60 * 24 * 30,
-      });
+      res.cookie('refreshToken', refreshToken, this.refreshCookieOptions());
 
       return res.redirect(this.oauthSuccessRedirect(accessToken));
     } catch {
@@ -218,6 +204,22 @@ export class AuthController {
 
   private oauthStateCookieName(provider: OAuthProvider) {
     return `oauthState_${provider.toLowerCase()}`;
+  }
+
+  private refreshCookieOptions(): CookieOptions {
+    const isProduction = this.config.get<string>('NODE_ENV') === 'production';
+    return {
+      httpOnly: true,
+      sameSite: isProduction ? 'none' : 'lax',
+      secure: isProduction,
+      path: '/auth/refresh',
+      maxAge: 1000 * 60 * 60 * 24 * 30,
+    };
+  }
+
+  private clearRefreshCookieOptions(): CookieOptions {
+    const { maxAge: _maxAge, ...options } = this.refreshCookieOptions();
+    return options;
   }
 
   private oauthSuccessRedirect(accessToken: string) {

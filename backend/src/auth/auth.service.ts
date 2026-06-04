@@ -83,7 +83,7 @@ export class AuthService {
     };
     const token = await this.jwt.signAsync(payload, {
       expiresIn: '24h',
-      secret: this.config.get('JWT_SECRET'),
+      secret: this.getRequiredConfig('JWT_SECRET'),
     });
 
     return token;
@@ -101,8 +101,23 @@ export class AuthService {
     // include "tv" so you can invalidate by bumping tokenVersion on password change
     return this.jwt.sign(
       { sub: userId, tv },
-      { secret: this.config.get('JWT_REFRESH_SECRET'), expiresIn: '30d' },
+      {
+        secret: this.getRequiredConfig('JWT_REFRESH_SECRET'),
+        expiresIn: '30d',
+      },
     );
+  }
+
+  private getRequiredConfig(key: string): string {
+    if (typeof this.config.getOrThrow === 'function') {
+      return this.config.getOrThrow<string>(key);
+    }
+
+    const value = this.config.get<string>(key);
+    if (!value) {
+      throw new Error(`${key} is required`);
+    }
+    return value;
   }
 
   async changePassword(userId: number, current: string, next: string) {

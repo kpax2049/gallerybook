@@ -9,7 +9,6 @@ import { JwtStrategy } from './strategy';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserService } from 'src/users/user.service';
-import { ThrottlerModule, seconds } from '@nestjs/throttler';
 import { OAuthService } from './oauth.service';
 import { JwtRefreshStrategy } from './strategy/jwt-refresh.strategy';
 
@@ -19,11 +18,6 @@ import { JwtRefreshStrategy } from './strategy/jwt-refresh.strategy';
     UserModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({}),
-    ThrottlerModule.forRoot({
-      throttlers: [
-        { ttl: seconds(60), limit: 5 }, // 5 requests / minute
-      ],
-    }),
   ],
   providers: [
     ConfigService,

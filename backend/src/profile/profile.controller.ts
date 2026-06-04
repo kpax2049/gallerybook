@@ -9,7 +9,7 @@ import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { ProfileService } from './profile.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { cloudinary } from 'src/cloudinary/cloudinary.config';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { GetUser } from 'src/auth/decorator';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
@@ -66,7 +66,7 @@ export class ProfileController {
     try {
       result = await cloudinary.uploader.upload(file.path, {
         folder: 'avatars',
-        public_id: uuidv4(),
+        public_id: randomUUID(),
       });
 
       if (!result?.secure_url) {

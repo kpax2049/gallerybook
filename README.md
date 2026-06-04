@@ -50,7 +50,7 @@ npm install
 npm run start:dev
 ```
 
-Default backend port is `3333` (set `PORT` to change). CORS allows `http://localhost:5173` and `http://localhost:5174`.
+Default backend port is `3333` (set `PORT` to change). CORS uses `CORS_ORIGINS` when set, otherwise it allows `FRONTEND_URL` plus the local Vite ports.
 
 ### 3) Frontend
 
@@ -76,6 +76,13 @@ COOKIE_SECRET="your-cookie-secret"
 PORT=3333
 BACKEND_URL="http://localhost:3333"
 FRONTEND_URL="http://localhost:5173"
+CORS_ORIGINS="http://localhost:5173,http://localhost:5174"
+
+# Admin bootstrap used by `npm run seed`
+ADMIN_EMAIL="you@example.com"
+ADMIN_PASSWORD="change-this-password"
+ADMIN_USERNAME="admin"
+ADMIN_FULL_NAME="Gallerybook Admin"
 
 # OAuth
 GOOGLE_OAUTH_CLIENT_ID="..."
@@ -112,7 +119,7 @@ VITE_S3_FOLDER="uploads/"
 
 ### Test Env (Backend)
 
-Create `backend/.env.test` from `backend/.env.test.example` and set `DATABASE_URL` to match the `test_db` container in `docker-compose.yml` (defaults: host `localhost`, port `5435`, user `postgres`, password `secret`, db `nest_db`). Set `JWT_SECRET` to any non-empty value.
+Create `backend/.env.test` from `backend/.env.test.example` and set `DATABASE_URL` to match the `test_db` container in `docker-compose.yml` (defaults: host `localhost`, port `5435`, user `postgres`, password `secret`, db `nest_db`). Set `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `COOKIE_SECRET` to non-empty values.
 
 ## Useful Scripts
 
@@ -120,6 +127,8 @@ Create `backend/.env.test` from `backend/.env.test.example` and set `DATABASE_UR
 
 ```
 npm run start:dev
+npm run prisma:dev:deploy
+npm run seed
 npm run test
 npm run test:e2e
 ```
@@ -137,3 +146,5 @@ npm run test
 - The backend uses presigned S3 URLs for gallery uploads and rewrites image URLs for optimized CloudFront delivery.
 - Refresh tokens are issued as HTTP-only cookies; access tokens are stored on the client.
 - Docker Compose includes dev and test Postgres containers.
+- In production, run Prisma migrations before app traffic and seed one admin user with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+- For split frontend/backend cloud domains, set `FRONTEND_URL`, `BACKEND_URL`, and `CORS_ORIGINS` to the deployed HTTPS origins.
