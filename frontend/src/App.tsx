@@ -19,6 +19,7 @@ import GalleriesLayout from './app/gallery/GalleriesLayout';
 import FollowingPage from './app/following/FollowingPage';
 import { useFollowStore } from './stores/followStore';
 import { signout } from './api/auth';
+import { LegalPage } from './app/legal/LegalPage';
 
 const Home = () => {
   return <h2>Home (Protected: authenticated user required)</h2>;
@@ -245,6 +246,24 @@ const App = () => {
         <Route
           path="/login"
           element={<LoginForm handleLogin={handleLogin} />}
+        />
+        <Route
+          path="/terms"
+          element={
+            <>
+              <LoginForm handleLogin={handleLogin} />
+              <LegalPage type="terms" />
+            </>
+          }
+        />
+        <Route
+          path="/privacy"
+          element={
+            <>
+              <LoginForm handleLogin={handleLogin} />
+              <LegalPage type="privacy" />
+            </>
+          }
         />
         <Route
           path="/auth/oauth/callback"

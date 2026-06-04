@@ -45,7 +45,7 @@ function SignUpOrInButton() {
             <img
               src={logo}
               alt="GB Logo"
-              className="group-data-[state=collapsed]:w-[28px] group-data-[state=collapsed]:h-[28px]"
+              className="h-7 w-7 object-contain group-data-[state=collapsed]:h-[28px] group-data-[state=collapsed]:w-[28px]"
             />
           </NavLink>
         </Button>
@@ -83,7 +83,7 @@ export function NavUser({ handleLogout }: NavUserProps) {
                 size="lg"
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
-                <img src={logo} alt="Logo" />
+                <img src={logo} alt="Logo" className="h-8 w-8 object-contain" />
                 <div className="grid flex-1 text-center text-sm leading-tight">
                   <span className="truncate font-semibold">
                     {currentUser.fullName}

@@ -80,23 +80,35 @@ export function LoginForm({
 
   return (
     <LoginPage>
-      <div className={cn('flex flex-col gap-6', className)} {...props}>
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-xl">Welcome back</CardTitle>
-            <CardDescription>
-              Login with your GitHub or Google account
+      <div
+        className={cn('flex flex-col gap-6 text-white', className)}
+        {...props}
+      >
+        <Card className="border-0 bg-transparent shadow-none">
+          <CardHeader className="px-0 pb-5 text-left">
+            <div className="mb-2 inline-flex w-fit rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/80">
+              Account access
+            </div>
+            <CardTitle className="text-3xl tracking-normal text-white">
+              Sign in
+            </CardTitle>
+            <CardDescription className="text-sm leading-6 text-white/78">
+              Use Google, GitHub, or your email and password.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-4"
               >
-                <div className="grid gap-6">
-                  <div className="flex flex-col gap-4">
-                    <Button variant="outline" className="w-full" asChild>
+                <div className="grid gap-5">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Button
+                      variant="outline"
+                      className="h-12 justify-start rounded-lg border-white/22 bg-white/10 px-4 text-white shadow-none hover:border-white/45 hover:bg-white/18 hover:text-white"
+                      asChild
+                    >
                       <a href={getOAuthLoginUrl('github')}>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -107,10 +119,14 @@ export function LoginForm({
                             fill="currentColor"
                           />
                         </svg>
-                        Login with GitHub
+                        GitHub
                       </a>
                     </Button>
-                    <Button variant="outline" className="w-full" asChild>
+                    <Button
+                      variant="outline"
+                      className="h-12 justify-start rounded-lg border-white/22 bg-white/10 px-4 text-white shadow-none hover:border-white/45 hover:bg-white/18 hover:text-white"
+                      asChild
+                    >
                       <a href={getOAuthLoginUrl('google')}>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -121,25 +137,29 @@ export function LoginForm({
                             fill="currentColor"
                           />
                         </svg>
-                        Login with Google
+                        Google
                       </a>
                     </Button>
                   </div>
-                  <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-                    <span className="relative z-10 bg-background px-2 text-muted-foreground">
-                      Or continue with
+                  <div className="relative py-1 text-center text-xs uppercase tracking-[0.18em] after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-white/24">
+                    <span className="relative z-10 bg-[#0f0d0b] px-2 text-white/72">
+                      Or use email
                     </span>
                   </div>
 
-                  <div className="grid gap-6">
+                  <div className="grid gap-4">
                     <FormField
                       control={form.control}
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel className="text-white">Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="email" {...field} />
+                            <Input
+                              className="h-12 rounded-lg border-white/20 bg-black/35 text-white placeholder:text-white/45 focus-visible:ring-white/55"
+                              placeholder="you@example.com"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -147,10 +167,12 @@ export function LoginForm({
                     />
                     <div className="grid gap-2">
                       <div className="flex items-center">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password" className="text-white">
+                          Password
+                        </Label>
                         <a
                           href="#"
-                          className="ml-auto text-sm underline-offset-4 hover:underline"
+                          className="ml-auto text-sm text-white/82 underline-offset-4 hover:text-white hover:underline"
                         >
                           Forgot your password?
                         </a>
@@ -162,7 +184,8 @@ export function LoginForm({
                           <FormItem>
                             <FormControl>
                               <PasswordInput
-                                placeholder="password"
+                                className="h-12 rounded-lg border-white/20 bg-black/35 text-white placeholder:text-white/45 focus-visible:ring-white/55"
+                                placeholder="Password"
                                 {...field}
                               />
                             </FormControl>
@@ -171,26 +194,33 @@ export function LoginForm({
                         )}
                       />
                     </div>
-                    <Button type="submit" className="w-full" loading={loading}>
+                    <Button
+                      type="submit"
+                      className="h-12 w-full rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
+                      loading={loading}
+                    >
                       {loading ? 'Logging in...' : 'Login'}
                     </Button>
                   </div>
-                  <div className="text-center text-sm">
-                    Don&apos;t have an account?{' '}
-                    {/* <a href="#" className="underline underline-offset-4"> */}
-                    <Link className="link-as-a-tag" to="/signup" viewTransition>
-                      Sign up
+                  <div className="rounded-lg border border-white/18 bg-white/10 px-4 py-3 text-center text-sm text-white/82">
+                    New here?{' '}
+                    <Link
+                      className="font-medium text-white underline underline-offset-4"
+                      to="/signup"
+                      viewTransition
+                    >
+                      Create an account
                     </Link>
-                    {/* </a> */}
                   </div>
                 </div>
               </form>
             </Form>
           </CardContent>
         </Card>
-        <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-primary  ">
+        <div className="text-balance border-t border-white/20 pt-4 text-center text-xs leading-5 text-white/72 [&_a]:font-medium [&_a]:text-white [&_a]:underline [&_a]:underline-offset-4">
           By clicking continue, you agree to our{' '}
-          <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+          <Link to="/terms">Terms of Service</Link> and{' '}
+          <Link to="/privacy">Privacy Policy</Link>.
         </div>
       </div>
     </LoginPage>
