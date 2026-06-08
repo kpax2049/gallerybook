@@ -10,6 +10,7 @@ import * as argon from 'argon2';
 import { AuthDto, SignupDto } from '../../src/dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserService } from 'src/users/user.service';
+import { UserStatus } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -31,6 +32,7 @@ export class AuthService {
           hash,
           fullName: dto.fullName,
           username: dto.username,
+          status: UserStatus.inactive,
           profile: {
             create: {
               avatarUrl: null, // optional

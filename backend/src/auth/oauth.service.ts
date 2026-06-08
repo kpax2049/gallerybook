@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OAuthProvider } from '@prisma/client';
+import { OAuthProvider, UserStatus } from '@prisma/client';
 import * as argon from 'argon2';
 import { randomBytes } from 'crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -138,6 +138,7 @@ export class OAuthService {
         hash,
         fullName: identity.fullName,
         username,
+        status: UserStatus.inactive,
         profile: {
           create: {
             avatarUrl: identity.avatarUrl ?? null,

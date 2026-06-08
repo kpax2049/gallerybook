@@ -23,12 +23,11 @@ import {
 import { cn } from '@/lib/utils';
 import LoginPage from '../login/Login';
 import { PasswordInput } from '../../components/ui/password-input';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { signupUser } from '@/api/signup';
 import { useNavigate } from 'react-router-dom';
-import { getUser, User } from '@/api/user';
-import { useUserStore } from '@/stores/userStore';
 import { toast } from '@/hooks/use-toast';
+import { TurnstileWidget } from './TurnstileWidget';
 
 const formSchema = z
   .object({
@@ -59,12 +58,15 @@ const formSchema = z
     }
   });
 
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+
 export function SignupForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<'div'>) {
   const [loading, setLoading] = useState<boolean>(false);
-  const setGlobalUser = useUserStore((state) => state.setUser);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
   const navigate = useNavigate();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,30 +79,44 @@ export function SignupForm({
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    setLoading(true);
-    signupUser({
-      email: values.email,
-      password: values.password,
-      fullName: values.fullName,
-      username: values.username,
-    })
-      .then((response) => {
-        toast({
-          variant: 'default',
-          title: 'Success',
-          description: `Account created 🎉 — Welcome to Gallerybook, ${values.username}!`,
-        });
-        localStorage.setItem('ACCESS_TOKEN', response.accessToken);
-        getUser().then((user: User) => {
-          setGlobalUser(user);
-          setLoading(false);
-          navigate('/', { viewTransition: true });
-        });
-      })
-      .catch(() => {
-        setLoading(false);
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken('');
+    setTurnstileResetSignal((value) => value + 1);
+  }, []);
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (turnstileSiteKey && !turnstileToken) {
+      toast({
+        variant: 'destructive',
+        title: 'Verification required',
+        description: 'Please complete the verification before signing up.',
       });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await signupUser({
+        email: values.email,
+        password: values.password,
+        fullName: values.fullName,
+        username: values.username,
+        turnstileToken: turnstileToken || undefined,
+      });
+
+      localStorage.removeItem('ACCESS_TOKEN');
+      toast({
+        variant: 'default',
+        title: 'Account created',
+        description: 'Your account is pending admin approval.',
+      });
+      navigate('/login', { viewTransition: true });
+    } catch {
+      resetTurnstile();
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -189,6 +205,15 @@ export function SignupForm({
                     </FormItem>
                   )}
                 />
+                {turnstileSiteKey && (
+                  <TurnstileWidget
+                    siteKey={turnstileSiteKey}
+                    resetSignal={turnstileResetSignal}
+                    onVerify={setTurnstileToken}
+                    onExpire={resetTurnstile}
+                    onError={resetTurnstile}
+                  />
+                )}
                 <Button type="submit" className="w-full" loading={loading}>
                   {loading ? 'Signing Up...' : 'Signup'}
                 </Button>

@@ -102,6 +102,9 @@ GITHUB_OAUTH_CLIENT_SECRET="..."
 # GOOGLE_OAUTH_CALLBACK_URL="http://localhost:3333/auth/oauth/google/callback"
 # GITHUB_OAUTH_CALLBACK_URL="http://localhost:3333/auth/oauth/github/callback"
 
+# Cloudflare Turnstile for public signup. Required for signup in production.
+TURNSTILE_SECRET_KEY="..."
+
 # AWS / S3 / CloudFront
 AWS_REGION="us-east-1"
 AWS_ACCESS_KEY_ID="..."
@@ -123,6 +126,7 @@ CLOUDINARY_API_SECRET="..."
 VITE_API_URL="http://localhost:3333/"
 VITE_S3_DOMAIN="https://your-s3-bucket.s3.us-east-1.amazonaws.com"
 VITE_S3_FOLDER="uploads/"
+VITE_TURNSTILE_SITE_KEY="..."
 ```
 
 These frontend variables are build-time values. When building the frontend Docker image, pass them as `--build-arg` values so nginx serves an app compiled for the correct backend and media origins.
@@ -187,6 +191,7 @@ docker build \
 - The backend uses presigned S3 URLs for gallery uploads and rewrites image URLs for optimized CloudFront delivery.
 - Refresh tokens are issued as HTTP-only cookies scoped to `/auth/refresh`; access tokens are stored on the client and automatically refreshed after a 401.
 - Signup, signin, password verification, and OAuth start endpoints are rate-limited.
+- Public signup is protected by Cloudflare Turnstile in production. New email/password and OAuth users are created as inactive accounts, and protected API access is blocked until an admin marks the user active.
 - Gallery creation/editing and the admin user list are restricted to admin users in the frontend routes.
 - Docker Compose includes backend, dev Postgres, and test Postgres services. The frontend service is documented in compose but commented out.
 - In production, seed one admin user with `ADMIN_EMAIL` / `ADMIN_PASSWORD` after migrations are applied.

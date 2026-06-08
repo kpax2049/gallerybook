@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, UserStatus } from '@prisma/client';
 import * as argon from 'argon2';
 
 const prisma = new PrismaClient();
@@ -32,6 +32,7 @@ async function main() {
     update: {
       hash,
       role: Role.ADMIN,
+      status: UserStatus.active,
       fullName,
       username,
     },
@@ -39,6 +40,7 @@ async function main() {
       email,
       hash,
       role: Role.ADMIN,
+      status: UserStatus.active,
       fullName,
       username,
       profile: {

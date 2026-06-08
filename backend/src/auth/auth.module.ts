@@ -11,6 +11,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { UserService } from 'src/users/user.service';
 import { OAuthService } from './oauth.service';
 import { JwtRefreshStrategy } from './strategy/jwt-refresh.strategy';
+import { TurnstileService } from './turnstile.service';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { JwtRefreshStrategy } from './strategy/jwt-refresh.strategy';
     JwtRefreshStrategy,
     AuthService,
     OAuthService,
+    TurnstileService,
     PrismaService,
     UserService,
   ],

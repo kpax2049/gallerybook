@@ -1,9 +1,14 @@
 // auth/jwt-refresh.strategy.ts
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UserService } from 'src/users/user.service';
 import { ConfigService } from '@nestjs/config';
+import { UserStatus } from '@prisma/client';
 
 function cookieExtractor(req: any) {
   return req?.cookies?.refreshToken ?? null;
@@ -29,6 +34,9 @@ export class JwtRefreshStrategy extends PassportStrategy(
     const user = await this.users.getTokenVersion(payload.sub);
     if (!user || payload.tv !== user.tokenVersion) {
       throw new UnauthorizedException('Refresh token invalid.');
+    }
+    if (user.status !== UserStatus.active) {
+      throw new ForbiddenException('User is pending approval.');
     }
     return user;
   }

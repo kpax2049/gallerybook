@@ -7,6 +7,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import { OAuthService } from './oauth.service';
 import { ConfigService } from '@nestjs/config';
 import { OAuthProvider } from '@prisma/client';
+import { TurnstileService } from './turnstile.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -23,6 +24,9 @@ describe('AuthController', () => {
     getAuthorizationUrl: jest.fn(),
     authenticate: jest.fn(),
   } as Record<string, jest.Mock>;
+  const turnstileService = {
+    verify: jest.fn(),
+  } as Record<string, jest.Mock>;
   const configService = {
     get: jest.fn(),
   } as Record<string, jest.Mock>;
@@ -33,6 +37,7 @@ describe('AuthController', () => {
       providers: [
         { provide: AuthService, useValue: authService },
         { provide: OAuthService, useValue: oauthService },
+        { provide: TurnstileService, useValue: turnstileService },
         { provide: ConfigService, useValue: configService },
       ],
     })
@@ -47,17 +52,27 @@ describe('AuthController', () => {
     controller = module.get(AuthController);
     Object.values(authService).forEach((mock) => mock.mockReset());
     Object.values(oauthService).forEach((mock) => mock.mockReset());
+    Object.values(turnstileService).forEach((mock) => mock.mockReset());
     Object.values(configService).forEach((mock) => mock.mockReset());
   });
 
   describe('signup', () => {
     it('returns success + access token', async () => {
+      turnstileService.verify.mockResolvedValue(undefined);
       authService.signup.mockResolvedValue('token');
 
-      await expect(controller.signup({} as any)).resolves.toEqual({
+      await expect(
+        controller.signup({ ip: '127.0.0.1' } as any, {
+          turnstileToken: 'turnstile-token',
+        } as any),
+      ).resolves.toEqual({
         success: true,
         accessToken: 'token',
       });
+      expect(turnstileService.verify).toHaveBeenCalledWith(
+        'turnstile-token',
+        '127.0.0.1',
+      );
       expect(authService.signup).toHaveBeenCalled();
     });
   });

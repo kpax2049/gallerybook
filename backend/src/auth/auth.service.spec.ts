@@ -84,6 +84,7 @@ describe('AuthService', () => {
         data: expect.objectContaining({
           email: 'user@example.com',
           hash: 'hashed',
+          status: 'inactive',
         }),
       });
       expect(jwt.signAsync).toHaveBeenCalledWith(

@@ -25,8 +25,9 @@ import {
   FormMessage,
 } from '../../components/ui/form';
 import { PasswordInput } from '../../components/ui/password-input';
-import { authUser, getOAuthLoginUrl } from '@/api/auth';
+import { authUser, getOAuthLoginUrl, signout } from '@/api/auth';
 import { getUser, User } from '@/api/user';
+import { toast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   email: z
@@ -64,13 +65,27 @@ export function LoginForm({
   function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
     authUser({ email: values.email, password: values.password })
-      .then((response) => {
+      .then(async (response) => {
         localStorage.setItem('ACCESS_TOKEN', response.accessToken);
-        getUser().then((user: User) => {
+        try {
+          const user: User = await getUser();
           handleLogin(user);
           setLoading(false);
           navigate('/', { viewTransition: true });
-        });
+        } catch {
+          localStorage.removeItem('ACCESS_TOKEN');
+          try {
+            await signout();
+          } catch {
+            // The session may already be unusable.
+          }
+          toast({
+            variant: 'default',
+            title: 'Approval pending',
+            description: 'Your account is waiting for admin approval.',
+          });
+          setLoading(false);
+        }
       })
 
       .catch(() => {

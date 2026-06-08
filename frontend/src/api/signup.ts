@@ -7,6 +7,7 @@ interface SignupRequest {
   password: string;
   username?: string;
   fullName?: string;
+  turnstileToken?: string;
 }
 
 // Define the response structure from the server when a user is created

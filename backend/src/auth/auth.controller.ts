@@ -26,19 +26,22 @@ import { OAuthService } from './oauth.service';
 import { randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { CookieOptions, Request } from 'express';
+import { TurnstileService } from './turnstile.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
     private oauthService: OAuthService,
+    private turnstileService: TurnstileService,
     private config: ConfigService,
   ) {}
 
   @HttpCode(HttpStatus.CREATED)
   @Post('signup')
   @Throttle({ default: { limit: 3, ttl: seconds(60) } })
-  async signup(@Body() dto: SignupDto) {
+  async signup(@Req() req: Request, @Body() dto: SignupDto) {
+    await this.turnstileService.verify(dto.turnstileToken, req.ip);
     const accessToken = await this.authService.signup(dto);
     return { success: true, accessToken };
   }
@@ -143,7 +146,7 @@ export class AuthController {
     @GetUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const access = this.authService.signToken(user.id, user.email);
+    const access = await this.authService.signToken(user.id, user.email);
     // (optional) rotate refresh token each time:
     const refresh = await this.authService.signRefreshToken(user.id);
     res.cookie('refreshToken', refresh, this.refreshCookieOptions());

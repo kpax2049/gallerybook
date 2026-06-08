@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getUser, User } from '@/api/user';
 import LoginPage from './Login';
+import { signout } from '@/api/auth';
+import { toast } from '@/hooks/use-toast';
 
 type OAuthCallbackProps = {
   handleLogin: (u: User) => void;
@@ -30,8 +32,18 @@ export function OAuthCallback({ handleLogin }: OAuthCallbackProps) {
         handleLogin(user);
         navigate('/', { replace: true, viewTransition: true });
       })
-      .catch(() => {
+      .catch(async () => {
         localStorage.removeItem('ACCESS_TOKEN');
+        try {
+          await signout();
+        } catch {
+          // The session may already be unusable.
+        }
+        toast({
+          variant: 'default',
+          title: 'Approval pending',
+          description: 'Your account is waiting for admin approval.',
+        });
         navigate('/login', { replace: true });
       });
   }, [handleLogin, navigate]);
