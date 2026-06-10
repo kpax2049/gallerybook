@@ -12,6 +12,7 @@ describe('GalleryService', () => {
     gallery: {
       findUnique: jest.Mock;
       findMany: jest.Mock;
+      delete: jest.Mock;
     };
     galleryReaction: {
       findMany: jest.Mock;
@@ -25,6 +26,7 @@ describe('GalleryService', () => {
       gallery: {
         findUnique: jest.fn(),
         findMany: jest.fn(),
+        delete: jest.fn(),
       },
       galleryReaction: {
         findMany: jest.fn(),
@@ -303,5 +305,34 @@ describe('GalleryService', () => {
     expect(
       normalize(['  Tag ', 'tag', 'Another   Tag', '', 'ANOTHER tag']),
     ).toEqual(['Tag', 'Another Tag']);
+  });
+
+  describe('deleteGalleryById', () => {
+    it('deletes galleries that have no stored image keys without calling S3', async () => {
+      const s3Send = jest.fn();
+      (service as any).s3 = { send: s3Send };
+      prisma.gallery.findUnique.mockResolvedValue({
+        id: 1,
+        userId: 7,
+        content: null,
+      });
+      prisma.gallery.delete.mockResolvedValue({ id: 1 });
+
+      await expect(
+        service.deleteGalleryById({ id: 7, role: Role.USER }, 1),
+      ).resolves.toBeUndefined();
+
+      expect(s3Send).not.toHaveBeenCalled();
+      expect(prisma.gallery.delete).toHaveBeenCalledWith({ where: { id: 1 } });
+    });
+
+    it('skips S3 deletes when the key list is empty', async () => {
+      const s3Send = jest.fn();
+      (service as any).s3 = { send: s3Send };
+
+      await expect(service.deleteImagesFromS3([])).resolves.toBeUndefined();
+
+      expect(s3Send).not.toHaveBeenCalled();
+    });
   });
 });

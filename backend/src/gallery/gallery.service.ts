@@ -516,7 +516,11 @@ export class GalleryService {
   }
 
   async deleteImagesFromS3(keys: string[]): Promise<void> {
-    const objects = keys.map((Key) => ({ Key }));
+    const objects = [...new Set(keys)].filter(Boolean).map((Key) => ({ Key }));
+    if (objects.length === 0) {
+      return;
+    }
+
     const command = new DeleteObjectsCommand({
       Bucket: this.bucket,
       Delete: { Objects: objects, Quiet: true },
