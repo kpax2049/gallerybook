@@ -1,8 +1,8 @@
- 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   createDraftGallery,
   createGallery,
+  deleteGallery,
   deleteGalleryImages,
   editGallery,
   fetchPresignedUrls,
@@ -17,23 +17,38 @@ import 'react-image-crop/dist/ReactCrop.css';
 import 'reactjs-tiptap-editor/style.css';
 import { RichTextProvider } from 'reactjs-tiptap-editor';
 import { Bold, RichTextBold } from 'reactjs-tiptap-editor/bold';
-import { BulletList, RichTextBulletList } from 'reactjs-tiptap-editor/bulletlist';
+import {
+  BulletList,
+  RichTextBulletList,
+} from 'reactjs-tiptap-editor/bulletlist';
 import { Column, RichTextColumn } from 'reactjs-tiptap-editor/column';
 import { Color, RichTextColor } from 'reactjs-tiptap-editor/color';
 import { Emoji, RichTextEmoji } from 'reactjs-tiptap-editor/emoji';
-import { FontFamily, RichTextFontFamily } from 'reactjs-tiptap-editor/fontfamily';
+import {
+  FontFamily,
+  RichTextFontFamily,
+} from 'reactjs-tiptap-editor/fontfamily';
 import { FontSize, RichTextFontSize } from 'reactjs-tiptap-editor/fontsize';
 import { Heading, RichTextHeading } from 'reactjs-tiptap-editor/heading';
 import { Highlight, RichTextHighlight } from 'reactjs-tiptap-editor/highlight';
-import { HorizontalRule, RichTextHorizontalRule } from 'reactjs-tiptap-editor/horizontalrule';
+import {
+  HorizontalRule,
+  RichTextHorizontalRule,
+} from 'reactjs-tiptap-editor/horizontalrule';
 import { Image, RichTextImage } from 'reactjs-tiptap-editor/image';
 import { Indent, RichTextIndent } from 'reactjs-tiptap-editor/indent';
 import { Italic, RichTextItalic } from 'reactjs-tiptap-editor/italic';
-import { OrderedList, RichTextOrderedList } from 'reactjs-tiptap-editor/orderedlist';
+import {
+  OrderedList,
+  RichTextOrderedList,
+} from 'reactjs-tiptap-editor/orderedlist';
 import { Strike, RichTextStrike } from 'reactjs-tiptap-editor/strike';
 import { Table, RichTextTable } from 'reactjs-tiptap-editor/table';
 import { TextAlign, RichTextAlign } from 'reactjs-tiptap-editor/textalign';
-import { TextUnderline, RichTextUnderline } from 'reactjs-tiptap-editor/textunderline';
+import {
+  TextUnderline,
+  RichTextUnderline,
+} from 'reactjs-tiptap-editor/textunderline';
 import { EditorContent, AnyExtension, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -180,6 +195,8 @@ export function GalleryEditor({
     if (!currentUser || !data || submitting) return;
     setLoading(true);
     setSubmitting(true);
+    let draftId: number | undefined;
+    let uploadedPaths: string[] = [];
 
     try {
       const response = await createDraftGallery({
@@ -188,15 +205,14 @@ export function GalleryEditor({
         tags: data.tags,
       });
 
-      const draftId = response.id;
+      draftId = response.id;
       const { imageFiles, paths, updatedJson } =
         await extractBase64ImagesFromJson(value, currentUser.id, draftId);
+      uploadedPaths = paths;
 
       if (imageFiles.length === 0) {
         await createGallery(updatedJson, draftId);
-        setLoading(false);
         setOpen(false);
-        setSubmitting(false);
         return;
       }
 
@@ -211,11 +227,29 @@ export function GalleryEditor({
 
       await editGallery({ thumbnail: thumbnailUrl }, draftId);
       await createGallery(updatedJson, draftId);
-      setLoading(false);
       setOpen(false);
     } catch (error) {
       console.error('Failed to save gallery:', error);
+      if (draftId !== undefined) {
+        if (uploadedPaths.length > 0) {
+          try {
+            await deleteGalleryImages(uploadedPaths, draftId);
+          } catch (cleanupError) {
+            console.error(
+              'Failed to clean up draft gallery images:',
+              cleanupError
+            );
+          }
+        }
+
+        try {
+          await deleteGallery(draftId);
+        } catch (cleanupError) {
+          console.error('Failed to clean up draft gallery:', cleanupError);
+        }
+      }
     } finally {
+      setLoading(false);
       setSubmitting(false);
     }
   };
@@ -225,16 +259,16 @@ export function GalleryEditor({
     setLoading(true);
     setSubmitting(true);
 
-    const handleDeletedImages = (updatedJson: any) => {
+    const handleDeletedImages = async (updatedJson: any) => {
       const oldKeys = extractImageKeysFromJSON(originalValue);
       const newKeys = extractImageKeysFromJSON(updatedJson);
       const deletedKeys = [...oldKeys].filter((key) => !newKeys.has(key));
       if (deletedKeys.length > 0) {
-        deleteGalleryImages(deletedKeys, resolvedGalleryId);
+        await deleteGalleryImages(deletedKeys, resolvedGalleryId);
       }
     };
 
-    const updateGalleryMeta = (updatedJson: any) => {
+    const updateGalleryMeta = async (updatedJson: any) => {
       const newPaths: string[] = Array.from(
         extractImageKeysFromJSON(updatedJson)
       );
@@ -243,7 +277,7 @@ export function GalleryEditor({
         newPaths[index] ??
         newPaths[0] ?? // fallback to first image if needed
         null;
-      editGallery(
+      await editGallery(
         {
           thumbnail: thumbnailUrl,
           title: data.title,
@@ -264,19 +298,13 @@ export function GalleryEditor({
 
       if (imageFiles.length === 0) {
         normalizeImageSrcsToS3Keys(updatedJson);
-        updateGalleryMeta(updatedJson);
-        createGallery(updatedJson, resolvedGalleryId)
-          .then((result: any) => {
-            if (result.success) {
-              handleDeletedImages(updatedJson);
-              setOpen(false);
-              setOriginalValue(updatedJson);
-            }
-          })
-          .finally(() => {
-            setLoading(false);
-            setSubmitting(false);
-          });
+        await updateGalleryMeta(updatedJson);
+        const result: any = await createGallery(updatedJson, resolvedGalleryId);
+        if (result.success) {
+          await handleDeletedImages(updatedJson);
+          setOpen(false);
+          setOriginalValue(updatedJson);
+        }
         return;
       }
 
@@ -286,25 +314,18 @@ export function GalleryEditor({
       );
       await uploadFilesToS3(imageFiles, presignedUrls, paths);
       normalizeImageSrcsToS3Keys(updatedJson);
-      updateGalleryMeta(updatedJson);
-
-      createGallery(updatedJson, resolvedGalleryId)
-        .then((result: any) => {
-          if (result.success) {
-            handleDeletedImages(updatedJson);
-            setOpen(false);
-            setOriginalValue(updatedJson);
-          }
-        })
-        .finally(() => {
-          setLoading(false);
-          setSubmitting(false);
-        });
+      await updateGalleryMeta(updatedJson);
+      const result: any = await createGallery(updatedJson, resolvedGalleryId);
+      if (result.success) {
+        await handleDeletedImages(updatedJson);
+        setOpen(false);
+        setOriginalValue(updatedJson);
+      }
     } catch (error) {
       console.error('Failed to save gallery:', error);
+    } finally {
       setLoading(false);
       setSubmitting(false);
-      throw error;
     }
   };
 
@@ -401,7 +422,8 @@ export function GalleryEditor({
   }, [editor, handleEditSaveClick, handleSaveClick, isEdit]);
 
   const showEditor =
-    !!editor && (!isEdit || (isEdit && !loading && resolvedGalleryId !== undefined));
+    !!editor &&
+    (!isEdit || (isEdit && !loading && resolvedGalleryId !== undefined));
 
   return (
     <div className="container mx-auto p-5 flex justify-center">
@@ -409,7 +431,10 @@ export function GalleryEditor({
         {showEditor ? (
           <RichTextProvider editor={editor}>
             {toolbar}
-            <EditorContent className="min-h-[380px] rounded-lg border bg-card p-4 prose max-w-none focus:outline-none" editor={editor} />
+            <EditorContent
+              className="min-h-[380px] rounded-lg border bg-card p-4 prose max-w-none focus:outline-none"
+              editor={editor}
+            />
             <input
               type="file"
               accept="image/*"

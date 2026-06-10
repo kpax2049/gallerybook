@@ -1,4 +1,3 @@
- 
 import { apiRequest } from '@/lib/apiClient';
 import { User } from './user';
 import qs from 'qs';
@@ -100,8 +99,8 @@ export const editGallery = async (
   );
 };
 
-export const deleteGallery = async (galleryId: number): Promise<Gallery> => {
-  return await apiRequest<Gallery>(`/galleries/${galleryId}`, 'DELETE');
+export const deleteGallery = async (galleryId: number): Promise<void> => {
+  await apiRequest<void>(`/galleries/${galleryId}`, 'DELETE');
 };
 
 export const getGalleries = async (): Promise<Gallery[]> => {
