@@ -11,8 +11,10 @@ export interface UseMinimalTiptapEditorProps extends UseEditorOptions {
   onBlur?: (content: Content) => void;
 }
 
-export interface MinimalTiptapProps
-  extends Omit<UseMinimalTiptapEditorProps, 'onUpdate'> {
+export interface MinimalTiptapProps extends Omit<
+  UseMinimalTiptapEditorProps,
+  'onUpdate'
+> {
   value?: Content;
   onChange?: (value: Content) => void;
   className?: string;
@@ -145,7 +147,7 @@ export const blobUrlToBase64 = async (blobUrl: string): Promise<string> => {
 
 export const randomId = (): string => Math.random().toString(36).slice(2, 11);
 
-export const fileToBase64 = (file: File | Blob): Promise<string> => {
+const blobToBase64 = (blob: Blob): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -156,8 +158,93 @@ export const fileToBase64 = (file: File | Blob): Promise<string> => {
       }
     };
     reader.onerror = reject;
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(blob);
   });
+};
+
+const isJpeg = (file: File | Blob): boolean =>
+  file.type === 'image/jpeg' || file.type === 'image/jpg';
+
+const canvasToBlob = (
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality: number
+): Promise<Blob | null> => {
+  return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+};
+
+const loadImageElement = (blob: Blob): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to decode image'));
+    };
+    img.src = url;
+  });
+};
+
+async function decodeImageWithOrientation(blob: Blob) {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      return await createImageBitmap(blob, { imageOrientation: 'from-image' });
+    } catch {
+      // Fall through to the element decoder for browsers with partial support.
+    }
+  }
+
+  return loadImageElement(blob);
+}
+
+async function normalizeJpegOrientation(file: File | Blob): Promise<Blob> {
+  if (!isJpeg(file) || typeof document === 'undefined') {
+    return file;
+  }
+
+  const image = await decodeImageWithOrientation(file);
+  const isBitmap =
+    typeof ImageBitmap !== 'undefined' && image instanceof ImageBitmap;
+  const width = isBitmap
+    ? image.width
+    : (image as HTMLImageElement).naturalWidth;
+  const height = isBitmap
+    ? image.height
+    : (image as HTMLImageElement).naturalHeight;
+
+  if (!width || !height) {
+    if (isBitmap) image.close();
+    return file;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    if (isBitmap) image.close();
+    return file;
+  }
+
+  ctx.drawImage(image, 0, 0, width, height);
+  if (isBitmap) image.close();
+
+  return (await canvasToBlob(canvas, 'image/jpeg', 0.92)) ?? file;
+}
+
+export const fileToBase64 = async (file: File | Blob): Promise<string> => {
+  try {
+    const normalized = await normalizeJpegOrientation(file);
+    return blobToBase64(normalized);
+  } catch {
+    return blobToBase64(file);
+  }
 };
 
 const validateFileOrBase64 = <T extends FileInput>(
