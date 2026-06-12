@@ -465,7 +465,10 @@ export function GalleryEditor({
     );
   };
 
-  const editorReady = !!editor?.extensionManager;
+  const editorReady =
+    !!editor &&
+    !editor.isDestroyed &&
+    Array.isArray(editor.extensionManager?.extensions);
 
   const toolbar = useMemo(() => {
     if (!editorReady) return null;
