@@ -178,19 +178,28 @@ export function GalleryEditor({
 
   useEffect(() => {
     if (!editor || !value) return;
-    try {
-      const current = editor.getJSON();
-      const incoming = value || '';
-      if (JSON.stringify(current) !== JSON.stringify(incoming)) {
-        if (incoming) {
-          editor.commands.setContent(incoming);
-        } else {
-          editor.commands.clearContent(true);
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      try {
+        const current = editor.getJSON();
+        const incoming = value || '';
+        if (JSON.stringify(current) !== JSON.stringify(incoming)) {
+          if (incoming) {
+            editor.commands.setContent(incoming);
+          } else {
+            editor.commands.clearContent(true);
+          }
         }
+      } catch (err) {
+        console.error('Failed to sync editor content', err);
       }
-    } catch (err) {
-      console.error('Failed to sync editor content', err);
-    }
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
   }, [editor, value]);
 
   const saveNewGallery = async (data: FormDataProps) => {
