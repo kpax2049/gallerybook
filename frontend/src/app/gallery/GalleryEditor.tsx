@@ -15,7 +15,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -44,7 +43,7 @@ import {
   HorizontalRule,
   RichTextHorizontalRule,
 } from 'reactjs-tiptap-editor/horizontalrule';
-import { Image, RichTextImage } from 'reactjs-tiptap-editor/image';
+import { Image } from 'reactjs-tiptap-editor/image';
 import { Indent, RichTextIndent } from 'reactjs-tiptap-editor/indent';
 import { Italic, RichTextItalic } from 'reactjs-tiptap-editor/italic';
 import {
@@ -76,6 +75,10 @@ import { useUserStore } from '@/stores/userStore';
 import { useThumbStore } from '@/stores/thumbStore';
 import { Button } from '@/components/ui/button';
 import { useTheme as useAppTheme } from '@/components/theme-provider';
+import {
+  ImageUploadButton,
+  ImageUploadDialog,
+} from '@/components/file-upload-06';
 
 export type DialogData = {
   html: string;
@@ -119,7 +122,7 @@ export function GalleryEditor({
   const [open, setOpen] = useState(false);
   const [dialogData, setDialogData] = useState<DialogData | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [imageUploadOpen, setImageUploadOpen] = useState(false);
 
   const extensions = useMemo<AnyExtension[]>(
     () => [
@@ -434,14 +437,21 @@ export function GalleryEditor({
     if (!v) setDialogData(null);
   };
 
-  const handleImageUpload = useCallback(
-    async (files: FileList | null) => {
-      if (!editor || !files?.length) return;
-      const file = files[0];
-      const src = await fileToBase64(file);
-      editor.chain().focus().setImage({ src }).run();
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+  const handleImageUploadClick = useCallback(() => {
+    setImageUploadOpen(true);
+  }, []);
+
+  const handleInsertImages = useCallback(
+    async (files: File[]) => {
+      if (!editor) return;
+
+      for (const file of files) {
+        const src = await fileToBase64(file);
+        editor
+          .chain()
+          .focus()
+          .setImage({ src, alt: file.name, title: file.name })
+          .run();
       }
     },
     [editor]
@@ -480,7 +490,10 @@ export function GalleryEditor({
         <RichTextColumn />
         <RichTextTable />
         <RichTextHorizontalRule />
-        <RichTextImage />
+        <ImageUploadButton
+          onClick={handleImageUploadClick}
+          disabled={submitting}
+        />
         <RichTextEmoji />
         <span className="richtext-flex-1" />
         <Button
@@ -507,6 +520,7 @@ export function GalleryEditor({
     editorReady,
     handleCancelClick,
     handleEditSaveClick,
+    handleImageUploadClick,
     handleSaveClick,
     isEdit,
     submitting,
@@ -528,12 +542,10 @@ export function GalleryEditor({
                 editor={editor}
                 style={editorSurfaceStyle}
               />
-              <input
-                type="file"
-                accept="image/*"
-                ref={fileInputRef}
-                className="hidden"
-                onChange={(e) => handleImageUpload(e.target.files)}
+              <ImageUploadDialog
+                open={imageUploadOpen}
+                onOpenChange={setImageUploadOpen}
+                onInsert={handleInsertImages}
               />
             </RichTextProvider>
           </div>
