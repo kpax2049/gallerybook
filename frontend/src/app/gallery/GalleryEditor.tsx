@@ -10,12 +10,21 @@ import {
   getGallery,
   uploadFilesToS3,
 } from '@/api/gallery';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
 import 'react-image-crop/dist/ReactCrop.css';
 import 'reactjs-tiptap-editor/style.css';
+import './GalleryEditor.css';
 import { RichTextProvider } from 'reactjs-tiptap-editor';
+import { themeActions } from 'reactjs-tiptap-editor/theme';
 import { Bold, RichTextBold } from 'reactjs-tiptap-editor/bold';
 import {
   BulletList,
@@ -66,6 +75,7 @@ import {
 import { useUserStore } from '@/stores/userStore';
 import { useThumbStore } from '@/stores/thumbStore';
 import { Button } from '@/components/ui/button';
+import { useTheme as useAppTheme } from '@/components/theme-provider';
 
 export type DialogData = {
   html: string;
@@ -81,11 +91,19 @@ type GalleryEditorProps = {
   galleryId?: number;
 };
 
+const editorSurfaceStyle: CSSProperties = {
+  backgroundColor: 'hsl(var(--card))',
+  borderColor: 'hsl(var(--border))',
+  color: 'hsl(var(--card-foreground))',
+};
+
 export function GalleryEditor({
   mode = 'create',
   galleryId,
 }: GalleryEditorProps) {
   const params = useParams();
+  const navigate = useNavigate();
+  const { theme } = useAppTheme();
   const resolvedGalleryId = useMemo(() => {
     if (galleryId !== undefined) return galleryId;
     if (params.galleryId) return Number(params.galleryId);
@@ -151,11 +169,40 @@ export function GalleryEditor({
   const editor = useEditor({
     extensions,
     content: value,
+    editorProps: {
+      attributes: {
+        class: 'gallery-editor-prosemirror',
+      },
+    },
     onUpdate: ({ editor }) => {
       const json = editor.getJSON();
       setValue(json);
     },
   });
+
+  useEffect(() => {
+    const getResolvedTheme = () => {
+      if (theme !== 'system') return theme;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light';
+    };
+
+    const syncEditorTheme = () => {
+      themeActions.setTheme(getResolvedTheme());
+    };
+
+    syncEditorTheme();
+
+    if (theme !== 'system') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', syncEditorTheme);
+
+    return () => {
+      mediaQuery.removeEventListener('change', syncEditorTheme);
+    };
+  }, [theme]);
 
   // Load existing gallery when in edit mode
   useEffect(() => {
@@ -356,6 +403,17 @@ export function GalleryEditor({
     setOpen(true);
   }, []);
 
+  const handleCancelClick = useCallback(() => {
+    if (submitting) return;
+
+    if (isEdit && resolvedGalleryId !== undefined) {
+      navigate(`/galleries/${gallery?.slug ?? resolvedGalleryId}`);
+      return;
+    }
+
+    navigate('/galleries');
+  }, [gallery?.slug, isEdit, navigate, resolvedGalleryId, submitting]);
+
   const initialFormData = useMemo(() => {
     if (!isEdit || !gallery) return {};
     const images = Array.from(
@@ -402,7 +460,10 @@ export function GalleryEditor({
   const toolbar = useMemo(() => {
     if (!editorReady) return null;
     return (
-      <div className="mb-4 richtext-flex richtext-flex-wrap richtext-items-center richtext-gap-2 richtext-rounded-md richtext-border richtext-bg-popover richtext-p-2">
+      <div
+        className="gallery-editor-toolbar mb-4 richtext-flex richtext-flex-wrap richtext-items-center richtext-gap-2 richtext-rounded-md richtext-border richtext-bg-popover richtext-p-2"
+        style={editorSurfaceStyle}
+      >
         <RichTextHeading />
         <RichTextBold />
         <RichTextItalic />
@@ -425,14 +486,31 @@ export function GalleryEditor({
         <Button
           type="button"
           size="sm"
+          variant="outline"
+          onClick={handleCancelClick}
+          disabled={submitting}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          size="sm"
           variant="default"
           onClick={isEdit ? handleEditSaveClick : handleSaveClick}
+          disabled={submitting}
         >
           Save
         </Button>
       </div>
     );
-  }, [editorReady, handleEditSaveClick, handleSaveClick, isEdit]);
+  }, [
+    editorReady,
+    handleCancelClick,
+    handleEditSaveClick,
+    handleSaveClick,
+    isEdit,
+    submitting,
+  ]);
 
   const showEditor =
     editorReady &&
@@ -442,20 +520,23 @@ export function GalleryEditor({
     <div className="container mx-auto p-5 flex justify-center">
       <div className="h-full w-full">
         {showEditor ? (
-          <RichTextProvider editor={editor}>
-            {toolbar}
-            <EditorContent
-              className="min-h-[380px] rounded-lg border bg-card p-4 prose max-w-none focus:outline-none"
-              editor={editor}
-            />
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={(e) => handleImageUpload(e.target.files)}
-            />
-          </RichTextProvider>
+          <div className="gallery-editor-shell">
+            <RichTextProvider editor={editor}>
+              {toolbar}
+              <EditorContent
+                className="gallery-editor-content min-h-[380px] rounded-lg border bg-card text-card-foreground p-4 prose max-w-none focus:outline-none"
+                editor={editor}
+                style={editorSurfaceStyle}
+              />
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={(e) => handleImageUpload(e.target.files)}
+              />
+            </RichTextProvider>
+          </div>
         ) : (
           <EditorSkeleton />
         )}

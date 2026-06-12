@@ -1,0 +1,60 @@
+.gallery-editor-shell,
+.gallery-editor-shell .reactjs-tiptap-editor,
+.gallery-editor-toolbar,
+.gallery-editor-content {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--card-foreground)) !important;
+}
+
+.gallery-editor-shell .reactjs-tiptap-editor {
+  border-radius: var(--radius);
+}
+
+.gallery-editor-toolbar {
+  border-color: hsl(var(--border)) !important;
+}
+
+.gallery-editor-toolbar button,
+.gallery-editor-toolbar [role='button'],
+.gallery-editor-toolbar [data-radix-collection-item] {
+  color: hsl(var(--card-foreground)) !important;
+}
+
+.gallery-editor-toolbar button:hover,
+.gallery-editor-toolbar [role='button']:hover {
+  background-color: hsl(var(--muted)) !important;
+}
+
+.gallery-editor-content .ProseMirror,
+.gallery-editor-prosemirror {
+  min-height: 380px;
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--card-foreground)) !important;
+  caret-color: hsl(var(--foreground));
+}
+
+.gallery-editor-content .ProseMirror p,
+.gallery-editor-content .ProseMirror h1,
+.gallery-editor-content .ProseMirror h2,
+.gallery-editor-content .ProseMirror h3,
+.gallery-editor-content .ProseMirror h4,
+.gallery-editor-content .ProseMirror h5,
+.gallery-editor-content .ProseMirror h6,
+.gallery-editor-content .ProseMirror li,
+.gallery-editor-content .ProseMirror blockquote,
+.gallery-editor-prosemirror p,
+.gallery-editor-prosemirror h1,
+.gallery-editor-prosemirror h2,
+.gallery-editor-prosemirror h3,
+.gallery-editor-prosemirror h4,
+.gallery-editor-prosemirror h5,
+.gallery-editor-prosemirror h6,
+.gallery-editor-prosemirror li,
+.gallery-editor-prosemirror blockquote {
+  color: hsl(var(--card-foreground));
+}
+
+.gallery-editor-content .ProseMirror p.is-editor-empty:first-child::before,
+.gallery-editor-prosemirror p.is-editor-empty:first-child::before {
+  color: hsl(var(--muted-foreground));
+}
