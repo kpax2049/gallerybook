@@ -14,6 +14,19 @@
   border-color: hsl(var(--border)) !important;
 }
 
+.gallery-editor-content {
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.gallery-editor-content:focus-within {
+  border-color: hsl(var(--ring)) !important;
+  box-shadow:
+    0 0 0 1px hsl(var(--ring) / 0.32),
+    0 0 0 4px hsl(var(--ring) / 0.12);
+}
+
 .gallery-editor-toolbar button,
 .gallery-editor-toolbar [role='button'],
 .gallery-editor-toolbar [data-radix-collection-item] {
@@ -31,6 +44,7 @@
   background-color: hsl(var(--card)) !important;
   color: hsl(var(--card-foreground)) !important;
   caret-color: hsl(var(--foreground));
+  outline: none !important;
 }
 
 .gallery-editor-content .ProseMirror p,
