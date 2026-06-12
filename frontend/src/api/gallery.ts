@@ -100,7 +100,14 @@ export const editGallery = async (
 };
 
 export const deleteGallery = async (galleryId: number): Promise<void> => {
-  await apiRequest<void>(`/galleries/${galleryId}`, 'DELETE');
+  try {
+    await apiRequest<void>(`/galleries/${galleryId}`, 'DELETE');
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return;
+    }
+    throw error;
+  }
 };
 
 export const getGalleries = async (): Promise<Gallery[]> => {

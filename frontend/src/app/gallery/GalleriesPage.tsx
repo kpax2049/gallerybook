@@ -40,6 +40,9 @@ function GalleriesListPage() {
   const [reactionOverrides, setReactionOverrides] = React.useState<
     Record<number, { like: boolean; favorite: boolean }>
   >({});
+  const [deletedGalleryIds, setDeletedGalleryIds] = React.useState<Set<number>>(
+    () => new Set()
+  );
 
   const location = useLocation();
   const hub =
@@ -166,6 +169,10 @@ function GalleriesListPage() {
   });
 
   const items = data?.items ?? [];
+  const visibleItems = React.useMemo(
+    () => items.filter((item) => !deletedGalleryIds.has(item.id)),
+    [deletedGalleryIds, items]
+  );
   const commentCounts = data?.commentCounts ?? {};
   const serverReactions = React.useMemo(
     () => data?.myReactions ?? {},
@@ -209,6 +216,9 @@ function GalleriesListPage() {
         likesCountOverride={likesDisplay}
         favoritesCountOverride={favsDisplay}
         onReactionChanged={(next) => handleReactionChanged(g.id, next)}
+        onDeleted={(id) =>
+          setDeletedGalleryIds((prev) => new Set(prev).add(id))
+        }
       />
     );
   };
@@ -271,7 +281,7 @@ function GalleriesListPage() {
                 </figure>
               ))}
 
-            {!loading && items.map(renderGridCard)}
+            {!loading && visibleItems.map(renderGridCard)}
           </div>
         </div>
       ) : (
@@ -281,7 +291,7 @@ function GalleriesListPage() {
             <ListSkeleton />
           ) : (
             <ul className="divide-y">
-              {items.map((g) => {
+              {visibleItems.map((g) => {
                 // reactions math (same as before)
                 const base = serverReactions[g.id] ?? {
                   like: false,
@@ -305,6 +315,9 @@ function GalleriesListPage() {
                     onReactionChanged={(next) =>
                       handleReactionChanged(g.id, next)
                     }
+                    onDeleted={(id) =>
+                      setDeletedGalleryIds((prev) => new Set(prev).add(id))
+                    }
                   />
                 );
               })}
@@ -312,7 +325,7 @@ function GalleriesListPage() {
           )}
         </div>
       )}
-      {!loading && items.length === 0 && !error && (
+      {!loading && visibleItems.length === 0 && !error && (
         <div className="mt-14 flex flex-col items-center gap-2 text-center">
           <p className="text-sm text-muted-foreground">No galleries yet.</p>
           <Link to="/galleries/new">

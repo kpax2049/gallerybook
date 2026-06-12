@@ -18,6 +18,7 @@ type Props = {
   onReactionChanged?: (next: { like?: boolean; favorite?: boolean }) => void;
   likesCountOverride?: number;
   favoritesCountOverride?: number;
+  onDeleted?: (id: number) => void;
   to?: string;
 };
 
@@ -28,20 +29,33 @@ export const GalleryCard = React.memo(function GalleryCard({
   onReactionChanged,
   likesCountOverride,
   favoritesCountOverride,
+  onDeleted,
   to = '#',
 }: Props) {
   const navigate = useNavigate();
   const currentUser = useUserStore((state) => state.user);
   const canManage = isAdmin(currentUser);
+  const [deleting, setDeleting] = React.useState(false);
 
   const onEdit = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (e && e.stopPropagation) e.stopPropagation();
     navigate(`/galleries/edit/${item.id}`);
   };
 
-  const onDelete = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+  const onDelete = async (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (e && e.stopPropagation) e.stopPropagation();
-    deleteGallery(item.id);
+    if (e && e.preventDefault) e.preventDefault();
+    if (deleting) return;
+
+    setDeleting(true);
+    try {
+      await deleteGallery(item.id);
+      onDeleted?.(item.id);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const [busyLike, setBusyLike] = React.useState(false);

@@ -1,4 +1,3 @@
- 
 import { useEffect, useRef, useState } from 'react';
 import { useParams /*, useNavigate */ } from 'react-router-dom';
 import { getGallery, getGalleryBySlug } from '@/api/gallery';
@@ -8,9 +7,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Comment from './galleryComment/Comment';
 import { useInView } from 'react-intersection-observer';
 import { generateHTML } from '@tiptap/html';
-import Document from '@tiptap/extension-document';
-import Paragraph from '@tiptap/extension-paragraph';
-import Text from '@tiptap/extension-text';
+import { mergeAttributes, Node } from '@tiptap/core';
 import { Bold } from 'reactjs-tiptap-editor/bold';
 import { TextAlign } from 'reactjs-tiptap-editor/textalign';
 import { Color } from 'reactjs-tiptap-editor/color';
@@ -20,7 +17,6 @@ import { FontSize } from 'reactjs-tiptap-editor/fontsize';
 import { Highlight } from 'reactjs-tiptap-editor/highlight';
 import { BulletList } from 'reactjs-tiptap-editor/bulletlist';
 import { Column } from 'reactjs-tiptap-editor/column';
-import { Emoji } from 'reactjs-tiptap-editor/emoji';
 import { Indent } from 'reactjs-tiptap-editor/indent';
 import { Strike } from 'reactjs-tiptap-editor/strike';
 import { Table } from 'reactjs-tiptap-editor/table';
@@ -43,6 +39,59 @@ export interface GalleryData {
 }
 
 const chunkSize = 2;
+
+const GalleryEmoji = Node.create({
+  name: 'emoji',
+  inline: true,
+  group: 'inline',
+  selectable: false,
+
+  addAttributes() {
+    return {
+      name: {
+        default: null,
+      },
+    };
+  },
+
+  renderHTML({ HTMLAttributes, node }) {
+    const name = node.attrs.name;
+    return [
+      'span',
+      mergeAttributes(HTMLAttributes, {
+        'data-type': 'emoji',
+        'data-name': name,
+      }),
+      name ? `:${name}:` : '',
+    ];
+  },
+});
+
+const galleryRenderExtensions = [
+  Image,
+  StarterKit.configure({
+    bold: false,
+    italic: false,
+    strike: false,
+    bulletList: false,
+    underline: false,
+  }),
+  TextStyle,
+  FontFamily,
+  FontSize,
+  Bold,
+  Italic,
+  TextUnderline,
+  Strike,
+  Color,
+  Highlight,
+  BulletList,
+  TextAlign,
+  Indent,
+  Column,
+  Table,
+  GalleryEmoji,
+];
 
 export default function GalleryPage() {
   const [loading, setLoading] = useState<boolean>(false);
@@ -97,25 +146,10 @@ export default function GalleryPage() {
 
         // initial chunk
         const firstChunk = blocks.slice(0, chunkSize);
-        const html = generateHTML({ type: 'doc', content: firstChunk }, [
-          Image,
-          StarterKit,
-          TextStyle,
-          FontFamily,
-          FontSize,
-          Bold,
-          Italic,
-          TextUnderline,
-          Strike,
-          Color,
-          Highlight,
-          BulletList,
-          TextAlign,
-          Indent,
-          Column,
-          Table,
-          Emoji,
-        ]);
+        const html = generateHTML(
+          { type: 'doc', content: firstChunk },
+          galleryRenderExtensions
+        );
         setHtmlChunks([html]);
         setChunkIndex(1);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,12 +180,10 @@ export default function GalleryPage() {
       const end = start + chunkSize;
       const nextChunk = rawBlocks.slice(start, end);
 
-      const html = generateHTML({ type: 'doc', content: nextChunk }, [
-        Document,
-        Paragraph,
-        Text,
-        Image,
-      ]);
+      const html = generateHTML(
+        { type: 'doc', content: nextChunk },
+        galleryRenderExtensions
+      );
 
       if (!cancelled) {
         setHtmlChunks((prev) => [...prev, html]);

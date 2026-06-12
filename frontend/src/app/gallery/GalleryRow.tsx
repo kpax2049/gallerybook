@@ -45,6 +45,7 @@ type RowProps = {
   onReactionChanged?: (next: { like?: boolean; favorite?: boolean }) => void;
   likesCountOverride?: number;
   favoritesCountOverride?: number;
+  onDeleted?: (id: number) => void;
 };
 
 export function GalleryRow({
@@ -54,12 +55,14 @@ export function GalleryRow({
   onReactionChanged,
   likesCountOverride,
   favoritesCountOverride,
+  onDeleted,
 }: RowProps) {
   const navigate = useNavigate();
   const currentUser = useUserStore((state) => state.user);
   const canManage = isAdmin(currentUser);
   const [busyLike, setBusyLike] = React.useState(false);
   const [busyFav, setBusyFav] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
   const liked = !!myReaction?.like;
   const faved = !!myReaction?.favorite;
 
@@ -85,6 +88,20 @@ export function GalleryRow({
 
   const likesDisplay = likesCountOverride ?? item.likesCount ?? 0;
   const favsDisplay = favoritesCountOverride ?? item.favoritesCount ?? 0;
+
+  const onDelete = async () => {
+    if (deleting) return;
+
+    setDeleting(true);
+    try {
+      await deleteGallery(item.id);
+      onDeleted?.(item.id);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <li className="p-3 hover:bg-muted/30">
@@ -185,7 +202,7 @@ export function GalleryRow({
                 >
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => void deleteGallery(item.id)}>
+                <DropdownMenuItem onSelect={() => void onDelete()}>
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
