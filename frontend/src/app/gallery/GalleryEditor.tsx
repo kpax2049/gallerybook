@@ -108,10 +108,12 @@ export function GalleryEditor({
       StarterKit.configure({
         bold: false,
         italic: false,
+        underline: false,
         strike: false,
         bulletList: false,
         orderedList: false,
         heading: false,
+        horizontalRule: false,
       }),
       TextStyle,
       Placeholder.configure({
@@ -386,8 +388,10 @@ export function GalleryEditor({
     );
   };
 
+  const editorReady = !!editor?.extensionManager;
+
   const toolbar = useMemo(() => {
-    if (!editor) return null;
+    if (!editorReady) return null;
     return (
       <div className="mb-4 richtext-flex richtext-flex-wrap richtext-items-center richtext-gap-2 richtext-rounded-md richtext-border richtext-bg-popover richtext-p-2">
         <RichTextHeading />
@@ -419,10 +423,10 @@ export function GalleryEditor({
         </Button>
       </div>
     );
-  }, [editor, handleEditSaveClick, handleSaveClick, isEdit]);
+  }, [editorReady, handleEditSaveClick, handleSaveClick, isEdit]);
 
   const showEditor =
-    !!editor &&
+    editorReady &&
     (!isEdit || (isEdit && !loading && resolvedGalleryId !== undefined));
 
   return (

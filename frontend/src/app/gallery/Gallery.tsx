@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams /*, useNavigate */ } from 'react-router-dom';
-import { getGallery, getGalleryBySlug } from '@/api/gallery';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  deleteGallery,
+  Gallery,
+  getGallery,
+  getGalleryBySlug,
+} from '@/api/gallery';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -27,6 +32,10 @@ import Thumbnails from 'yet-another-react-lightbox/plugins/thumbnails';
 import 'yet-another-react-lightbox/styles.css';
 import 'yet-another-react-lightbox/plugins/thumbnails.css';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Loader2, Pencil, Trash2 } from 'lucide-react';
+import { useUserStore } from '@/stores/userStore';
+import { isAdmin } from '@/lib/authz';
 
 export interface GalleryBlock {
   type: string;
@@ -95,6 +104,9 @@ const galleryRenderExtensions = [
 
 export default function GalleryPage() {
   const [loading, setLoading] = useState<boolean>(false);
+  const [deleting, setDeleting] = useState(false);
+  const navigate = useNavigate();
+  const currentUser = useUserStore((state) => state.user);
   const { slug, galleryId } = useParams<{
     slug?: string;
     galleryId?: string;
@@ -102,6 +114,7 @@ export default function GalleryPage() {
 
   const [title, setTitle] = useState<string>('');
   const [numericId, setNumericId] = useState<number | null>(null);
+  const [gallery, setGallery] = useState<Gallery | null>(null);
 
   const [rawBlocks, setRawBlocks] = useState<GalleryBlock[]>([]);
   const [htmlChunks, setHtmlChunks] = useState<string[]>([]);
@@ -129,6 +142,7 @@ export default function GalleryPage() {
         setHtmlChunks([]);
         setChunkIndex(0);
         setSlides([]);
+        setGallery(null);
 
         const isNumeric = /^\d+$/.test(param);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -138,6 +152,7 @@ export default function GalleryPage() {
 
         if (cancelled) return;
 
+        setGallery(data);
         setTitle(data?.title ?? 'Gallery');
         setNumericId(Number(data?.id) || null);
 
@@ -235,19 +250,80 @@ export default function GalleryPage() {
   }, []);
 
   const showSkeleton = loading && htmlChunks.length === 0;
+  const canManage = isAdmin(currentUser) && numericId != null;
+
+  const blurActiveElement = () => {
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement) {
+      activeElement.blur();
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!numericId || deleting) return;
+
+    const confirmed = window.confirm(
+      `Delete "${title || 'this gallery'}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      await deleteGallery(numericId);
+      navigate('/galleries', { replace: true });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="grid auto-rows-min gap-4 p-4 justify-between">
-      <div className="flex items-baseline gap-2">
-        {showSkeleton ? (
-          <Skeleton className="h-7 w-40" />
-        ) : (
-          <h3 className="text-lg font-semibold">{title || 'Gallery'}</h3>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-baseline gap-2">
+          {showSkeleton ? (
+            <Skeleton className="h-7 w-40" />
+          ) : (
+            <h3 className="text-lg font-semibold">{title || 'Gallery'}</h3>
+          )}
+          {loading && !showSkeleton && (
+            <span className="text-xs text-muted-foreground">Loading…</span>
+          )}
+          {error && <span className="text-xs text-destructive">{error}</span>}
+        </div>
+
+        {canManage && (
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                blurActiveElement();
+                navigate(`/galleries/edit/${numericId}`);
+              }}
+              disabled={!gallery}
+            >
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              Delete
+            </Button>
+          </div>
         )}
-        {loading && !showSkeleton && (
-          <span className="text-xs text-muted-foreground">Loading…</span>
-        )}
-        {error && <span className="text-xs text-destructive">{error}</span>}
       </div>
 
       <div
