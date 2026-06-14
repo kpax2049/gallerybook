@@ -9,7 +9,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { TooltipProvider } from './components/ui/tooltip';
 
 createRoot(document.getElementById('root')!).render(
-  <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+  <ThemeProvider defaultTheme="system" storageKey="gb-theme">
     <BrowserRouter>
       <TooltipProvider>
         <Toaster />

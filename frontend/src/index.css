@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,500&display=swap');
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
@@ -62,25 +63,51 @@ button:focus-visible {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 224 26% 13%;
-    --card: 0 0% 100%;
-    --card-foreground: 224 26% 13%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 26% 13%;
-    --primary: 188 72% 28%;
+    --gb-bg: radial-gradient(78% 52% at 88% -6%, rgba(252,250,245,.7), transparent 56%), linear-gradient(168deg,#f1efeb 0%,#e8e5df 58%,#dedbd3 100%);
+    --gb-ink: #2c2a26;
+    --gb-ink-soft: #55514a;
+    --gb-ink-mute: #8a857c;
+    --gb-surface: rgba(255,255,255,.7);
+    --gb-surface-2: rgba(255,255,255,.96);
+    --gb-border: rgba(40,34,26,.12);
+    --gb-border-2: rgba(40,34,26,.2);
+    --gb-bar: rgba(249,248,245,.86);
+    --gb-accent: #2f9d7d;
+    --gb-accent-ink: #f3fffb;
+    --gb-accent-soft: rgba(47,157,125,.13);
+    --gb-glow: rgba(255,252,244,.45);
+    --gb-panel: #fcfbf9;
+    --gb-field: #fafaf9;
+    --gb-scrim: rgba(35,32,26,.42);
+    --gb-hand: #94794f;
+    --gb-paper: #fdfbf6;
+    --gb-paper-ink: #33271a;
+    --gb-tape: rgba(210,184,134,.46);
+    --gb-tape-border: rgba(150,120,70,.3);
+    --gb-print-shadow: 0 16px 28px -14px rgba(50,45,38,.3);
+    --gb-print-shadow-hover: 0 30px 48px -16px rgba(50,45,38,.4);
+    --gb-like: #e0556b;
+    --gb-favorite: #e0a35c;
+
+    --background: 42 17% 93%;
+    --foreground: 40 7% 16%;
+    --card: 40 25% 98%;
+    --card-foreground: 40 7% 16%;
+    --popover: 40 25% 98%;
+    --popover-foreground: 40 7% 16%;
+    --primary: 163 54% 40%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 214 24% 94%;
-    --secondary-foreground: 224 26% 13%;
-    --muted: 216 24% 96%;
-    --muted-foreground: 222 11% 42%;
-    --accent: 188 54% 91%;
-    --accent-foreground: 224 26% 13%;
+    --secondary: 40 12% 91%;
+    --secondary-foreground: 40 7% 16%;
+    --muted: 40 12% 91%;
+    --muted-foreground: 36 6% 51%;
+    --accent: 163 43% 89%;
+    --accent-foreground: 40 7% 16%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 216 18% 86%;
-    --input: 216 18% 86%;
-    --ring: 188 72% 28%;
+    --border: 36 14% 78%;
+    --input: 36 14% 78%;
+    --ring: 163 54% 40%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 258 45% 54%;
@@ -97,25 +124,46 @@ button:focus-visible {
     --sidebar-ring: 188 72% 28%;
   }
   .dark {
-    --background: 224 24% 9%;
-    --foreground: 0 0% 98%;
-    --card: 224 22% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 224 22% 12%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 174 58% 46%;
-    --primary-foreground: 224 26% 10%;
-    --secondary: 223 18% 18%;
+    --gb-bg: radial-gradient(78% 52% at 88% -6%, rgba(255,224,160,.17), transparent 56%), linear-gradient(168deg,#22180e 0%,#160f08 60%,#110b06 100%);
+    --gb-ink: #f4ecdb;
+    --gb-ink-soft: #cdb189;
+    --gb-ink-mute: #9c8158;
+    --gb-surface: rgba(20,12,6,.5);
+    --gb-surface-2: rgba(20,12,6,.72);
+    --gb-border: rgba(235,220,195,.12);
+    --gb-border-2: rgba(235,220,195,.2);
+    --gb-bar: rgba(20,13,7,.74);
+    --gb-accent: #57d3ad;
+    --gb-accent-ink: #0d2620;
+    --gb-accent-soft: rgba(87,211,173,.14);
+    --gb-glow: rgba(255,231,178,.13);
+    --gb-panel: #241a10;
+    --gb-field: rgba(20,12,6,.5);
+    --gb-scrim: rgba(8,5,2,.66);
+    --gb-hand: #c9a87f;
+    --gb-paper: #fbf6ec;
+    --gb-print-shadow: 0 20px 34px -16px rgba(8,4,1,.72);
+    --gb-print-shadow-hover: 0 40px 60px -18px rgba(8,4,1,.9);
+
+    --background: 28 52% 5%;
+    --foreground: 39 48% 91%;
+    --card: 31 38% 10%;
+    --card-foreground: 39 48% 91%;
+    --popover: 31 38% 10%;
+    --popover-foreground: 39 48% 91%;
+    --primary: 163 60% 58%;
+    --primary-foreground: 166 49% 10%;
+    --secondary: 30 36% 13%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 223 18% 16%;
-    --muted-foreground: 220 14% 70%;
-    --accent: 188 38% 22%;
-    --accent-foreground: 0 0% 98%;
+    --muted: 30 34% 12%;
+    --muted-foreground: 35 34% 58%;
+    --accent: 163 40% 15%;
+    --accent-foreground: 39 48% 91%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 223 16% 22%;
-    --input: 223 16% 22%;
-    --ring: 174 58% 46%;
+    --border: 35 28% 23%;
+    --input: 35 28% 23%;
+    --ring: 163 60% 58%;
     --chart-1: 12 76% 61%;
     --chart-2: 174 58% 46%;
     --chart-3: 258 52% 66%;
@@ -138,6 +186,157 @@ button:focus-visible {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@keyframes gb-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(.96) rotate(var(--gb-tilt, 0deg));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(var(--gb-tilt, 0deg));
+  }
+}
+
+@keyframes gb-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes gb-slide {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@layer components {
+  .gb-page {
+    min-height: 100svh;
+    color: var(--gb-ink);
+    background: var(--gb-bg);
+    transition: background .45s ease, color .3s ease;
+  }
+
+  .gb-serif {
+    font-family: Newsreader, Georgia, serif;
+  }
+
+  .gb-hand {
+    font-family: Caveat, "Comic Sans MS", cursive;
+  }
+
+  .gb-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    border-bottom: 1px solid var(--gb-border);
+    background: var(--gb-bar);
+    backdrop-filter: blur(13px);
+  }
+
+  .gb-shell {
+    width: min(1340px, calc(100vw - 32px));
+    margin: 0 auto;
+  }
+
+  .gb-chip {
+    border: 1px solid var(--gb-border);
+    background: var(--gb-surface);
+    color: var(--gb-ink-soft);
+    transition: background .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
+  }
+
+  .gb-chip:hover,
+  .gb-chip[data-active='true'] {
+    border-color: color-mix(in srgb, var(--gb-accent), transparent 58%);
+    background: var(--gb-accent-soft);
+    color: var(--gb-ink);
+  }
+
+  .gb-chip[data-active='true'] {
+    box-shadow: inset 0 -2px 0 var(--gb-accent);
+  }
+
+  .gb-field {
+    border: 1px solid var(--gb-border);
+    background: var(--gb-field);
+    color: var(--gb-ink);
+  }
+
+  .gb-field::placeholder {
+    color: var(--gb-ink-mute);
+  }
+
+  .gb-paper {
+    position: relative;
+    border-radius: 4px;
+    background: var(--gb-paper);
+    color: var(--gb-paper-ink);
+    box-shadow: var(--gb-print-shadow);
+  }
+
+  .gb-paper::before {
+    content: '';
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    width: 96px;
+    height: 24px;
+    border: 1px solid var(--gb-tape-border);
+    border-radius: 2px;
+    background: var(--gb-tape);
+    transform: translateX(-50%) rotate(-2.5deg);
+    box-shadow: 0 5px 12px rgba(80, 55, 24, .13);
+    z-index: 2;
+  }
+
+  .gb-print-card {
+    transform: rotate(var(--gb-tilt, 0deg));
+    transition: transform .34s cubic-bezier(.2,.85,.3,1), box-shadow .34s cubic-bezier(.2,.85,.3,1);
+    animation: gb-card-enter 520ms cubic-bezier(.2,.85,.3,1) both;
+    animation-delay: var(--gb-delay, 0ms);
+  }
+
+  .gb-print-card:hover,
+  .gb-print-card:focus-within {
+    box-shadow: var(--gb-print-shadow-hover);
+    transform: translateY(-9px) scale(1.035) rotate(0deg);
+  }
+
+  .gb-menu {
+    border: 1px solid var(--gb-border);
+    border-radius: 15px;
+    background: var(--gb-surface-2);
+    color: var(--gb-ink);
+    box-shadow: 0 22px 60px -30px rgba(0,0,0,.55);
+    backdrop-filter: blur(16px);
+    animation: gb-pop .18s ease both;
+  }
+
+  .gb-panel {
+    border: 1px solid var(--gb-border);
+    border-radius: 15px;
+    background: var(--gb-panel);
+    color: var(--gb-ink);
+    box-shadow: 0 28px 80px -34px rgba(0,0,0,.62);
+  }
+
+  .gb-scrim {
+    background: var(--gb-scrim);
+    backdrop-filter: blur(2px);
   }
 }
 @layer components {
