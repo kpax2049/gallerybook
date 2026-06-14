@@ -85,16 +85,28 @@ export default function CommentList({ galleryId }: CommentProps) {
     });
   }, [galleryId]);
 
+  const normalizeCreatedComment = (comment: Comment) =>
+    normalizeComment({
+      ...comment,
+      user: comment.user
+        ? {
+            ...currentUser,
+            ...comment.user,
+            profile: comment.user.profile ?? currentUser?.profile,
+          }
+        : currentUser,
+    });
+
   const onChange = (val: CreateCommentRequest) => {
     createComment(val).then((data: Comment) => {
-      const normalized = normalizeComment(data);
+      const normalized = normalizeCreatedComment(data);
       setValue((prev) => [...prev, normalized]);
     });
   };
 
   const onReply = (val: CreateCommentRequest) => {
     createComment(val).then((data: Comment) => {
-      const normalized = normalizeComment(data);
+      const normalized = normalizeCreatedComment(data);
       setValue((prev) =>
         prev.map((f) =>
           f.id === val.parentId
@@ -117,7 +129,8 @@ export default function CommentList({ galleryId }: CommentProps) {
     setValue((prev) =>
       updateCommentById(prev, commentId, (c) => {
         const current = c.actions?.[type] ?? 0;
-        const desired = nextSelected ?? !(c.selectedActions ?? []).includes(type);
+        const desired =
+          nextSelected ?? !(c.selectedActions ?? []).includes(type);
         const delta = desired ? 1 : -1;
         const nextActions = { ...emptyActions(), ...(c.actions ?? {}) };
         nextActions[type] = Math.max(0, current + delta);
@@ -125,7 +138,11 @@ export default function CommentList({ galleryId }: CommentProps) {
         const nextSelectedList = desired
           ? Array.from(new Set([...selected, type]))
           : selected.filter((t) => t !== type);
-        return { ...c, actions: nextActions, selectedActions: nextSelectedList };
+        return {
+          ...c,
+          actions: nextActions,
+          selectedActions: nextSelectedList,
+        };
       })
     );
 
