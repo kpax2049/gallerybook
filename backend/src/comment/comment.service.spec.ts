@@ -156,12 +156,33 @@ describe('CommentService', () => {
 
   it('creates comments with the provided payload', async () => {
     const dto = { text: 'hi', userId: 1, galleryId: 2 };
-    prisma.comment.create.mockResolvedValue({ id: 1, ...dto });
-    prisma.actionCount.create.mockResolvedValue({ commentId: 1 });
+    prisma.comment.create.mockResolvedValue({
+      id: 1,
+      ...dto,
+      user: { id: 1, username: 'artist', profile: { avatarUrl: 'avatar.png' } },
+    });
+    prisma.actionCount.create.mockResolvedValue({
+      commentId: 1,
+      upvote: 0,
+      rocket: 0,
+      heart: 0,
+      thumbUp: 0,
+      thumbDown: 0,
+      laugh: 0,
+      hooray: 0,
+      confused: 0,
+      eye: 0,
+    });
 
-    await expect(service.createComment(dto as any)).resolves.toMatchObject(dto);
+    await expect(service.createComment(dto as any)).resolves.toMatchObject({
+      ...dto,
+      user: { id: 1, username: 'artist', profile: { avatarUrl: 'avatar.png' } },
+      selectedActions: [],
+      replies: [],
+    });
     expect(prisma.comment.create).toHaveBeenCalledWith({
       data: dto,
+      include: { user: { include: { profile: true } } },
     });
     expect(prisma.actionCount.create).toHaveBeenCalledWith({
       data: { commentId: 1 },

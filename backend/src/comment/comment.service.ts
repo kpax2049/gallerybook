@@ -92,12 +92,25 @@ export class CommentService {
       data: {
         ...dto,
       },
+      include: {
+        user: {
+          include: {
+            profile: true,
+          },
+        },
+      },
     });
     // ensure an ActionCount row exists for this comment so counts can be updated cheaply
-    await this.prisma.actionCount
+    const count = await this.prisma.actionCount
       .create({ data: { commentId: comment.id } })
       .catch(() => undefined);
-    return comment;
+
+    return {
+      ...comment,
+      actions: this.toActionMap(count),
+      selectedActions: [],
+      replies: [],
+    };
   }
 
   async toggleReaction(userId: number, commentId: number, type: ActionType) {
