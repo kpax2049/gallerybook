@@ -88,7 +88,7 @@ export function GalleryRow({
 
   return (
     <article
-      className="animate-[gb-card-enter_520ms_cubic-bezier(.2,.85,.3,1)_both] rounded-[14px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] p-3 text-[var(--gb-ink)] shadow-[0_18px_40px_-32px_rgba(0,0,0,.55)] transition hover:-translate-y-1 hover:border-[var(--gb-border-2)]"
+      className="animate-[gb-card-enter_520ms_cubic-bezier(.2,.85,.3,1)_backwards] rounded-[14px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] p-3 text-[var(--gb-ink)] shadow-[0_18px_40px_-32px_rgba(0,0,0,.55)] transition hover:-translate-y-1 hover:border-[var(--gb-border-2)]"
       style={style}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">

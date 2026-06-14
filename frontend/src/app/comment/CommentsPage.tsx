@@ -181,7 +181,7 @@ function CommentNote({
 
   return (
     <article
-      className="gb-paper animate-[gb-card-enter_520ms_cubic-bezier(.2,.85,.3,1)_both] p-4 sm:p-5"
+      className="gb-paper animate-[gb-card-enter_520ms_cubic-bezier(.2,.85,.3,1)_backwards] p-4 sm:p-5"
       style={
         {
           '--gb-tilt': index % 2 === 0 ? '-.5deg' : '.45deg',

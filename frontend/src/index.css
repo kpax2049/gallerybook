@@ -306,7 +306,7 @@ button:focus-visible {
   .gb-print-card {
     transform: rotate(var(--gb-tilt, 0deg));
     transition: transform .34s cubic-bezier(.2,.85,.3,1), box-shadow .34s cubic-bezier(.2,.85,.3,1);
-    animation: gb-card-enter 520ms cubic-bezier(.2,.85,.3,1) both;
+    animation: gb-card-enter 520ms cubic-bezier(.2,.85,.3,1) backwards;
     animation-delay: var(--gb-delay, 0ms);
   }
 
