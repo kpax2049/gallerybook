@@ -338,6 +338,95 @@ button:focus-visible {
     background: var(--gb-scrim);
     backdrop-filter: blur(2px);
   }
+
+  .gb-album-page {
+    position: relative;
+    border-radius: 5px;
+    background: var(--gb-paper);
+    color: var(--gb-paper-ink);
+    box-shadow: var(--gb-print-shadow);
+    padding: 16px 16px 0;
+    animation: gb-card-enter 520ms cubic-bezier(.2,.85,.3,1) backwards;
+    animation-delay: var(--gb-delay, 0ms);
+  }
+
+  .gb-album-photo-wrap {
+    position: relative;
+    overflow: hidden;
+    border-radius: 3px;
+    background: rgba(30, 22, 12, .1);
+  }
+
+  .gb-album-photo {
+    display: block;
+    width: 100%;
+    height: min(420px, 62vw);
+    min-height: 230px;
+    object-fit: cover;
+    transition: transform .34s cubic-bezier(.2,.85,.3,1);
+    cursor: zoom-in;
+  }
+
+  .gb-album-page:hover .gb-album-photo {
+    transform: scale(1.012);
+  }
+
+  .gb-photo-corner {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    background: rgba(251, 246, 236, .74);
+    pointer-events: none;
+  }
+
+  .gb-photo-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 7px;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity .24s ease, transform .24s ease;
+  }
+
+  .gb-album-page:hover .gb-photo-actions,
+  .gb-album-page:focus-within .gb-photo-actions {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .gb-photo-actions button,
+  .gb-photo-actions a {
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(251,246,236,.95);
+    color: #33271a;
+    box-shadow: 0 3px 9px rgba(0,0,0,.32);
+    transition: transform .16s ease, background .16s ease;
+  }
+
+  .gb-photo-actions button:hover,
+  .gb-photo-actions a:hover {
+    transform: translateY(-1px);
+    background: #fffdf8;
+  }
+
+  .gb-rich-gallery-content {
+    color: var(--gb-paper-ink);
+  }
+
+  .gb-rich-gallery-content img {
+    width: 100%;
+    max-height: min(420px, 62vw);
+    object-fit: cover;
+    border-radius: 3px;
+  }
 }
 @layer components {
   .link-as-a-tag {
