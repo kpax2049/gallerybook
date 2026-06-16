@@ -1,20 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  Download,
   Heart,
   ImagePlus,
   Loader2,
-  Maximize2,
   MessageSquare,
-  MoreHorizontal,
   Pencil,
   Share2,
   Star,
   Trash2,
 } from 'lucide-react';
 import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { generateHTML } from '@tiptap/html';
 import { mergeAttributes, Node } from '@tiptap/core';
@@ -46,12 +42,24 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { deleteGallery, Gallery, getGallery, getGalleryBySlug, toggleReaction } from '@/api/gallery';
+import {
+  deleteGallery,
+  Gallery,
+  getGallery,
+  getGalleryBySlug,
+  toggleReaction,
+} from '@/api/gallery';
 import Comment from './galleryComment/Comment';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/stores/userStore';
 import { isAdmin } from '@/lib/authz';
 import { DeskHeader } from './GalleriesPage';
+import {
+  hasStoryProse,
+  StoryImage,
+  StoryLink,
+  StoryParagraph,
+} from './galleryStoryExtensions';
 
 export interface GalleryBlock {
   type: string;
@@ -94,14 +102,18 @@ const GalleryEmoji = Node.create({
 });
 
 const galleryRenderExtensions = [
-  Image,
   StarterKit.configure({
+    paragraph: false,
     bold: false,
     italic: false,
     strike: false,
     bulletList: false,
     underline: false,
+    link: false,
   }),
+  StoryParagraph,
+  StoryImage,
+  StoryLink,
   TextStyle,
   FontFamily,
   FontSize,
@@ -123,14 +135,14 @@ export default function GalleryPage() {
   const navigate = useNavigate();
   const currentUser = useUserStore((state) => state.user);
   const { slug, galleryId } = useParams<{ slug?: string; galleryId?: string }>();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const storyRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [numericId, setNumericId] = useState<number | null>(null);
   const [rawBlocks, setRawBlocks] = useState<GalleryBlock[]>([]);
-  const [richHtml, setRichHtml] = useState('');
+  const [storyHtml, setStoryHtml] = useState('');
   const [open, setOpen] = useState(false);
   const [lbIndex, setLbIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -153,7 +165,7 @@ export default function GalleryPage() {
         setError(null);
         setGallery(null);
         setRawBlocks([]);
-        setRichHtml('');
+        setStoryHtml('');
 
         const isNumeric = /^\d+$/.test(param);
         const data = isNumeric
@@ -171,7 +183,7 @@ export default function GalleryPage() {
           ? data.content.content
           : [];
         setRawBlocks(blocks);
-        setRichHtml(
+        setStoryHtml(
           generateHTML({ type: 'doc', content: blocks }, galleryRenderExtensions)
         );
       } catch (e) {
@@ -190,6 +202,7 @@ export default function GalleryPage() {
   }, [slug, galleryId]);
 
   const photos = useMemo(() => extractPhotos(rawBlocks), [rawBlocks]);
+  const storyHasProse = useMemo(() => hasStoryProse(rawBlocks), [rawBlocks]);
   const slides = useMemo(
     () => photos.map((photo) => ({ src: photo.src, alt: photo.alt })),
     [photos]
@@ -197,6 +210,26 @@ export default function GalleryPage() {
   const title = gallery?.title ?? 'Gallery';
   const photoCount = photos.length;
   const canManage = isAdmin(currentUser) && numericId != null;
+  const renderMasonry = !storyHasProse && photos.length > 0;
+
+  useEffect(() => {
+    const root = storyRef.current;
+    if (!root) return;
+
+    const onClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      const image = target?.closest?.('img') as HTMLImageElement | null;
+      if (!image || !root.contains(image)) return;
+      const index = photos.findIndex((photo) => photo.src === image.currentSrc || photo.src === image.src);
+      if (index >= 0) {
+        setLbIndex(index);
+        setOpen(true);
+      }
+    };
+
+    root.addEventListener('click', onClick);
+    return () => root.removeEventListener('click', onClick);
+  }, [photos]);
 
   const handleDelete = async () => {
     if (!numericId || deleting) return;
@@ -231,13 +264,8 @@ export default function GalleryPage() {
       const response = await toggleReaction(numericId, type);
       const active =
         typeof response?.active === 'boolean' ? response.active : !previous;
-      if (isLike) {
-        setLiked(active);
-        setLikesCount((count) => count + (active === !previous ? 0 : active ? 1 : -1));
-      } else {
-        setFavorited(active);
-        setFavoritesCount((count) => count + (active === !previous ? 0 : active ? 1 : -1));
-      }
+      if (isLike) setLiked(active);
+      else setFavorited(active);
     } catch (reactionError) {
       if (isLike) {
         setLiked(previous);
@@ -255,7 +283,7 @@ export default function GalleryPage() {
   return (
     <div className="gb-page">
       <DeskHeader onCreate={() => navigate('/galleries/new')} />
-      <main className="gb-shell px-0 pb-[70px] pt-5 sm:px-3">
+      <main className="gb-story-shell pb-[70px] pt-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
             to="/galleries"
@@ -272,12 +300,12 @@ export default function GalleryPage() {
               className="gb-chip h-10 rounded-[11px] px-3"
             >
               <Pencil className="mr-2 h-4 w-4" />
-              Edit album
+              Edit story
             </Button>
           )}
         </div>
 
-        <div className="mt-4 flex items-center gap-2 px-0 text-sm text-[var(--gb-ink-mute)]">
+        <div className="mt-5 flex items-center gap-2 text-sm text-[var(--gb-ink-mute)]">
           <Link to="/galleries" className="hover:text-[var(--gb-ink)]">
             My Galleries
           </Link>
@@ -285,27 +313,34 @@ export default function GalleryPage() {
           <span className="truncate text-[var(--gb-ink-soft)]">{title}</span>
         </div>
 
-        <section className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 flex-1">
-            {loading && !gallery ? (
-              <HeaderSkeleton />
-            ) : (
-              <>
-                <h1 className="gb-serif text-[34px] font-medium leading-[1.05] tracking-normal text-[var(--gb-ink)]">
-                  {title}
-                </h1>
-                <div className="gb-hand mt-1 text-[22px] font-semibold text-[var(--gb-hand)]">
-                  {photoCount.toLocaleString()} photos
-                  {gallery?.updatedAt
-                    ? ` · updated ${new Date(gallery.updatedAt).toLocaleDateString()}`
-                    : ''}
-                </div>
-                {gallery?.description && (
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--gb-ink-soft)]">
-                    {gallery.description}
-                  </p>
-                )}
-                <div className="mt-4 flex flex-wrap items-center gap-2">
+        <header className="gb-story-masthead">
+          {loading && !gallery ? (
+            <HeaderSkeleton />
+          ) : (
+            <>
+              <p className="gb-hand text-[24px] font-semibold text-[var(--gb-hand)]">
+                a short story
+                {gallery?.updatedAt
+                  ? ` · ${new Date(gallery.updatedAt).toLocaleDateString(undefined, {
+                      month: 'long',
+                      year: 'numeric',
+                    })}`
+                  : ''}
+              </p>
+              <h1 className="gb-serif mt-2 text-[clamp(42px,8vw,78px)] font-medium leading-[.95] tracking-normal text-[var(--gb-ink)]">
+                {title}
+              </h1>
+              {gallery?.description && (
+                <p className="gb-story-description">{gallery.description}</p>
+              )}
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                <Stat value={`${photoCount.toLocaleString()} photos`} />
+                <Stat icon={<Heart className="h-3.5 w-3.5" />} value={likesCount} />
+                <Stat icon={<Star className="h-3.5 w-3.5" />} value={favoritesCount} />
+                <Stat icon={<MessageSquare className="h-3.5 w-3.5" />} value="Comments" />
+              </div>
+              {(gallery?.tags?.length ?? 0) > 0 && (
+                <div className="mt-5 flex flex-wrap justify-center gap-2">
                   {(gallery?.tags ?? []).map((tag) => (
                     <span
                       key={tag}
@@ -314,94 +349,79 @@ export default function GalleryPage() {
                       {tag}
                     </span>
                   ))}
-                  {(gallery?.tags?.length ?? 0) > 0 && (
-                    <span className="mx-1 h-4 w-px bg-[var(--gb-border-2)]" />
-                  )}
-                  <Stat icon={<Heart className="h-3.5 w-3.5" />} value={likesCount} />
-                  <Stat icon={<Star className="h-3.5 w-3.5" />} value={favoritesCount} />
-                  <Stat icon={<MessageSquare className="h-3.5 w-3.5" />} value="Comments" />
                 </div>
-              </>
-            )}
-            {error && (
-              <div className="mt-4 rounded-[14px] border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-          </div>
+              )}
+            </>
+          )}
+          {error && (
+            <div className="mx-auto mt-5 max-w-xl rounded-[14px] border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+        </header>
 
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            <IconAction
-              label={favorited ? 'Remove favorite' : 'Favorite'}
-              active={favorited}
-              activeClass="text-[var(--gb-favorite)]"
-              busy={busyReaction === 'FAVORITE'}
-              onClick={() => void toggleGalleryReaction('FAVORITE')}
+        <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
+          <IconAction
+            label={favorited ? 'Remove favorite' : 'Favorite'}
+            active={favorited}
+            activeClass="text-[var(--gb-favorite)]"
+            busy={busyReaction === 'FAVORITE'}
+            onClick={() => void toggleGalleryReaction('FAVORITE')}
+          >
+            <Star className={cn('h-4 w-4', favorited && 'fill-current')} />
+          </IconAction>
+          <IconAction
+            label={liked ? 'Unlike' : 'Like'}
+            active={liked}
+            activeClass="text-[var(--gb-like)]"
+            busy={busyReaction === 'LIKE'}
+            onClick={() => void toggleGalleryReaction('LIKE')}
+          >
+            <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
+          </IconAction>
+          <IconAction label="Share">
+            <Share2 className="h-4 w-4" />
+          </IconAction>
+          {canManage && (
+            <Button
+              type="button"
+              onClick={() => setDeleteOpen(true)}
+              disabled={deleting}
+              className="h-10 rounded-[11px] border border-red-500/30 bg-red-500/12 px-3 text-red-500 shadow-none hover:bg-red-500/18"
             >
-              <Star className={cn('h-4 w-4', favorited && 'fill-current')} />
-            </IconAction>
-            <IconAction
-              label={liked ? 'Unlike' : 'Like'}
-              active={liked}
-              activeClass="text-[var(--gb-like)]"
-              busy={busyReaction === 'LIKE'}
-              onClick={() => void toggleGalleryReaction('LIKE')}
-            >
-              <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
-            </IconAction>
-            <IconAction label="Share">
-              <Share2 className="h-4 w-4" />
-            </IconAction>
-            {canManage && (
-              <Button
-                type="button"
-                onClick={() => setDeleteOpen(true)}
-                disabled={deleting}
-                className="h-10 rounded-[11px] border border-red-500/30 bg-red-500/12 px-3 text-red-500 shadow-none hover:bg-red-500/18"
-              >
-                {deleting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="mr-2 h-4 w-4" />
-                )}
-                Delete
-              </Button>
-            )}
-          </div>
-        </section>
+              {deleting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Delete
+            </Button>
+          )}
+        </div>
 
-        <section className="mt-9 space-y-[34px]" ref={containerRef}>
+        <section ref={storyRef}>
           {loading && !gallery ? (
-            Array.from({ length: 3 }).map((_, index) => (
-              <PhotoPageSkeleton key={index} />
-            ))
-          ) : photos.length > 0 ? (
-            photos.map((photo, index) => (
-              <PhotoPage
-                key={`${photo.src}-${index}`}
-                photo={photo}
-                index={index}
-                onOpen={() => {
-                  setLbIndex(index);
-                  setOpen(true);
-                }}
-              />
-            ))
+            <StorySkeleton />
+          ) : renderMasonry ? (
+            <MasonryPhotos photos={photos} />
           ) : (
-            <RichContentFallback html={richHtml} />
+            <article
+              className="gb-story-prose"
+              dangerouslySetInnerHTML={{ __html: storyHtml }}
+            />
           )}
 
           {canManage && (
             <button
               type="button"
               onClick={() => navigate(`/galleries/edit/${numericId}`)}
-              className="gb-chip flex w-full flex-col items-center justify-center gap-2 rounded-[7px] border-dashed border-[var(--gb-border-2)] bg-[var(--gb-surface)] p-10 text-center text-[var(--gb-ink-soft)] hover:border-[var(--gb-accent)] hover:bg-[var(--gb-accent-soft)]"
+              className="gb-chip mx-auto mt-10 flex w-full max-w-[720px] flex-col items-center justify-center gap-2 rounded-[7px] border-dashed border-[var(--gb-border-2)] bg-[var(--gb-surface)] p-10 text-center text-[var(--gb-ink-soft)] hover:border-[var(--gb-accent)] hover:bg-[var(--gb-accent-soft)]"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--gb-border-2)]">
                 <ImagePlus className="h-5 w-5" />
               </span>
               <span className="gb-hand text-[23px] font-semibold">
-                Add photos to this album
+                Add photos to this story
               </span>
               <span className="text-[11.5px] text-[var(--gb-ink-mute)]">
                 Open the editor to upload or rearrange photos
@@ -420,7 +440,7 @@ export default function GalleryPage() {
         />
 
         {numericId != null && (
-          <section className="mt-10 rounded-[15px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] p-4">
+          <section className="mx-auto mt-12 max-w-[820px] rounded-[15px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] p-4">
             <Comment galleryId={numericId} />
           </section>
         )}
@@ -433,7 +453,7 @@ export default function GalleryPage() {
               <Trash2 className="h-5 w-5" />
             </div>
             <DialogTitle className="gb-serif text-[22px] font-medium">
-              Delete this album?
+              Delete this story?
             </DialogTitle>
             <DialogDescription className="text-[var(--gb-ink-soft)]">
               “{title}” and its {photoCount.toLocaleString()} photos will be
@@ -456,7 +476,7 @@ export default function GalleryPage() {
               className="rounded-[11px] bg-red-500 text-white hover:bg-red-600"
             >
               {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete album
+              Delete story
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -465,63 +485,18 @@ export default function GalleryPage() {
   );
 }
 
-function PhotoPage({
-  photo,
-  index,
-  onOpen,
-}: {
-  photo: GalleryPhoto;
-  index: number;
-  onOpen: () => void;
-}) {
+function MasonryPhotos({ photos }: { photos: GalleryPhoto[] }) {
   return (
-    <article
-      className="gb-album-page"
-      style={{ '--gb-delay': `${index * 45}ms` } as React.CSSProperties}
-    >
-      <div className="gb-album-photo-wrap">
+    <div className="gb-story-masonry">
+      {photos.map((photo, index) => (
         <img
+          key={`${photo.src}-${index}`}
           src={photo.src}
           alt={photo.alt ?? photo.title}
-          className="gb-album-photo"
           loading="lazy"
         />
-        <span className="gb-photo-corner left-0 top-0 [clip-path:polygon(0_0,100%_0,0_100%)]" />
-        <span className="gb-photo-corner right-0 top-0 [clip-path:polygon(100%_0,0_0,100%_100%)]" />
-        <span className="gb-photo-corner bottom-0 left-0 [clip-path:polygon(0_100%,0_0,100%_100%)]" />
-        <span className="gb-photo-corner bottom-0 right-0 [clip-path:polygon(100%_100%,100%_0,0_100%)]" />
-        <div className="gb-photo-actions">
-          <button type="button" onClick={onOpen} aria-label="Open image">
-            <Maximize2 className="h-4 w-4" />
-          </button>
-          <a href={photo.src} download aria-label="Download image">
-            <Download className="h-4 w-4" />
-          </a>
-          <button type="button" aria-label="More image actions">
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-      <footer className="flex items-center justify-between gap-3 px-1 py-3">
-        <div className="gb-hand min-w-0 truncate text-[25px] font-semibold leading-none text-[var(--gb-paper-ink)]">
-          {photo.title}
-        </div>
-        <div className="shrink-0 text-[11.5px] text-[#8d7c65]">
-          {photo.meta}
-        </div>
-      </footer>
-    </article>
-  );
-}
-
-function RichContentFallback({ html }: { html: string }) {
-  return (
-    <article className="gb-album-page">
-      <div
-        className="gallery-container gb-rich-gallery-content px-2 py-3"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-    </article>
+      ))}
+    </div>
   );
 }
 
@@ -558,7 +533,7 @@ function IconAction({
   );
 }
 
-function Stat({ icon, value }: { icon: React.ReactNode; value: React.ReactNode }) {
+function Stat({ icon, value }: { icon?: React.ReactNode; value: React.ReactNode }) {
   return (
     <span className="inline-flex items-center gap-1 text-[12.5px] text-[var(--gb-ink-mute)]">
       {icon}
@@ -569,23 +544,24 @@ function Stat({ icon, value }: { icon: React.ReactNode; value: React.ReactNode }
 
 function HeaderSkeleton() {
   return (
-    <div className="space-y-3">
-      <Skeleton className="h-9 w-72" />
-      <Skeleton className="h-6 w-44" />
-      <Skeleton className="h-4 w-full max-w-xl" />
-      <Skeleton className="h-4 w-full max-w-md" />
+    <div className="mx-auto max-w-3xl space-y-4">
+      <Skeleton className="mx-auto h-7 w-56" />
+      <Skeleton className="mx-auto h-16 w-full max-w-xl" />
+      <Skeleton className="mx-auto h-4 w-full max-w-lg" />
+      <Skeleton className="mx-auto h-4 w-full max-w-md" />
     </div>
   );
 }
 
-function PhotoPageSkeleton() {
+function StorySkeleton() {
   return (
-    <div className="gb-album-page">
-      <Skeleton className="h-[420px] rounded-[3px]" />
-      <div className="flex justify-between py-3">
-        <Skeleton className="h-6 w-44" />
-        <Skeleton className="h-4 w-28" />
-      </div>
+    <div className="gb-story-prose">
+      <Skeleton className="h-7 w-11/12" />
+      <Skeleton className="h-5 w-full" />
+      <Skeleton className="h-5 w-10/12" />
+      <Skeleton className="h-[380px] w-full rounded-[5px]" />
+      <Skeleton className="h-5 w-full" />
+      <Skeleton className="h-5 w-9/12" />
     </div>
   );
 }

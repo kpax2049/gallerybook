@@ -15,6 +15,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -43,7 +44,6 @@ import {
   HorizontalRule,
   RichTextHorizontalRule,
 } from 'reactjs-tiptap-editor/horizontalrule';
-import { Image } from 'reactjs-tiptap-editor/image';
 import { Indent, RichTextIndent } from 'reactjs-tiptap-editor/indent';
 import { Italic, RichTextItalic } from 'reactjs-tiptap-editor/italic';
 import {
@@ -63,6 +63,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fileToBase64 } from '@/lib/fileUtils';
+import { cn } from '@/lib/utils';
 import {
   extractBase64ImagesFromJson,
   extractImageKeysFromJSON,
@@ -79,6 +80,12 @@ import {
   ImageUploadButton,
   ImageUploadDialog,
 } from '@/components/file-upload-06';
+import {
+  readImageDimensions,
+  StoryImage,
+  StoryLink,
+  StoryParagraph,
+} from './galleryStoryExtensions';
 
 export type DialogData = {
   html: string;
@@ -95,9 +102,9 @@ type GalleryEditorProps = {
 };
 
 const editorSurfaceStyle: CSSProperties = {
-  backgroundColor: 'hsl(var(--card))',
-  borderColor: 'hsl(var(--border))',
-  color: 'hsl(var(--card-foreground))',
+  backgroundColor: 'var(--gb-panel)',
+  borderColor: 'var(--gb-border)',
+  color: 'var(--gb-ink)',
 };
 
 export function GalleryEditor({
@@ -123,10 +130,15 @@ export function GalleryEditor({
   const [dialogData, setDialogData] = useState<DialogData | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [imageUploadOpen, setImageUploadOpen] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [descriptionDraft, setDescriptionDraft] = useState('');
+  const [showSelectionBubble, setShowSelectionBubble] = useState(false);
+  const editorRef = useRef<any>(null);
 
   const extensions = useMemo<AnyExtension[]>(
     () => [
       StarterKit.configure({
+        paragraph: false,
         bold: false,
         italic: false,
         underline: false,
@@ -135,10 +147,17 @@ export function GalleryEditor({
         orderedList: false,
         heading: false,
         horizontalRule: false,
+        link: false,
       }),
+      StoryParagraph,
+      StoryImage,
+      StoryLink,
       TextStyle,
       Placeholder.configure({
-        placeholder: 'Share your gallery story...',
+        placeholder: ({ node }) =>
+          node.type.name === 'paragraph'
+            ? 'Type / for a block, or drag a photo here'
+            : 'Share your gallery story...',
       }),
       Bold,
       Italic,
@@ -161,10 +180,6 @@ export function GalleryEditor({
       Heading.configure({
         levels: [1, 2, 3, 4, 5, 6],
       }),
-      Image.configure({
-        resourceImage: 'upload',
-        upload: async (file: File) => fileToBase64(file),
-      }),
     ],
     []
   );
@@ -176,12 +191,37 @@ export function GalleryEditor({
       attributes: {
         class: 'gallery-editor-prosemirror',
       },
+      handlePaste: (_view, event) => {
+        const files = Array.from(event.clipboardData?.files ?? []).filter(
+          (file) => file.type.startsWith('image/')
+        );
+        if (!files.length) return false;
+        event.preventDefault();
+        void handleInsertImages(files);
+        return true;
+      },
+      handleDrop: (_view, event) => {
+        const files = Array.from(event.dataTransfer?.files ?? []).filter(
+          (file) => file.type.startsWith('image/')
+        );
+        if (!files.length) return false;
+        event.preventDefault();
+        void handleInsertImages(files);
+        return true;
+      },
     },
     onUpdate: ({ editor }) => {
       const json = editor.getJSON();
       setValue(json);
     },
+    onSelectionUpdate: ({ editor }) => {
+      setShowSelectionBubble(!editor.state.selection.empty);
+    },
   });
+
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
 
   useEffect(() => {
     const getResolvedTheme = () => {
@@ -214,6 +254,8 @@ export function GalleryEditor({
     getGallery(resolvedGalleryId, 'edit')
       .then((data) => {
         setGallery(data);
+        setTitleDraft(data.title ?? '');
+        setDescriptionDraft(data.description ?? '');
         if (data?.content) {
           setOriginalValue(data.content);
           const normalizedContent = normalizeAttrs(data.content);
@@ -418,18 +460,23 @@ export function GalleryEditor({
   }, [gallery?.slug, isEdit, navigate, resolvedGalleryId, submitting]);
 
   const initialFormData = useMemo(() => {
-    if (!isEdit || !gallery) return {};
+    if (!isEdit || !gallery) {
+      return {
+        title: titleDraft,
+        description: descriptionDraft,
+      };
+    }
     const images = Array.from(
       extractImageKeysFromJSON(value || gallery.content || {})
     );
     const thumbIdx = gallery.thumbnail ? images.indexOf(gallery.thumbnail) : 0;
     return {
-      title: gallery.title ?? '',
-      description: gallery.description ?? '',
+      title: titleDraft || gallery.title || '',
+      description: descriptionDraft || gallery.description || '',
       tags: (gallery as any)?.tags ?? [],
       thumbnailIndex: thumbIdx >= 0 ? thumbIdx : 0,
     };
-  }, [isEdit, gallery, value]);
+  }, [descriptionDraft, isEdit, gallery, titleDraft, value]);
 
   const handleOpenChange = (v: boolean) => {
     if (submitting) return;
@@ -443,18 +490,31 @@ export function GalleryEditor({
 
   const handleInsertImages = useCallback(
     async (files: File[]) => {
-      if (!editor) return;
+      const activeEditor = editorRef.current;
+      if (!activeEditor) return;
 
       for (const file of files) {
         const src = await fileToBase64(file);
-        editor
+        const dimensions = await readImageDimensions(src);
+        activeEditor
           .chain()
           .focus()
-          .setImage({ src, alt: file.name, title: file.name })
+          .insertContent({
+            type: 'image',
+            attrs: {
+              src,
+              alt: file.name,
+              title: file.name,
+              align: 'center',
+              size: 'measure',
+              width: dimensions.width ?? undefined,
+              height: dimensions.height ?? undefined,
+            },
+          })
           .run();
       }
     },
-    [editor]
+    []
   );
 
   const EditorSkeleton = () => {
@@ -474,9 +534,12 @@ export function GalleryEditor({
     if (!editorReady) return null;
     return (
       <div
-        className="gallery-editor-toolbar mb-4 richtext-flex richtext-flex-wrap richtext-items-center richtext-gap-2 richtext-rounded-md richtext-border richtext-bg-popover richtext-p-2"
+        className="gallery-editor-toolbar richtext-flex richtext-items-center richtext-gap-2 richtext-overflow-x-auto richtext-rounded-none richtext-border-0 richtext-border-b richtext-p-3"
         style={editorSurfaceStyle}
       >
+        <span className="gb-serif mr-1 whitespace-nowrap text-base text-[var(--gb-ink)]">
+          Gallery Book
+        </span>
         <RichTextHeading />
         <RichTextBold />
         <RichTextItalic />
@@ -499,12 +562,16 @@ export function GalleryEditor({
         />
         <RichTextEmoji />
         <span className="richtext-flex-1" />
+        <span className="whitespace-nowrap rounded-full bg-[var(--gb-accent-soft)] px-3 py-1 text-xs font-medium text-[var(--gb-accent)]">
+          ✓ Saved
+        </span>
         <Button
           type="button"
           size="sm"
           variant="outline"
           onClick={handleCancelClick}
           disabled={submitting}
+          className="gb-chip rounded-[11px]"
         >
           Cancel
         </Button>
@@ -514,8 +581,9 @@ export function GalleryEditor({
           variant="default"
           onClick={isEdit ? handleEditSaveClick : handleSaveClick}
           disabled={submitting}
+          className="rounded-[11px] bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]/90"
         >
-          Save
+          Save story
         </Button>
       </div>
     );
@@ -534,26 +602,93 @@ export function GalleryEditor({
     (!isEdit || (isEdit && !loading && resolvedGalleryId !== undefined));
 
   return (
-    <div className="container mx-auto p-5 flex justify-center">
-      <div className="h-full w-full">
+    <div className="gb-page min-h-svh">
+      <div className="gallery-editor-shell">
         {showEditor ? (
-          <div className="gallery-editor-shell">
-            <RichTextProvider editor={editor}>
-              {toolbar}
+          <RichTextProvider editor={editor}>
+            {toolbar}
+            <main className="gb-editor-story-shell">
+              <div className="gb-editor-title-block">
+                <p className="gb-hand text-[24px] font-semibold text-[var(--gb-hand)]">
+                  {isEdit ? 'editing story' : 'new story'} · draft
+                </p>
+                <input
+                  value={titleDraft}
+                  onChange={(event) => setTitleDraft(event.target.value)}
+                  placeholder="Untitled story"
+                  className="gb-editor-title-input"
+                  aria-label="Gallery title"
+                />
+                <textarea
+                  value={descriptionDraft}
+                  onChange={(event) => setDescriptionDraft(event.target.value)}
+                  placeholder="Add a short story summary..."
+                  className="gb-editor-description-input"
+                  aria-label="Gallery description"
+                  rows={2}
+                />
+              </div>
+
+              {editor && showSelectionBubble && (
+                <div className="gb-bubble-menu gb-bubble-menu-static">
+                  <button
+                    type="button"
+                    className={cn(editor.isActive('bold') && 'is-active')}
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                  >
+                    B
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(editor.isActive('italic') && 'is-active')}
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                  >
+                    I
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(editor.isActive('underline') && 'is-active')}
+                    onClick={() =>
+                      editor.chain().focus().toggleUnderline().run()
+                    }
+                  >
+                    U
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(editor.isActive('link') && 'is-active')}
+                    onClick={() => {
+                      const previous = editor.getAttributes('link').href;
+                      const href = window.prompt('Link URL', previous || '');
+                      if (href === null) return;
+                      if (href === '') {
+                        editor.chain().focus().unsetLink().run();
+                        return;
+                      }
+                      editor.chain().focus().setLink({ href }).run();
+                    }}
+                  >
+                    Link
+                  </button>
+                </div>
+              )}
+
               <EditorContent
-                className="gallery-editor-content min-h-[380px] rounded-lg border bg-card text-card-foreground p-4 prose max-w-none focus:outline-none"
+                className="gallery-editor-content gb-story-editor-content"
                 editor={editor}
                 style={editorSurfaceStyle}
               />
-              <ImageUploadDialog
-                open={imageUploadOpen}
-                onOpenChange={setImageUploadOpen}
-                onInsert={handleInsertImages}
-              />
-            </RichTextProvider>
-          </div>
+            </main>
+            <ImageUploadDialog
+              open={imageUploadOpen}
+              onOpenChange={setImageUploadOpen}
+              onInsert={handleInsertImages}
+            />
+          </RichTextProvider>
         ) : (
-          <EditorSkeleton />
+          <div className="gb-editor-story-shell">
+            <EditorSkeleton />
+          </div>
         )}
       </div>
       {((isEdit && value) || (!isEdit && dialogData)) && (
