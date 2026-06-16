@@ -8,6 +8,7 @@ import {
   ReactNodeViewRenderer,
   type NodeViewProps,
 } from '@tiptap/react';
+import { NodeSelection } from '@tiptap/pm/state';
 import {
   AlignCenter,
   AlignLeft,
@@ -43,7 +44,7 @@ export const aspectRatioStyle = (
   height?: number | null
 ): React.CSSProperties | undefined => {
   if (!width || !height) return undefined;
-  return { aspectRatio: `${width} / ${height}` };
+  return { '--gb-image-ratio': `${width}/${height}` } as React.CSSProperties;
 };
 
 const storyImageFrameAttrs = (attrs: StoryImageAttrs) => {
@@ -244,9 +245,21 @@ function StoryImageNodeView({
       .insertContentAt(nextPos, {
         type: 'paragraph',
         attrs: { caption: true },
-        content: [{ type: 'text', text: 'Add a caption...' }],
       })
       .run();
+  };
+
+  const selectImage = (event: React.MouseEvent) => {
+    if (selected || typeof getPos !== 'function') return;
+    const pos = getPos();
+    if (typeof pos !== 'number') return;
+    event.preventDefault();
+    editor.view.dispatch(
+      editor.view.state.tr.setSelection(
+        NodeSelection.create(editor.view.state.doc, pos)
+      )
+    );
+    editor.view.focus();
   };
 
   return (
@@ -261,6 +274,7 @@ function StoryImageNodeView({
       data-align={align}
       data-size={size}
       style={aspectRatioStyle(toNumber(attrs.width), toNumber(attrs.height))}
+      onMouseDown={selectImage}
     >
       <div className="gb-story-image-mat">
         <img

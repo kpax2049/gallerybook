@@ -132,7 +132,14 @@ export function GalleryEditor({
   const [imageUploadOpen, setImageUploadOpen] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
   const [descriptionDraft, setDescriptionDraft] = useState('');
-  const [showSelectionBubble, setShowSelectionBubble] = useState(false);
+  const [selectionBubble, setSelectionBubble] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [slashMenu, setSlashMenu] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const editorRef = useRef<any>(null);
 
   const extensions = useMemo<AnyExtension[]>(
@@ -209,13 +216,43 @@ export function GalleryEditor({
         void handleInsertImages(files);
         return true;
       },
+      handleKeyDown: (view, event) => {
+        if (event.key === 'Escape') {
+          setSlashMenu(null);
+          return false;
+        }
+
+        if (event.key !== '/') return false;
+
+        const { selection } = view.state;
+        const parent = selection.$from.parent;
+        if (parent.type.name !== 'paragraph' || parent.textContent.length > 0) {
+          return false;
+        }
+
+        const coords = view.coordsAtPos(selection.from);
+        setSlashMenu({ top: coords.bottom + 8, left: coords.left });
+        event.preventDefault();
+        return true;
+      },
     },
     onUpdate: ({ editor }) => {
       const json = editor.getJSON();
       setValue(json);
     },
     onSelectionUpdate: ({ editor }) => {
-      setShowSelectionBubble(!editor.state.selection.empty);
+      setSlashMenu(null);
+      const { selection } = editor.state;
+      if (selection.empty) {
+        setSelectionBubble(null);
+        return;
+      }
+      const from = editor.view.coordsAtPos(selection.from);
+      const to = editor.view.coordsAtPos(selection.to);
+      setSelectionBubble({
+        top: Math.min(from.top, to.top) - 48,
+        left: (from.left + to.right) / 2,
+      });
     },
   });
 
@@ -629,8 +666,16 @@ export function GalleryEditor({
                 />
               </div>
 
-              {editor && showSelectionBubble && (
-                <div className="gb-bubble-menu gb-bubble-menu-static">
+              {editor && selectionBubble && (
+                <div
+                  className="gb-bubble-menu"
+                  style={{
+                    position: 'fixed',
+                    top: selectionBubble.top,
+                    left: selectionBubble.left,
+                    transform: 'translateX(-50%)',
+                  }}
+                >
                   <button
                     type="button"
                     className={cn(editor.isActive('bold') && 'is-active')}
@@ -669,6 +714,62 @@ export function GalleryEditor({
                     }}
                   >
                     Link
+                  </button>
+                </div>
+              )}
+
+              {editor && slashMenu && (
+                <div
+                  className="gb-slash-menu"
+                  style={{
+                    position: 'fixed',
+                    top: slashMenu.top,
+                    left: slashMenu.left,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      editor.chain().focus().setParagraph().run();
+                      setSlashMenu(null);
+                    }}
+                  >
+                    <span>Text</span>
+                    <small>Plain story paragraph</small>
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      editor.chain().focus().toggleHeading({ level: 2 }).run();
+                      setSlashMenu(null);
+                    }}
+                  >
+                    <span>Heading</span>
+                    <small>Section title</small>
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      editor.chain().focus().setHorizontalRule().run();
+                      setSlashMenu(null);
+                    }}
+                  >
+                    <span>Divider</span>
+                    <small>Story break</small>
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      setImageUploadOpen(true);
+                      setSlashMenu(null);
+                    }}
+                  >
+                    <span>Image</span>
+                    <small>Upload a framed photo</small>
                   </button>
                 </div>
               )}
