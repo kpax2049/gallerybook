@@ -96,13 +96,23 @@ export const GalleryCard = React.memo(function GalleryCard({
 
   const Figure = (
     <figure
+      aria-busy={deleting}
       className={cn(
-        'block w-full select-none rounded-[14px] p-3',
+        'relative block w-full select-none rounded-[14px] p-3',
         'bg-card text-card-foreground border border-border',
         'shadow-sm hover:shadow-md transition-shadow',
-        'rotate-[-0.75deg] transition-transform duration-300 group-hover:rotate-0'
+        'rotate-[-0.75deg] transition-transform duration-300 group-hover:rotate-0',
+        deleting && 'pointer-events-none opacity-75'
       )}
     >
+      {deleting && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center rounded-[14px] bg-background/70 text-foreground backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm shadow-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Deleting...
+          </div>
+        </div>
+      )}
       {/* Photo card */}
       <Card className="relative w-full rounded-[10px] overflow-hidden border border-border/60 bg-background">
         {/* Photo */}
@@ -137,6 +147,7 @@ export const GalleryCard = React.memo(function GalleryCard({
               className="h-8 w-8 rounded-full bg-background/70 backdrop-blur"
               title={liked ? 'Unlike' : 'Like'}
               aria-pressed={liked}
+              disabled={deleting}
               onClick={(e) => handleToggle('LIKE', e)}
               data-stop-link="true"
             >
@@ -159,6 +170,7 @@ export const GalleryCard = React.memo(function GalleryCard({
               className="h-8 w-8 rounded-full bg-background/70 backdrop-blur"
               title={faved ? 'Remove favorite' : 'Favorite'}
               aria-pressed={faved}
+              disabled={deleting}
               onClick={(e) => handleToggle('FAVORITE', e)}
               data-stop-link="true"
             >
@@ -233,7 +245,12 @@ export const GalleryCard = React.memo(function GalleryCard({
             {item.title ?? 'Untitled gallery'}
           </div>
           {canManage && (
-            <ThreeDotMenu onEdit={onEdit} onDelete={onDelete} gallery={item} />
+            <ThreeDotMenu
+              onEdit={onEdit}
+              onDelete={onDelete}
+              gallery={item}
+              deleting={deleting}
+            />
           )}
         </div>
       </figcaption>

@@ -104,7 +104,21 @@ export function GalleryRow({
   };
 
   return (
-    <li className="p-3 hover:bg-muted/30">
+    <li
+      className={cn(
+        'relative p-3 hover:bg-muted/30',
+        deleting && 'pointer-events-none opacity-75'
+      )}
+      aria-busy={deleting}
+    >
+      {deleting && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 text-foreground backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm shadow-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Deleting...
+          </div>
+        </div>
+      )}
       <div className="flex items-center gap-3">
         <Link
           to={`/galleries/${item.slug ?? item.id}`}
@@ -152,6 +166,7 @@ export function GalleryRow({
             variant="outline"
             className="h-8 w-8"
             aria-pressed={liked}
+            disabled={deleting}
             onClick={() => onToggle('LIKE')}
             title={liked ? 'Unlike' : 'Like'}
           >
@@ -170,6 +185,7 @@ export function GalleryRow({
             variant="outline"
             className="h-8 w-8"
             aria-pressed={faved}
+            disabled={deleting}
             onClick={() => onToggle('FAVORITE')}
             title={faved ? 'Unfavorite' : 'Favorite'}
           >
@@ -192,18 +208,28 @@ export function GalleryRow({
                   variant="ghost"
                   className="h-8 w-8"
                   aria-label="More"
+                  disabled={deleting}
                 >
-                  <MoreHorizontal className="h-5 w-5" />
+                  {deleting ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <MoreHorizontal className="h-5 w-5" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" sideOffset={6}>
                 <DropdownMenuItem
+                  disabled={deleting}
                   onSelect={() => navigate(`/galleries/edit/${item.id}`)}
                 >
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => void onDelete()}>
-                  Delete
+                <DropdownMenuItem
+                  disabled={deleting}
+                  onSelect={() => void onDelete()}
+                >
+                  {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {deleting ? 'Deleting...' : 'Delete'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
