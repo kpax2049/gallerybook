@@ -269,50 +269,51 @@
   user-select: none;
 }
 
-.gb-block-bumper {
-  position: fixed;
+.drag-handle {
   z-index: 65;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  transform: translateY(-50%);
-}
-
-.gb-block-bumper button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  color: var(--gb-ink-mute);
-  cursor: pointer;
-}
-
-.gb-block-bumper-grip {
-  width: 24px;
-  height: 28px;
+  width: 28px;
+  height: 34px;
   border-radius: 8px;
+  cursor: grab;
+  transform: translate(-14px, -2px);
 }
 
-.gb-block-bumper-insert {
-  width: 44px;
-  height: 44px;
-  border: 1px solid var(--gb-border-2) !important;
+.drag-handle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
   border-radius: 999px;
-  background: var(--gb-surface) !important;
-  box-shadow: 0 14px 30px -20px rgba(0,0,0,.7);
-  color: var(--gb-ink) !important;
+  background: var(--gb-ink-mute);
+  box-shadow:
+    0 -7px 0 var(--gb-ink-mute),
+    0 7px 0 var(--gb-ink-mute),
+    7px -7px 0 var(--gb-ink-mute),
+    7px 0 0 var(--gb-ink-mute),
+    7px 7px 0 var(--gb-ink-mute);
+  opacity: .82;
+  transform: translate(-6px, -2px);
 }
 
-.gb-block-bumper button:hover {
-  color: var(--gb-ink);
+.drag-handle:hover {
+  background: var(--gb-tbhover);
 }
 
-.gb-block-bumper-insert:hover {
-  border-color: var(--gb-accent) !important;
-  background: var(--gb-accent-soft) !important;
-  color: var(--gb-accent) !important;
+.drag-handle:hover::before {
+  background: var(--gb-ink);
+  box-shadow:
+    0 -7px 0 var(--gb-ink),
+    0 7px 0 var(--gb-ink),
+    7px -7px 0 var(--gb-ink),
+    7px 0 0 var(--gb-ink),
+    7px 7px 0 var(--gb-ink);
+  opacity: 1;
+}
+
+.drag-handle[data-dragging='true'] {
+  cursor: grabbing;
 }
 
 .gb-story-editor-content .ProseMirror .gb-story-image,

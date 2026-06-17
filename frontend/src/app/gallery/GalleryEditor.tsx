@@ -61,7 +61,7 @@ import { EditorContent, AnyExtension, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
-import { NodeSelection } from '@tiptap/pm/state';
+import { DragHandle as Drag } from '@tiptap/extension-drag-handle';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fileToBase64 } from '@/lib/fileUtils';
 import { cn } from '@/lib/utils';
@@ -81,7 +81,7 @@ import {
   ImageUploadButton,
   ImageUploadDialog,
 } from '@/components/file-upload-06';
-import { Check, GripVertical, Plus } from 'lucide-react';
+import { Check } from 'lucide-react';
 import {
   readImageDimensions,
   StoryImage,
@@ -101,13 +101,6 @@ type GalleryEditorMode = 'create' | 'edit';
 type GalleryEditorProps = {
   mode?: GalleryEditorMode;
   galleryId?: number;
-};
-
-type BlockBumperState = {
-  top: number;
-  left: number;
-  pos: number;
-  nodeSize: number;
 };
 
 const editorSurfaceStyle: CSSProperties = {
@@ -149,10 +142,7 @@ export function GalleryEditor({
     top: number;
     left: number;
   } | null>(null);
-  const [blockBumper, setBlockBumper] = useState<BlockBumperState | null>(null);
   const editorRef = useRef<any>(null);
-  const bumperHoverRef = useRef(false);
-  const bumperHideTimerRef = useRef<number | null>(null);
 
   const extensions = useMemo<AnyExtension[]>(
     () => [
@@ -198,6 +188,13 @@ export function GalleryEditor({
       Emoji,
       Heading.configure({
         levels: [1, 2, 3, 4, 5, 6],
+      }),
+      Drag.configure({
+        render() {
+          const element = document.createElement('div');
+          element.className = 'drag-handle';
+          return element;
+        },
       }),
     ],
     []
@@ -251,7 +248,6 @@ export function GalleryEditor({
     onUpdate: ({ editor }) => {
       const json = editor.getJSON();
       setValue(json);
-      setBlockBumper(null);
     },
     onSelectionUpdate: ({ editor }) => {
       setSlashMenu(null);
@@ -272,152 +268,6 @@ export function GalleryEditor({
   useEffect(() => {
     editorRef.current = editor;
   }, [editor]);
-
-  useEffect(() => {
-    return () => {
-      if (bumperHideTimerRef.current !== null) {
-        window.clearTimeout(bumperHideTimerRef.current);
-      }
-    };
-  }, []);
-
-  const clearBlockBumperHide = useCallback(() => {
-    if (bumperHideTimerRef.current !== null) {
-      window.clearTimeout(bumperHideTimerRef.current);
-      bumperHideTimerRef.current = null;
-    }
-  }, []);
-
-  const scheduleBlockBumperHide = useCallback(() => {
-    clearBlockBumperHide();
-    bumperHideTimerRef.current = window.setTimeout(() => {
-      if (!bumperHoverRef.current) {
-        setBlockBumper(null);
-      }
-    }, 120);
-  }, [clearBlockBumperHide]);
-
-  const findEditorBlock = useCallback((target: EventTarget | null) => {
-    const activeEditor = editorRef.current;
-    const editorDom = activeEditor?.view?.dom as HTMLElement | undefined;
-    if (!editorDom || !(target instanceof Element)) return null;
-    if (!editorDom.contains(target)) return null;
-
-    let block: Element | null = target;
-    while (block && block.parentElement !== editorDom) {
-      if (block === editorDom) return null;
-      block = block.parentElement;
-    }
-
-    return block instanceof HTMLElement && block.parentElement === editorDom
-      ? block
-      : null;
-  }, []);
-
-  const getBlockPosition = useCallback((block: HTMLElement) => {
-    const activeEditor = editorRef.current;
-    if (!activeEditor) return null;
-
-    try {
-      const rawPos = activeEditor.view.posAtDOM(block, 0);
-      const docEnd = activeEditor.state.doc.content.size;
-      const safePos = Math.max(0, Math.min(rawPos, docEnd));
-      const resolved = activeEditor.state.doc.resolve(safePos);
-      const blockPos = resolved.depth > 0 ? resolved.before(1) : safePos;
-      const node =
-        activeEditor.state.doc.nodeAt(blockPos) ??
-        activeEditor.state.doc.nodeAt(safePos);
-
-      if (!node) return null;
-      return { pos: blockPos, nodeSize: node.nodeSize };
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const handleEditorMouseMove = useCallback(
-    (event: React.MouseEvent) => {
-      const activeEditor = editorRef.current;
-      if (!activeEditor) return;
-
-      const block = findEditorBlock(event.target);
-      if (!block) {
-        scheduleBlockBumperHide();
-        return;
-      }
-
-      const blockPosition = getBlockPosition(block);
-      if (!blockPosition) {
-        scheduleBlockBumperHide();
-        return;
-      }
-
-      clearBlockBumperHide();
-      const blockRect = block.getBoundingClientRect();
-      const editorRect = activeEditor.view.dom.getBoundingClientRect();
-      const blockStyles = window.getComputedStyle(block);
-      const lineHeight = Number.parseFloat(blockStyles.lineHeight);
-      const firstLineHeight = Number.isFinite(lineHeight)
-        ? Math.min(blockRect.height || lineHeight, lineHeight)
-        : Math.min(blockRect.height || 32, 32);
-      const nextBumper = {
-        top: blockRect.top + firstLineHeight / 2,
-        left: editorRect.left - 72,
-        ...blockPosition,
-      };
-
-      setBlockBumper((current) =>
-        current &&
-        Math.abs(current.top - nextBumper.top) < 0.5 &&
-        Math.abs(current.left - nextBumper.left) < 0.5 &&
-        current.pos === nextBumper.pos &&
-        current.nodeSize === nextBumper.nodeSize
-          ? current
-          : nextBumper
-      );
-    },
-    [
-      clearBlockBumperHide,
-      findEditorBlock,
-      getBlockPosition,
-      scheduleBlockBumperHide,
-    ]
-  );
-
-  const handleInsertBlockAfter = useCallback(() => {
-    const activeEditor = editorRef.current;
-    if (!activeEditor || !blockBumper) return;
-
-    const insertAt = blockBumper.pos + blockBumper.nodeSize;
-    activeEditor
-      .chain()
-      .focus()
-      .insertContentAt(insertAt, { type: 'paragraph' })
-      .setTextSelection(insertAt + 1)
-      .run();
-    setBlockBumper(null);
-
-    window.requestAnimationFrame(() => {
-      const coords = activeEditor.view.coordsAtPos(insertAt + 1);
-      setSlashMenu({ top: coords.bottom + 8, left: coords.left });
-    });
-  }, [blockBumper]);
-
-  const handleSelectBumperBlock = useCallback(() => {
-    const activeEditor = editorRef.current;
-    if (!activeEditor || !blockBumper) return;
-
-    try {
-      activeEditor.view.dispatch(
-        activeEditor.state.tr.setSelection(
-          NodeSelection.create(activeEditor.state.doc, blockBumper.pos)
-        )
-      );
-      activeEditor.view.focus();
-    } catch {
-      activeEditor.chain().focus().setTextSelection(blockBumper.pos + 1).run();
-    }
-  }, [blockBumper]);
 
   useEffect(() => {
     const getResolvedTheme = () => {
@@ -937,57 +787,11 @@ export function GalleryEditor({
                 </div>
               )}
 
-              {editor && blockBumper && (
-                <div
-                  className="gb-block-bumper"
-                  style={{
-                    top: blockBumper.top,
-                    left: blockBumper.left,
-                  }}
-                  onMouseEnter={() => {
-                    bumperHoverRef.current = true;
-                    clearBlockBumperHide();
-                  }}
-                  onMouseLeave={() => {
-                    bumperHoverRef.current = false;
-                    scheduleBlockBumperHide();
-                  }}
-                >
-                  <button
-                    type="button"
-                    className="gb-block-bumper-grip"
-                    aria-label="Select block"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      handleSelectBumperBlock();
-                    }}
-                  >
-                    <GripVertical className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    className="gb-block-bumper-insert"
-                    aria-label="Insert block"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      handleInsertBlockAfter();
-                    }}
-                  >
-                    <Plus className="h-5 w-5" />
-                  </button>
-                </div>
-              )}
-
-              <div
-                onMouseMove={handleEditorMouseMove}
-                onMouseLeave={scheduleBlockBumperHide}
-              >
-                <EditorContent
-                  className="gallery-editor-content gb-story-editor-content"
-                  editor={editor}
-                  style={editorSurfaceStyle}
-                />
-              </div>
+              <EditorContent
+                className="gallery-editor-content gb-story-editor-content"
+                editor={editor}
+                style={editorSurfaceStyle}
+              />
             </main>
             <ImageUploadDialog
               open={imageUploadOpen}
