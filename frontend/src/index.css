@@ -73,6 +73,7 @@ button:focus-visible {
     --gb-border: rgba(40,34,26,.12);
     --gb-border-2: rgba(40,34,26,.2);
     --gb-bar: rgba(249,248,245,.86);
+    --gb-tbhover: rgba(40,34,26,.06);
     --gb-accent: #2f9d7d;
     --gb-accent-ink: #f3fffb;
     --gb-accent-soft: rgba(47,157,125,.13);
@@ -137,6 +138,7 @@ button:focus-visible {
     --gb-border: rgba(235,220,195,.12);
     --gb-border-2: rgba(235,220,195,.2);
     --gb-bar: rgba(20,13,7,.74);
+    --gb-tbhover: rgba(235,220,195,.08);
     --gb-accent: #57d3ad;
     --gb-accent-ink: #0d2620;
     --gb-accent-soft: rgba(87,211,173,.14);
