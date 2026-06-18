@@ -344,7 +344,7 @@ function GalleriesListPage() {
   return (
     <div className="gb-page">
       <DeskHeader onCreate={openNewGallery} />
-      <main className="gb-shell px-0 pb-[70px] pt-8 sm:px-3">
+      <main className="gb-shell flex min-h-[calc(100svh-69px)] flex-col px-0 pb-4 pt-8 sm:px-3">
         <section className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="gb-serif text-[33px] font-medium leading-none tracking-normal">
