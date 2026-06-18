@@ -409,6 +409,7 @@
 }
 
 .gb-story-editor-content .ProseMirror .gb-story-image-mat {
+  position: relative;
   overflow: hidden;
   border-radius: 3px !important;
   background: rgba(30, 22, 12, .1) !important;
@@ -423,7 +424,36 @@
 }
 
 .gb-story-editor-content .ProseMirror .gb-story-corner {
+  position: absolute;
   display: block;
+  width: 26px;
+  height: 26px;
+  background: var(--gb-corner, rgba(38,26,12,.42));
+  pointer-events: none;
+}
+
+.gb-story-editor-content .ProseMirror .gb-story-corner--tl {
+  top: 0;
+  left: 0;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.gb-story-editor-content .ProseMirror .gb-story-corner--tr {
+  top: 0;
+  right: 0;
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+
+.gb-story-editor-content .ProseMirror .gb-story-corner--bl {
+  bottom: 0;
+  left: 0;
+  clip-path: polygon(0 100%, 0 0, 100% 100%);
+}
+
+.gb-story-editor-content .ProseMirror .gb-story-corner--br {
+  right: 0;
+  bottom: 0;
+  clip-path: polygon(100% 100%, 100% 0, 0 100%);
 }
 
 .gb-story-editor-content .ProseMirror .image-view {
@@ -453,6 +483,21 @@
   border-radius: 3px;
   background: rgba(30, 22, 12, .1);
   object-fit: contain;
+}
+
+.gb-story-editor-content .ProseMirror .image-view__body::after,
+.image-view > .image-view__body::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset: 13px;
+  border-radius: 3px;
+  background:
+    linear-gradient(135deg, var(--gb-corner, rgba(38,26,12,.42)) 0 50%, transparent 50%) top left / 26px 26px no-repeat,
+    linear-gradient(225deg, var(--gb-corner, rgba(38,26,12,.42)) 0 50%, transparent 50%) top right / 26px 26px no-repeat,
+    linear-gradient(45deg, var(--gb-corner, rgba(38,26,12,.42)) 0 50%, transparent 50%) bottom left / 26px 26px no-repeat,
+    linear-gradient(315deg, var(--gb-corner, rgba(38,26,12,.42)) 0 50%, transparent 50%) bottom right / 26px 26px no-repeat;
+  pointer-events: none;
 }
 
 .gb-story-editor-content .ProseMirror figure.gb-story-image,
