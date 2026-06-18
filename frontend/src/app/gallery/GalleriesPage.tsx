@@ -57,6 +57,7 @@ import { useTheme } from '@/components/theme-provider';
 import { useGalleryListState } from '@/stores/galleryStore';
 import { useUserStore } from '@/stores/userStore';
 import { UserProfileDialog } from '@/app/userProfile/UserProfileDialog';
+import { AccountLegalFooter, ShelfColophon } from '@/components/LegalColophon';
 import {
   FilterState,
   filtersToQuery,
@@ -500,6 +501,8 @@ function GalleriesListPage() {
             </Button>
           </div>
         )}
+
+        {!loading && !error && <ShelfColophon />}
       </main>
 
       <FiltersDrawer
@@ -666,6 +669,7 @@ function AccountMenu({ onLogout }: { onLogout: () => void }) {
           <LogOut className="mr-2 h-4 w-4" />
           Log out
         </DropdownMenuItem>
+        <AccountLegalFooter />
       </DropdownMenuContent>
     </DropdownMenu>
   );

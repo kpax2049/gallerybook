@@ -326,6 +326,81 @@ button:focus-visible {
     line-height: 1;
   }
 
+  .gb-account-legal {
+    margin: 8px -12px -12px;
+    padding: 11px 16px 13px;
+    background: rgba(0,0,0,.16);
+    color: var(--gb-ink-mute);
+  }
+
+  .gb-account-legal a,
+  .gb-shelf-colophon a {
+    color: var(--gb-ink-mute);
+    text-decoration: none;
+    transition: color .16s ease;
+  }
+
+  .gb-account-legal a:hover,
+  .gb-shelf-colophon a:hover {
+    color: var(--gb-ink-soft);
+  }
+
+  .gb-account-legal-star {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 9px;
+    font-size: 12px;
+  }
+
+  .gb-account-legal-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 11.5px;
+  }
+
+  .gb-legal-dot {
+    color: var(--gb-ink-mute);
+    opacity: .45;
+  }
+
+  .gb-legal-version {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 10.5px;
+    opacity: .8;
+  }
+
+  .gb-shelf-colophon {
+    margin-top: 38px;
+    text-align: center;
+    color: var(--gb-ink-mute);
+  }
+
+  .gb-shelf-colophon-rule {
+    width: min(520px, 100%);
+    height: 1px;
+    margin: 0 auto;
+    background: var(--gb-border);
+  }
+
+  .gb-shelf-colophon-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+    font-size: 12.5px;
+  }
+
+  .gb-shelf-colophon-signoff {
+    color: var(--gb-hand);
+    font-family: Caveat, "Comic Sans MS", cursive;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
   .gb-shell {
     width: min(1340px, calc(100vw - 32px));
     margin: 0 auto;
