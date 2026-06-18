@@ -37,7 +37,7 @@ export default function LoginPage({ children }: Props) {
         </div>
       </header>
 
-      <main className="relative z-10 grid min-h-[calc(100svh-84px)] grid-cols-1 items-end gap-8 px-5 pb-8 sm:px-8 lg:grid-cols-[minmax(0,1fr)_430px] lg:items-center lg:pb-12">
+      <main className="relative z-10 grid min-h-[calc(100svh-84px)] grid-cols-1 items-end gap-8 px-5 pb-8 sm:px-8 lg:grid-cols-[minmax(0,1fr)_430px_minmax(96px,0.33fr)] lg:items-center lg:pb-12">
         <p className="gb-hand order-2 max-w-xl pb-2 text-[34px] font-semibold leading-none text-[#f8e9c8] drop-shadow-lg lg:order-1 lg:pb-14">
           Every picture has a place to live.
         </p>
