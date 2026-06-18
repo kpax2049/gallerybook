@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Camera } from 'lucide-react';
 import heroArt from '@/assets/login-photo-albums-hero.png';
+import logoMint from '@/assets/GB-logo-mint.png';
+import logoTeal from '@/assets/GB-logo-teal.png';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -18,12 +19,28 @@ export default function LoginPage({ children }: Props) {
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(12,7,3,.82)_0%,rgba(16,9,4,.64)_39%,rgba(16,9,4,.22)_72%,rgba(16,9,4,.04)_100%)]" />
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 to-transparent" />
 
-      <header className="relative z-20 flex items-center justify-between px-5 py-5 sm:px-8">
-        <Link to="/login" className="inline-flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/25 bg-black/20 backdrop-blur">
-            <Camera className="h-5 w-5 text-[#57d3ad]" />
+      <header className="relative z-20 flex items-center justify-between px-5 py-[14px] sm:px-8">
+        <Link to="/login" className="gb-brand" aria-label="Gallery Book login">
+          <span className="gb-brand-mark" aria-hidden="true">
+            <img
+              src={logoTeal}
+              alt=""
+              width={40}
+              height={40}
+              className="gb-brand-logo gb-brand-logo--teal"
+            />
+            <img
+              src={logoMint}
+              alt=""
+              width={40}
+              height={40}
+              className="gb-brand-logo gb-brand-logo--mint"
+            />
           </span>
-          <span className="gb-serif text-xl font-semibold">Gallery Book</span>
+          <span className="gb-wordmark">
+            <span className="gb-wordmark-gallery text-white">Gallery</span>
+            <span className="gb-wordmark-book">Book</span>
+          </span>
         </Link>
         <div className="flex items-center gap-3 text-sm text-white/78">
           <span className="hidden sm:inline">New here?</span>
