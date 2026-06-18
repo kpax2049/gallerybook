@@ -765,35 +765,51 @@ export function GalleryEditor({
                   >
                     <button
                       type="button"
-                      className={cn(editor.isActive('bold') && 'is-active')}
-                      onClick={() => editor.chain().focus().toggleBold().run()}
+                      className={cn(
+                        'gb-bubble-item',
+                        editor.isActive('bold') && 'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        editor.chain().focus().toggleBold().run();
+                      }}
                     >
                       B
                     </button>
                     <button
                       type="button"
-                      className={cn(editor.isActive('italic') && 'is-active')}
-                      onClick={() =>
-                        editor.chain().focus().toggleItalic().run()
-                      }
+                      className={cn(
+                        'gb-bubble-item',
+                        editor.isActive('italic') && 'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        editor.chain().focus().toggleItalic().run();
+                      }}
                     >
                       I
                     </button>
                     <button
                       type="button"
                       className={cn(
+                        'gb-bubble-item',
                         editor.isActive('underline') && 'is-active'
                       )}
-                      onClick={() =>
-                        editor.chain().focus().toggleUnderline().run()
-                      }
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        editor.chain().focus().toggleUnderline().run();
+                      }}
                     >
                       U
                     </button>
                     <button
                       type="button"
-                      className={cn(editor.isActive('link') && 'is-active')}
-                      onClick={() => {
+                      className={cn(
+                        'gb-bubble-item gb-bubble-link',
+                        editor.isActive('link') && 'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
                         const previous = editor.getAttributes('link').href;
                         const href = window.prompt('Link URL', previous || '');
                         if (href === null) return;
