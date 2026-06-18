@@ -31,12 +31,38 @@
 .gallery-editor-toolbar button,
 .gallery-editor-toolbar [role='button'],
 .gallery-editor-toolbar [data-radix-collection-item] {
-  color: hsl(var(--card-foreground)) !important;
+  color: var(--gb-ink-soft) !important;
 }
 
 .gallery-editor-toolbar button:hover,
 .gallery-editor-toolbar [role='button']:hover {
-  background-color: hsl(var(--muted)) !important;
+  background: var(--gb-tbhover) !important;
+  background-color: var(--gb-tbhover) !important;
+  color: var(--gb-ink) !important;
+}
+
+.gallery-editor-toolbar button[aria-pressed='true'],
+.gallery-editor-toolbar button[data-active='true'],
+.gallery-editor-toolbar button[data-state='on'],
+.gallery-editor-toolbar [role='button'][aria-pressed='true'],
+.gallery-editor-toolbar [role='button'][data-active='true'],
+.gallery-editor-toolbar [role='button'][data-state='on'],
+.gallery-editor-toolbar .is-active {
+  background: var(--gb-accent-soft) !important;
+  background-color: var(--gb-accent-soft) !important;
+  color: var(--gb-accent) !important;
+}
+
+.gallery-editor-toolbar button[aria-label='Add images'],
+.gallery-editor-toolbar button[title='Add images'] {
+  color: var(--gb-accent) !important;
+}
+
+.gallery-editor-toolbar button[aria-label='Add images']:hover,
+.gallery-editor-toolbar button[title='Add images']:hover {
+  background: var(--gb-accent-soft) !important;
+  background-color: var(--gb-accent-soft) !important;
+  color: var(--gb-accent) !important;
 }
 
 .gallery-editor-content .ProseMirror,
