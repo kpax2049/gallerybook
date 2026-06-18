@@ -729,246 +729,258 @@ export function GalleryEditor({
           <RichTextProvider editor={editor}>
             {toolbar}
             <main className="gb-editor-story-shell">
-              <div className="gb-editor-title-block">
-                <p className="gb-hand text-[24px] font-semibold text-[var(--gb-hand)]">
-                  {isEdit ? 'editing story' : 'new story'} · draft
-                </p>
-                <input
-                  value={titleDraft}
-                  onChange={(event) => setTitleDraft(event.target.value)}
-                  placeholder="Untitled story"
-                  className="gb-editor-title-input"
-                  aria-label="Gallery title"
-                />
-                <textarea
-                  value={descriptionDraft}
-                  onChange={(event) => setDescriptionDraft(event.target.value)}
-                  placeholder="Add a short story summary..."
-                  className="gb-editor-description-input"
-                  aria-label="Gallery description"
-                  rows={2}
+              <div className="gb-editor-paper">
+                <div className="gb-editor-title-block">
+                  <p className="gb-hand text-[24px] font-semibold text-[var(--gb-hand)]">
+                    {isEdit ? 'editing story' : 'new story'} · draft
+                  </p>
+                  <input
+                    value={titleDraft}
+                    onChange={(event) => setTitleDraft(event.target.value)}
+                    placeholder="Untitled story"
+                    className="gb-editor-title-input"
+                    aria-label="Gallery title"
+                  />
+                  <textarea
+                    value={descriptionDraft}
+                    onChange={(event) =>
+                      setDescriptionDraft(event.target.value)
+                    }
+                    placeholder="Add a short story summary..."
+                    className="gb-editor-description-input"
+                    aria-label="Gallery description"
+                    rows={2}
+                  />
+                </div>
+
+                {editor && selectionBubble && (
+                  <div
+                    className="gb-bubble-menu"
+                    style={{
+                      position: 'fixed',
+                      top: selectionBubble.top,
+                      left: selectionBubble.left,
+                      transform: 'translateX(-50%)',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className={cn(editor.isActive('bold') && 'is-active')}
+                      onClick={() => editor.chain().focus().toggleBold().run()}
+                    >
+                      B
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(editor.isActive('italic') && 'is-active')}
+                      onClick={() =>
+                        editor.chain().focus().toggleItalic().run()
+                      }
+                    >
+                      I
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(
+                        editor.isActive('underline') && 'is-active'
+                      )}
+                      onClick={() =>
+                        editor.chain().focus().toggleUnderline().run()
+                      }
+                    >
+                      U
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(editor.isActive('link') && 'is-active')}
+                      onClick={() => {
+                        const previous = editor.getAttributes('link').href;
+                        const href = window.prompt('Link URL', previous || '');
+                        if (href === null) return;
+                        if (href === '') {
+                          editor.chain().focus().unsetLink().run();
+                          return;
+                        }
+                        editor.chain().focus().setLink({ href }).run();
+                      }}
+                    >
+                      Link
+                    </button>
+                  </div>
+                )}
+
+                {editor && slashMenu && (
+                  <div
+                    className="gb-slash-menu"
+                    style={{
+                      position: 'fixed',
+                      top: slashMenu.top,
+                      left: slashMenu.left,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        editor.chain().focus().setParagraph().run();
+                        setSlashMenu(null);
+                      }}
+                    >
+                      <span>Text</span>
+                      <small>Plain story paragraph</small>
+                    </button>
+                    <button
+                      type="button"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        editor
+                          .chain()
+                          .focus()
+                          .toggleHeading({ level: 2 })
+                          .run();
+                        setSlashMenu(null);
+                      }}
+                    >
+                      <span>Heading</span>
+                      <small>Section title</small>
+                    </button>
+                    <button
+                      type="button"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        editor.chain().focus().setHorizontalRule().run();
+                        setSlashMenu(null);
+                      }}
+                    >
+                      <span>Divider</span>
+                      <small>Story break</small>
+                    </button>
+                    <button
+                      type="button"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        setImageUploadOpen(true);
+                        setSlashMenu(null);
+                      }}
+                    >
+                      <span>Image</span>
+                      <small>Upload a framed photo</small>
+                    </button>
+                  </div>
+                )}
+
+                {editor && imageBubble && (
+                  <div
+                    className="gb-image-node-toolbar"
+                    style={{
+                      position: 'fixed',
+                      top: imageBubble.top,
+                      left: imageBubble.left,
+                      transform: 'translateX(-50%)',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      aria-label="Align image left"
+                      className={cn(
+                        editor.isActive('image', { align: 'left' }) &&
+                          'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        updateSelectedImage({
+                          align: 'left',
+                          inline: true,
+                          size: 'measure',
+                        });
+                      }}
+                    >
+                      <AlignLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Align image center"
+                      className={cn(
+                        editor.isActive('image', { align: 'center' }) &&
+                          'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        updateSelectedImage({
+                          align: 'center',
+                          inline: false,
+                          size: 'measure',
+                        });
+                      }}
+                    >
+                      <AlignCenter className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Align image right"
+                      className={cn(
+                        editor.isActive('image', { align: 'right' }) &&
+                          'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        updateSelectedImage({
+                          align: 'right',
+                          inline: true,
+                          size: 'measure',
+                        });
+                      }}
+                    >
+                      <AlignRight className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Make image wide"
+                      className={cn(
+                        editor.isActive('image', { size: 'wide' }) &&
+                          'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        updateSelectedImage({
+                          align: 'center',
+                          inline: false,
+                          size: 'wide',
+                        });
+                      }}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Toggle caption"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        toggleSelectedImageCaption();
+                      }}
+                    >
+                      <MessageSquareText className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Delete image"
+                      className="is-danger"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        deleteSelectedImage();
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
+                <EditorContent
+                  className="gallery-editor-content gb-story-editor-content"
+                  editor={editor}
+                  style={editorSurfaceStyle}
                 />
               </div>
-
-              {editor && selectionBubble && (
-                <div
-                  className="gb-bubble-menu"
-                  style={{
-                    position: 'fixed',
-                    top: selectionBubble.top,
-                    left: selectionBubble.left,
-                    transform: 'translateX(-50%)',
-                  }}
-                >
-                  <button
-                    type="button"
-                    className={cn(editor.isActive('bold') && 'is-active')}
-                    onClick={() => editor.chain().focus().toggleBold().run()}
-                  >
-                    B
-                  </button>
-                  <button
-                    type="button"
-                    className={cn(editor.isActive('italic') && 'is-active')}
-                    onClick={() => editor.chain().focus().toggleItalic().run()}
-                  >
-                    I
-                  </button>
-                  <button
-                    type="button"
-                    className={cn(editor.isActive('underline') && 'is-active')}
-                    onClick={() =>
-                      editor.chain().focus().toggleUnderline().run()
-                    }
-                  >
-                    U
-                  </button>
-                  <button
-                    type="button"
-                    className={cn(editor.isActive('link') && 'is-active')}
-                    onClick={() => {
-                      const previous = editor.getAttributes('link').href;
-                      const href = window.prompt('Link URL', previous || '');
-                      if (href === null) return;
-                      if (href === '') {
-                        editor.chain().focus().unsetLink().run();
-                        return;
-                      }
-                      editor.chain().focus().setLink({ href }).run();
-                    }}
-                  >
-                    Link
-                  </button>
-                </div>
-              )}
-
-              {editor && slashMenu && (
-                <div
-                  className="gb-slash-menu"
-                  style={{
-                    position: 'fixed',
-                    top: slashMenu.top,
-                    left: slashMenu.left,
-                  }}
-                >
-                  <button
-                    type="button"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      editor.chain().focus().setParagraph().run();
-                      setSlashMenu(null);
-                    }}
-                  >
-                    <span>Text</span>
-                    <small>Plain story paragraph</small>
-                  </button>
-                  <button
-                    type="button"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      editor.chain().focus().toggleHeading({ level: 2 }).run();
-                      setSlashMenu(null);
-                    }}
-                  >
-                    <span>Heading</span>
-                    <small>Section title</small>
-                  </button>
-                  <button
-                    type="button"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      editor.chain().focus().setHorizontalRule().run();
-                      setSlashMenu(null);
-                    }}
-                  >
-                    <span>Divider</span>
-                    <small>Story break</small>
-                  </button>
-                  <button
-                    type="button"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      setImageUploadOpen(true);
-                      setSlashMenu(null);
-                    }}
-                  >
-                    <span>Image</span>
-                    <small>Upload a framed photo</small>
-                  </button>
-                </div>
-              )}
-
-              {editor && imageBubble && (
-                <div
-                  className="gb-image-node-toolbar"
-                  style={{
-                    position: 'fixed',
-                    top: imageBubble.top,
-                    left: imageBubble.left,
-                    transform: 'translateX(-50%)',
-                  }}
-                >
-                  <button
-                    type="button"
-                    aria-label="Align image left"
-                    className={cn(
-                      editor.isActive('image', { align: 'left' }) &&
-                        'is-active'
-                    )}
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      updateSelectedImage({
-                        align: 'left',
-                        inline: true,
-                        size: 'measure',
-                      });
-                    }}
-                  >
-                    <AlignLeft className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Align image center"
-                    className={cn(
-                      editor.isActive('image', { align: 'center' }) &&
-                        'is-active'
-                    )}
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      updateSelectedImage({
-                        align: 'center',
-                        inline: false,
-                        size: 'measure',
-                      });
-                    }}
-                  >
-                    <AlignCenter className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Align image right"
-                    className={cn(
-                      editor.isActive('image', { align: 'right' }) &&
-                        'is-active'
-                    )}
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      updateSelectedImage({
-                        align: 'right',
-                        inline: true,
-                        size: 'measure',
-                      });
-                    }}
-                  >
-                    <AlignRight className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Make image wide"
-                    className={cn(
-                      editor.isActive('image', { size: 'wide' }) &&
-                        'is-active'
-                    )}
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      updateSelectedImage({
-                        align: 'center',
-                        inline: false,
-                        size: 'wide',
-                      });
-                    }}
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Toggle caption"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      toggleSelectedImageCaption();
-                    }}
-                  >
-                    <MessageSquareText className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Delete image"
-                    className="is-danger"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      deleteSelectedImage();
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
-
-              <EditorContent
-                className="gallery-editor-content gb-story-editor-content"
-                editor={editor}
-                style={editorSurfaceStyle}
-              />
             </main>
             <ImageUploadDialog
               open={imageUploadOpen}

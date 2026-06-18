@@ -10,9 +10,19 @@
   border-radius: 0;
 }
 
+.gallery-editor-shell {
+  --gb-editor-desk-gap: 48px;
+  --gb-editor-toolbar-height: 59px;
+
+  display: flex;
+  min-height: 100svh;
+  flex-direction: column;
+}
+
 .gallery-editor-toolbar {
   position: sticky;
   top: 0;
+  flex: 0 0 auto;
   z-index: 35;
   border-color: var(--gb-border) !important;
   background: var(--gb-bar) !important;
@@ -103,13 +113,40 @@
 .gb-editor-story-shell {
   width: min(1080px, calc(100vw - 32px));
   margin: 0 auto;
-  padding: 42px 0 80px;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding: var(--gb-editor-desk-gap) 0;
+}
+
+.gb-editor-paper {
+  display: flex;
+  width: 100%;
+  min-height: calc(
+    100svh - var(--gb-editor-toolbar-height) -
+    (var(--gb-editor-desk-gap) * 2)
+  );
+  max-width: 884px;
+  margin: 0 auto;
+  flex: 1 1 auto;
+  flex-direction: column;
+  border: 1px solid var(--gb-border);
+  border-radius: 16px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 240, 214, .05),
+    rgba(255, 240, 214, .014)
+  );
+  box-shadow:
+    0 34px 80px -36px rgba(0, 0, 0, .72),
+    inset 0 1px 0 rgba(255, 240, 210, .06);
 }
 
 .gb-editor-title-block {
   max-width: 720px;
   margin: 0 auto 28px;
-  text-align: center;
+  padding: 56px 30px 0 46px;
+  text-align: left;
 }
 
 .gb-editor-title-input {
@@ -129,7 +166,7 @@
   line-height: 1.07 !important;
   padding: 0 !important;
   resize: none !important;
-  text-align: center;
+  text-align: left;
   outline: none !important;
 }
 
@@ -177,7 +214,7 @@
   color: var(--gb-ink-soft);
   font: 18.5px/1.78 Newsreader, Georgia, serif;
   padding: 0 !important;
-  text-align: center;
+  text-align: left;
   outline: none !important;
 }
 
@@ -251,12 +288,24 @@
 }
 
 .gb-story-editor-content {
+  display: flex;
+  width: 100%;
   max-width: 720px;
   margin: 0 auto;
+  flex: 1 1 auto;
+  flex-direction: column;
   border: 0 !important;
   border-radius: 0;
   background: transparent !important;
+  box-shadow: none;
   padding: 0;
+}
+
+.gb-story-editor-content .ProseMirror {
+  flex: 1 1 auto;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 0 30px 92px 46px;
 }
 
 .gb-story-editor-content .ProseMirror p {
@@ -538,4 +587,22 @@
 .gb-slash-menu small {
   color: var(--gb-ink-mute);
   font-size: 11.5px;
+}
+
+@media (max-width: 640px) {
+  .gb-editor-title-block,
+  .gb-story-editor-content .ProseMirror {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .gb-editor-title-block {
+    padding-top: 40px;
+    padding-bottom: 0;
+  }
+
+  .gb-story-editor-content .ProseMirror {
+    padding-top: 0;
+    padding-bottom: 72px;
+  }
 }
