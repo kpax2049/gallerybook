@@ -281,8 +281,7 @@ function GalleriesListPage() {
   };
 
   const openNewGallery = () => {
-    setEditingGallery(null);
-    setEditorOpen(true);
+    navigate('/galleries/new');
   };
 
   const openEditGallery = (gallery: Gallery) => {
