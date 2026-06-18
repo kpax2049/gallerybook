@@ -4,6 +4,8 @@ interface ImportMetaEnv {
   readonly VITE_TURNSTILE_SITE_KEY?: string;
 }
 
+declare const __APP_VERSION__: string;
+
 interface Window {
   turnstile?: {
     render: (

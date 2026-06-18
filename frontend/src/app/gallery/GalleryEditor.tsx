@@ -15,11 +15,11 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FormDataProps, GallerySaveDialog } from './galleryDialog/SaveDialog';
-import 'react-image-crop/dist/ReactCrop.css';
 import 'reactjs-tiptap-editor/style.css';
 import './GalleryEditor.css';
 import { RichTextProvider } from 'reactjs-tiptap-editor';
@@ -43,7 +43,6 @@ import {
   HorizontalRule,
   RichTextHorizontalRule,
 } from 'reactjs-tiptap-editor/horizontalrule';
-import { Image } from 'reactjs-tiptap-editor/image';
 import { Indent, RichTextIndent } from 'reactjs-tiptap-editor/indent';
 import { Italic, RichTextItalic } from 'reactjs-tiptap-editor/italic';
 import {
@@ -61,8 +60,11 @@ import { EditorContent, AnyExtension, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
+import { DragHandle as Drag } from '@tiptap/extension-drag-handle';
+import { NodeSelection } from '@tiptap/pm/state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fileToBase64 } from '@/lib/fileUtils';
+import { cn } from '@/lib/utils';
 import {
   extractBase64ImagesFromJson,
   extractImageKeysFromJSON,
@@ -79,6 +81,21 @@ import {
   ImageUploadButton,
   ImageUploadDialog,
 } from '@/components/file-upload-06';
+import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  Check,
+  Maximize2,
+  MessageSquareText,
+  Trash2,
+} from 'lucide-react';
+import {
+  readImageDimensions,
+  StoryImage,
+  StoryLink,
+  StoryParagraph,
+} from './galleryStoryExtensions';
 
 export type DialogData = {
   html: string;
@@ -95,9 +112,9 @@ type GalleryEditorProps = {
 };
 
 const editorSurfaceStyle: CSSProperties = {
-  backgroundColor: 'hsl(var(--card))',
-  borderColor: 'hsl(var(--border))',
-  color: 'hsl(var(--card-foreground))',
+  backgroundColor: 'var(--gb-panel)',
+  borderColor: 'var(--gb-border)',
+  color: 'var(--gb-ink)',
 };
 
 export function GalleryEditor({
@@ -123,10 +140,26 @@ export function GalleryEditor({
   const [dialogData, setDialogData] = useState<DialogData | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [imageUploadOpen, setImageUploadOpen] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [descriptionDraft, setDescriptionDraft] = useState('');
+  const [selectionBubble, setSelectionBubble] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [imageBubble, setImageBubble] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [slashMenu, setSlashMenu] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const editorRef = useRef<any>(null);
 
   const extensions = useMemo<AnyExtension[]>(
     () => [
       StarterKit.configure({
+        paragraph: false,
         bold: false,
         italic: false,
         underline: false,
@@ -135,10 +168,17 @@ export function GalleryEditor({
         orderedList: false,
         heading: false,
         horizontalRule: false,
+        link: false,
       }),
+      StoryParagraph,
+      StoryImage,
+      StoryLink,
       TextStyle,
       Placeholder.configure({
-        placeholder: 'Share your gallery story...',
+        placeholder: ({ node }) =>
+          node.type.name === 'paragraph'
+            ? 'Type / for a block, or drag a photo here'
+            : 'Share your gallery story...',
       }),
       Bold,
       Italic,
@@ -161,9 +201,12 @@ export function GalleryEditor({
       Heading.configure({
         levels: [1, 2, 3, 4, 5, 6],
       }),
-      Image.configure({
-        resourceImage: 'upload',
-        upload: async (file: File) => fileToBase64(file),
+      Drag.configure({
+        render() {
+          const element = document.createElement('div');
+          element.className = 'drag-handle';
+          return element;
+        },
       }),
     ],
     []
@@ -176,12 +219,83 @@ export function GalleryEditor({
       attributes: {
         class: 'gallery-editor-prosemirror',
       },
+      handlePaste: (_view, event) => {
+        const files = Array.from(event.clipboardData?.files ?? []).filter(
+          (file) => file.type.startsWith('image/')
+        );
+        if (!files.length) return false;
+        event.preventDefault();
+        void handleInsertImages(files);
+        return true;
+      },
+      handleDrop: (_view, event) => {
+        const files = Array.from(event.dataTransfer?.files ?? []).filter(
+          (file) => file.type.startsWith('image/')
+        );
+        if (!files.length) return false;
+        event.preventDefault();
+        void handleInsertImages(files);
+        return true;
+      },
+      handleKeyDown: (view, event) => {
+        if (event.key === 'Escape') {
+          setSlashMenu(null);
+          return false;
+        }
+
+        if (event.key !== '/') return false;
+
+        const { selection } = view.state;
+        const parent = selection.$from.parent;
+        if (parent.type.name !== 'paragraph' || parent.textContent.length > 0) {
+          return false;
+        }
+
+        const coords = view.coordsAtPos(selection.from);
+        setSlashMenu({ top: coords.bottom + 8, left: coords.left });
+        event.preventDefault();
+        return true;
+      },
     },
     onUpdate: ({ editor }) => {
       const json = editor.getJSON();
       setValue(json);
     },
+    onSelectionUpdate: ({ editor }) => {
+      setSlashMenu(null);
+      const { selection } = editor.state;
+      if (
+        selection instanceof NodeSelection &&
+        selection.node.type.name === 'image'
+      ) {
+        setSelectionBubble(null);
+        const nodeDom = editor.view.nodeDOM(selection.from);
+        if (nodeDom instanceof HTMLElement) {
+          const rect = nodeDom.getBoundingClientRect();
+          setImageBubble({
+            top: rect.top - 50,
+            left: rect.left + rect.width / 2,
+          });
+        }
+        return;
+      }
+      setImageBubble(null);
+      if (selection.empty || editor.isActive('image')) {
+        setSelectionBubble(null);
+        return;
+      }
+      const from = editor.view.coordsAtPos(selection.from);
+      const to = editor.view.coordsAtPos(selection.to);
+      setSelectionBubble({
+        top: Math.min(from.top, to.top) - 48,
+        left: (from.left + to.right) / 2,
+      });
+    },
   });
+
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
 
   useEffect(() => {
     const getResolvedTheme = () => {
@@ -214,6 +328,8 @@ export function GalleryEditor({
     getGallery(resolvedGalleryId, 'edit')
       .then((data) => {
         setGallery(data);
+        setTitleDraft(data.title ?? '');
+        setDescriptionDraft(data.description ?? '');
         if (data?.content) {
           setOriginalValue(data.content);
           const normalizedContent = normalizeAttrs(data.content);
@@ -418,18 +534,23 @@ export function GalleryEditor({
   }, [gallery?.slug, isEdit, navigate, resolvedGalleryId, submitting]);
 
   const initialFormData = useMemo(() => {
-    if (!isEdit || !gallery) return {};
+    if (!isEdit || !gallery) {
+      return {
+        title: titleDraft,
+        description: descriptionDraft,
+      };
+    }
     const images = Array.from(
       extractImageKeysFromJSON(value || gallery.content || {})
     );
     const thumbIdx = gallery.thumbnail ? images.indexOf(gallery.thumbnail) : 0;
     return {
-      title: gallery.title ?? '',
-      description: gallery.description ?? '',
+      title: titleDraft || gallery.title || '',
+      description: descriptionDraft || gallery.description || '',
       tags: (gallery as any)?.tags ?? [],
       thumbnailIndex: thumbIdx >= 0 ? thumbIdx : 0,
     };
-  }, [isEdit, gallery, value]);
+  }, [descriptionDraft, isEdit, gallery, titleDraft, value]);
 
   const handleOpenChange = (v: boolean) => {
     if (submitting) return;
@@ -443,19 +564,75 @@ export function GalleryEditor({
 
   const handleInsertImages = useCallback(
     async (files: File[]) => {
-      if (!editor) return;
+      const activeEditor = editorRef.current;
+      if (!activeEditor) return;
 
       for (const file of files) {
         const src = await fileToBase64(file);
-        editor
+        const dimensions = await readImageDimensions(src);
+        activeEditor
           .chain()
           .focus()
-          .setImage({ src, alt: file.name, title: file.name })
+          .insertContent({
+            type: 'image',
+            attrs: {
+              src,
+              alt: file.name,
+              title: file.name,
+              align: 'center',
+              size: 'measure',
+              width: dimensions.width ?? undefined,
+              height: null,
+            },
+          })
           .run();
       }
     },
-    [editor]
+    []
   );
+
+  const updateSelectedImage = useCallback((attrs: Record<string, unknown>) => {
+    const activeEditor = editorRef.current;
+    if (!activeEditor) return;
+    activeEditor.chain().focus().updateImage(attrs).run();
+  }, []);
+
+  const toggleSelectedImageCaption = useCallback(() => {
+    const activeEditor = editorRef.current;
+    if (!activeEditor) return;
+    const { selection } = activeEditor.state;
+    if (!(selection instanceof NodeSelection)) return;
+    const selectedNode = selection.node;
+    if (selectedNode.type.name !== 'image') return;
+
+    const nextPos = selection.from + selectedNode.nodeSize;
+    const nextNode = activeEditor.state.doc.nodeAt(nextPos);
+    if (nextNode?.type.name === 'paragraph' && nextNode.attrs.caption) {
+      activeEditor
+        .chain()
+        .focus()
+        .deleteRange({ from: nextPos, to: nextPos + nextNode.nodeSize })
+        .run();
+      return;
+    }
+
+    activeEditor
+      .chain()
+      .focus()
+      .insertContentAt(nextPos, {
+        type: 'paragraph',
+        attrs: { caption: true },
+      })
+      .setTextSelection(nextPos + 1)
+      .run();
+  }, []);
+
+  const deleteSelectedImage = useCallback(() => {
+    const activeEditor = editorRef.current;
+    if (!activeEditor) return;
+    activeEditor.chain().focus().deleteSelection().run();
+    setImageBubble(null);
+  }, []);
 
   const EditorSkeleton = () => {
     return (
@@ -474,9 +651,12 @@ export function GalleryEditor({
     if (!editorReady) return null;
     return (
       <div
-        className="gallery-editor-toolbar mb-4 richtext-flex richtext-flex-wrap richtext-items-center richtext-gap-2 richtext-rounded-md richtext-border richtext-bg-popover richtext-p-2"
+        className="gallery-editor-toolbar richtext-flex richtext-items-center richtext-gap-2 richtext-overflow-x-auto richtext-rounded-none richtext-border-0 richtext-border-b richtext-p-3"
         style={editorSurfaceStyle}
       >
+        <span className="gb-serif mr-1 whitespace-nowrap text-base text-[var(--gb-ink)]">
+          Gallery Book
+        </span>
         <RichTextHeading />
         <RichTextBold />
         <RichTextItalic />
@@ -499,12 +679,19 @@ export function GalleryEditor({
         />
         <RichTextEmoji />
         <span className="richtext-flex-1" />
+        <span className="gb-tb-sep" aria-hidden="true" />
+        <div className="gb-toolbar-actions">
+          <span className="gb-save-state">
+            <Check className="h-3.5 w-3.5" />
+            Saved
+          </span>
         <Button
           type="button"
           size="sm"
           variant="outline"
           onClick={handleCancelClick}
           disabled={submitting}
+          className="gb-btn-cancel"
         >
           Cancel
         </Button>
@@ -514,9 +701,11 @@ export function GalleryEditor({
           variant="default"
           onClick={isEdit ? handleEditSaveClick : handleSaveClick}
           disabled={submitting}
+          className="gb-btn-save"
         >
-          Save
+          Save story
         </Button>
+        </div>
       </div>
     );
   }, [
@@ -534,26 +723,291 @@ export function GalleryEditor({
     (!isEdit || (isEdit && !loading && resolvedGalleryId !== undefined));
 
   return (
-    <div className="container mx-auto p-5 flex justify-center">
-      <div className="h-full w-full">
+    <div className="gb-page min-h-svh">
+      <div className="gallery-editor-shell">
         {showEditor ? (
-          <div className="gallery-editor-shell">
-            <RichTextProvider editor={editor}>
-              {toolbar}
-              <EditorContent
-                className="gallery-editor-content min-h-[380px] rounded-lg border bg-card text-card-foreground p-4 prose max-w-none focus:outline-none"
-                editor={editor}
-                style={editorSurfaceStyle}
-              />
-              <ImageUploadDialog
-                open={imageUploadOpen}
-                onOpenChange={setImageUploadOpen}
-                onInsert={handleInsertImages}
-              />
-            </RichTextProvider>
-          </div>
+          <RichTextProvider editor={editor}>
+            {toolbar}
+            <main className="gb-editor-story-shell">
+              <div className="gb-editor-paper">
+                <div className="gb-editor-title-block">
+                  <p className="gb-hand text-[24px] font-semibold text-[var(--gb-hand)]">
+                    {isEdit ? 'editing story' : 'new story'} · draft
+                  </p>
+                  <input
+                    value={titleDraft}
+                    onChange={(event) => setTitleDraft(event.target.value)}
+                    placeholder="Untitled story"
+                    className="gb-editor-title-input"
+                    aria-label="Gallery title"
+                  />
+                  <textarea
+                    value={descriptionDraft}
+                    onChange={(event) =>
+                      setDescriptionDraft(event.target.value)
+                    }
+                    placeholder="Add a short story summary..."
+                    className="gb-editor-description-input"
+                    aria-label="Gallery description"
+                    rows={2}
+                  />
+                </div>
+
+                {editor && selectionBubble && (
+                  <div
+                    className="gb-bubble-menu"
+                    style={{
+                      position: 'fixed',
+                      top: selectionBubble.top,
+                      left: selectionBubble.left,
+                      transform: 'translateX(-50%)',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className={cn(
+                        'gb-bubble-item',
+                        editor.isActive('bold') && 'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        editor.chain().focus().toggleBold().run();
+                      }}
+                    >
+                      B
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(
+                        'gb-bubble-item',
+                        editor.isActive('italic') && 'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        editor.chain().focus().toggleItalic().run();
+                      }}
+                    >
+                      I
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(
+                        'gb-bubble-item',
+                        editor.isActive('underline') && 'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        editor.chain().focus().toggleUnderline().run();
+                      }}
+                    >
+                      U
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(
+                        'gb-bubble-item gb-bubble-link',
+                        editor.isActive('link') && 'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        const previous = editor.getAttributes('link').href;
+                        const href = window.prompt('Link URL', previous || '');
+                        if (href === null) return;
+                        if (href === '') {
+                          editor.chain().focus().unsetLink().run();
+                          return;
+                        }
+                        editor.chain().focus().setLink({ href }).run();
+                      }}
+                    >
+                      Link
+                    </button>
+                  </div>
+                )}
+
+                {editor && slashMenu && (
+                  <div
+                    className="gb-slash-menu"
+                    style={{
+                      position: 'fixed',
+                      top: slashMenu.top,
+                      left: slashMenu.left,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        editor.chain().focus().setParagraph().run();
+                        setSlashMenu(null);
+                      }}
+                    >
+                      <span>Text</span>
+                      <small>Plain story paragraph</small>
+                    </button>
+                    <button
+                      type="button"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        editor
+                          .chain()
+                          .focus()
+                          .toggleHeading({ level: 2 })
+                          .run();
+                        setSlashMenu(null);
+                      }}
+                    >
+                      <span>Heading</span>
+                      <small>Section title</small>
+                    </button>
+                    <button
+                      type="button"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        editor.chain().focus().setHorizontalRule().run();
+                        setSlashMenu(null);
+                      }}
+                    >
+                      <span>Divider</span>
+                      <small>Story break</small>
+                    </button>
+                    <button
+                      type="button"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        setImageUploadOpen(true);
+                        setSlashMenu(null);
+                      }}
+                    >
+                      <span>Image</span>
+                      <small>Upload a framed photo</small>
+                    </button>
+                  </div>
+                )}
+
+                {editor && imageBubble && (
+                  <div
+                    className="gb-image-node-toolbar"
+                    style={{
+                      position: 'fixed',
+                      top: imageBubble.top,
+                      left: imageBubble.left,
+                      transform: 'translateX(-50%)',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      aria-label="Align image left"
+                      className={cn(
+                        editor.isActive('image', { align: 'left' }) &&
+                          'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        updateSelectedImage({
+                          align: 'left',
+                          inline: true,
+                          size: 'measure',
+                        });
+                      }}
+                    >
+                      <AlignLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Align image center"
+                      className={cn(
+                        editor.isActive('image', { align: 'center' }) &&
+                          'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        updateSelectedImage({
+                          align: 'center',
+                          inline: false,
+                          size: 'measure',
+                        });
+                      }}
+                    >
+                      <AlignCenter className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Align image right"
+                      className={cn(
+                        editor.isActive('image', { align: 'right' }) &&
+                          'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        updateSelectedImage({
+                          align: 'right',
+                          inline: true,
+                          size: 'measure',
+                        });
+                      }}
+                    >
+                      <AlignRight className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Make image wide"
+                      className={cn(
+                        editor.isActive('image', { size: 'wide' }) &&
+                          'is-active'
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        updateSelectedImage({
+                          align: 'center',
+                          inline: false,
+                          size: 'wide',
+                        });
+                      }}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Toggle caption"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        toggleSelectedImageCaption();
+                      }}
+                    >
+                      <MessageSquareText className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Delete image"
+                      className="is-danger"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        deleteSelectedImage();
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
+                <EditorContent
+                  className="gallery-editor-content gb-story-editor-content"
+                  editor={editor}
+                  style={editorSurfaceStyle}
+                />
+              </div>
+            </main>
+            <ImageUploadDialog
+              open={imageUploadOpen}
+              onOpenChange={setImageUploadOpen}
+              onInsert={handleInsertImages}
+            />
+          </RichTextProvider>
         ) : (
-          <EditorSkeleton />
+          <div className="gb-editor-story-shell">
+            <EditorSkeleton />
+          </div>
         )}
       </div>
       {((isEdit && value) || (!isEdit && dialogData)) && (

@@ -1,16 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  deleteGallery,
-  Gallery,
-  getGallery,
-  getGalleryBySlug,
-} from '@/api/gallery';
+  Heart,
+  ImagePlus,
+  Loader2,
+  MessageSquare,
+  Pencil,
+  Share2,
+  Star,
+  Trash2,
+} from 'lucide-react';
 import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
 import { TextStyle } from '@tiptap/extension-text-style';
-import Comment from './galleryComment/Comment';
-import { useInView } from 'react-intersection-observer';
 import { generateHTML } from '@tiptap/html';
 import { mergeAttributes, Node } from '@tiptap/core';
 import { Bold } from 'reactjs-tiptap-editor/bold';
@@ -31,23 +32,47 @@ import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 import Thumbnails from 'yet-another-react-lightbox/plugins/thumbnails';
 import 'yet-another-react-lightbox/styles.css';
 import 'yet-another-react-lightbox/plugins/thumbnails.css';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Loader2, Pencil, Trash2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  deleteGallery,
+  Gallery,
+  getGallery,
+  getGalleryBySlug,
+  toggleReaction,
+} from '@/api/gallery';
+import Comment from './galleryComment/Comment';
+import { cn } from '@/lib/utils';
 import { useUserStore } from '@/stores/userStore';
 import { isAdmin } from '@/lib/authz';
+import { DeskHeader } from './GalleriesPage';
+import {
+  hasStoryProse,
+  StoryImage,
+  StoryLink,
+  StoryParagraph,
+} from './galleryStoryExtensions';
 
 export interface GalleryBlock {
   type: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
-export interface GalleryData {
-  type: string;
-  content: GalleryBlock[];
-}
 
-const chunkSize = 2;
+type GalleryPhoto = {
+  src: string;
+  alt?: string;
+  title: string;
+  meta: string;
+};
 
 const GalleryEmoji = Node.create({
   name: 'emoji',
@@ -77,14 +102,18 @@ const GalleryEmoji = Node.create({
 });
 
 const galleryRenderExtensions = [
-  Image,
   StarterKit.configure({
+    paragraph: false,
     bold: false,
     italic: false,
     strike: false,
     bulletList: false,
     underline: false,
+    link: false,
   }),
+  StoryParagraph,
+  StoryImage,
+  StoryLink,
   TextStyle,
   FontFamily,
   FontSize,
@@ -103,31 +132,28 @@ const galleryRenderExtensions = [
 ];
 
 export default function GalleryPage() {
-  const [loading, setLoading] = useState<boolean>(false);
-  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
   const currentUser = useUserStore((state) => state.user);
-  const { slug, galleryId } = useParams<{
-    slug?: string;
-    galleryId?: string;
-  }>();
-
-  const [title, setTitle] = useState<string>('');
-  const [numericId, setNumericId] = useState<number | null>(null);
+  const { slug, galleryId } = useParams<{ slug?: string; galleryId?: string }>();
+  const storyRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [gallery, setGallery] = useState<Gallery | null>(null);
-
+  const [numericId, setNumericId] = useState<number | null>(null);
   const [rawBlocks, setRawBlocks] = useState<GalleryBlock[]>([]);
-  const [htmlChunks, setHtmlChunks] = useState<string[]>([]);
-  const [chunkIndex, setChunkIndex] = useState(0);
-  const [isLoadingChunk, setIsLoadingChunk] = useState(false);
-  const { ref, inView } = useInView();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [storyHtml, setStoryHtml] = useState('');
   const [open, setOpen] = useState(false);
   const [lbIndex, setLbIndex] = useState(0);
-  const [slides, setSlides] = useState<{ src: string; alt?: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [liked, setLiked] = useState(false);
+  const [favorited, setFavorited] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [favoritesCount, setFavoritesCount] = useState(0);
+  const [busyReaction, setBusyReaction] = useState<'LIKE' | 'FAVORITE' | null>(
+    null
+  );
 
-  // Load gallery by slug or id
   useEffect(() => {
     const param = slug ?? galleryId ?? '';
     if (!param) return;
@@ -137,235 +163,452 @@ export default function GalleryPage() {
       try {
         setLoading(true);
         setError(null);
-        // reset chunked rendering state for a fresh load
-        setRawBlocks([]);
-        setHtmlChunks([]);
-        setChunkIndex(0);
-        setSlides([]);
         setGallery(null);
+        setRawBlocks([]);
+        setStoryHtml('');
 
         const isNumeric = /^\d+$/.test(param);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data: any = isNumeric
+        const data = isNumeric
           ? await getGallery(Number(param))
           : await getGalleryBySlug(param);
 
         if (cancelled) return;
 
         setGallery(data);
-        setTitle(data?.title ?? 'Gallery');
         setNumericId(Number(data?.id) || null);
+        setLikesCount(data.likesCount ?? 0);
+        setFavoritesCount(data.favoritesCount ?? 0);
 
-        const blocks: GalleryBlock[] = data?.content?.content || [];
+        const blocks: GalleryBlock[] = Array.isArray(data?.content?.content)
+          ? data.content.content
+          : [];
         setRawBlocks(blocks);
-
-        // initial chunk
-        const firstChunk = blocks.slice(0, chunkSize);
-        const html = generateHTML(
-          { type: 'doc', content: firstChunk },
-          galleryRenderExtensions
+        setStoryHtml(
+          generateHTML({ type: 'doc', content: blocks }, galleryRenderExtensions)
         );
-        setHtmlChunks([html]);
-        setChunkIndex(1);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (e: any) {
-        setError(e?.message ?? 'Failed to load gallery');
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : 'Failed to load gallery';
+        setError(message);
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
-    load();
+    void load();
     return () => {
       cancelled = true;
     };
   }, [slug, galleryId]);
 
-  // Load next chunk when sentinel comes into view
+  const photos = useMemo(() => extractPhotos(rawBlocks), [rawBlocks]);
+  const storyHasProse = useMemo(() => hasStoryProse(rawBlocks), [rawBlocks]);
+  const slides = useMemo(
+    () => photos.map((photo) => ({ src: photo.src, alt: photo.alt })),
+    [photos]
+  );
+  const title = gallery?.title ?? 'Gallery';
+  const photoCount = photos.length;
+  const canManage = isAdmin(currentUser) && numericId != null;
+  const renderMasonry = !storyHasProse && photos.length > 0;
+
   useEffect(() => {
-    if (!inView || isLoadingChunk) return;
-    if (chunkIndex * chunkSize >= rawBlocks.length) return;
-
-    let cancelled = false;
-
-    const loadNextChunk = async () => {
-      setIsLoadingChunk(true);
-
-      const start = chunkIndex * chunkSize;
-      const end = start + chunkSize;
-      const nextChunk = rawBlocks.slice(start, end);
-
-      const html = generateHTML(
-        { type: 'doc', content: nextChunk },
-        galleryRenderExtensions
-      );
-
-      if (!cancelled) {
-        setHtmlChunks((prev) => [...prev, html]);
-        setChunkIndex((prev) => prev + 1);
-      }
-
-      setTimeout(() => !cancelled && setIsLoadingChunk(false), 200);
-    };
-
-    void loadNextChunk();
-    return () => {
-      cancelled = true;
-    };
-  }, [inView, isLoadingChunk, chunkIndex, rawBlocks]);
-
-  // Build slides whenever chunks change
-  useEffect(() => {
-    const root = containerRef.current;
+    const root = storyRef.current;
     if (!root) return;
 
-    const imgs = Array.from(root.querySelectorAll<HTMLImageElement>('img'));
-    const s = imgs.map((img) => ({
-      src: img.getAttribute('data-full') || img.src,
-      alt: img.alt || undefined,
-    }));
-    setSlides(s);
-  }, [htmlChunks]);
-
-  // Delegate clicks from images to open lightbox at that index
-  useEffect(() => {
-    const root = containerRef.current;
-    if (!root) return;
-
-    const onClick = (e: MouseEvent) => {
-      const t = e.target as HTMLElement | null;
-      const img = t?.closest?.('img') as HTMLImageElement | null;
-      if (!img || !root.contains(img)) return;
-
-      const imgs = Array.from(root.querySelectorAll<HTMLImageElement>('img'));
-      const idx = imgs.indexOf(img);
-      if (idx >= 0) {
-        setLbIndex(idx);
+    const onClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      const image = target?.closest?.('img') as HTMLImageElement | null;
+      if (!image || !root.contains(image)) return;
+      const index = photos.findIndex((photo) => photo.src === image.currentSrc || photo.src === image.src);
+      if (index >= 0) {
+        setLbIndex(index);
         setOpen(true);
       }
     };
 
     root.addEventListener('click', onClick);
     return () => root.removeEventListener('click', onClick);
-  }, []);
-
-  const showSkeleton = loading && htmlChunks.length === 0;
-  const canManage = isAdmin(currentUser) && numericId != null;
-
-  const blurActiveElement = () => {
-    const activeElement = document.activeElement;
-    if (activeElement instanceof HTMLElement) {
-      activeElement.blur();
-    }
-  };
+  }, [photos]);
 
   const handleDelete = async () => {
     if (!numericId || deleting) return;
-
-    const confirmed = window.confirm(
-      `Delete "${title || 'this gallery'}"? This cannot be undone.`
-    );
-    if (!confirmed) return;
 
     setDeleting(true);
     try {
       await deleteGallery(numericId);
       navigate('/galleries', { replace: true });
-    } catch (error) {
-      console.error(error);
+    } catch (deleteError) {
+      console.error(deleteError);
     } finally {
       setDeleting(false);
+      setDeleteOpen(false);
+    }
+  };
+
+  const toggleGalleryReaction = async (type: 'LIKE' | 'FAVORITE') => {
+    if (!numericId || busyReaction) return;
+    const isLike = type === 'LIKE';
+    const previous = isLike ? liked : favorited;
+    setBusyReaction(type);
+
+    if (isLike) {
+      setLiked(!previous);
+      setLikesCount((count) => count + (previous ? -1 : 1));
+    } else {
+      setFavorited(!previous);
+      setFavoritesCount((count) => count + (previous ? -1 : 1));
+    }
+
+    try {
+      const response = await toggleReaction(numericId, type);
+      const active =
+        typeof response?.active === 'boolean' ? response.active : !previous;
+      if (isLike) setLiked(active);
+      else setFavorited(active);
+    } catch (reactionError) {
+      if (isLike) {
+        setLiked(previous);
+        setLikesCount((count) => count + (previous ? 1 : -1));
+      } else {
+        setFavorited(previous);
+        setFavoritesCount((count) => count + (previous ? 1 : -1));
+      }
+      console.error(reactionError);
+    } finally {
+      setBusyReaction(null);
     }
   };
 
   return (
-    <div className="grid auto-rows-min gap-4 p-4 justify-between">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-baseline gap-2">
-          {showSkeleton ? (
-            <Skeleton className="h-7 w-40" />
-          ) : (
-            <h3 className="text-lg font-semibold">{title || 'Gallery'}</h3>
+    <div className="gb-page">
+      <DeskHeader onCreate={() => navigate('/galleries/new')} />
+      <main className="gb-story-shell pb-[70px] pt-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            to="/galleries"
+            className="gb-chip inline-flex h-10 items-center rounded-[11px] px-3 text-sm"
+          >
+            My Galleries
+          </Link>
+          {canManage && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(`/galleries/edit/${numericId}`)}
+              disabled={!gallery}
+              className="gb-chip h-10 rounded-[11px] px-3"
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit story
+            </Button>
           )}
-          {loading && !showSkeleton && (
-            <span className="text-xs text-muted-foreground">Loading…</span>
-          )}
-          {error && <span className="text-xs text-destructive">{error}</span>}
         </div>
 
-        {canManage && (
-          <div className="flex items-center gap-2">
+        <div className="mt-5 flex items-center gap-2 text-sm text-[var(--gb-ink-mute)]">
+          <Link to="/galleries" className="hover:text-[var(--gb-ink)]">
+            My Galleries
+          </Link>
+          <span>/</span>
+          <span className="truncate text-[var(--gb-ink-soft)]">{title}</span>
+        </div>
+
+        <header className="gb-story-masthead">
+          {loading && !gallery ? (
+            <HeaderSkeleton />
+          ) : (
+            <>
+              <p className="gb-hand text-[24px] font-semibold text-[var(--gb-hand)]">
+                a short story
+                {gallery?.updatedAt
+                  ? ` · ${new Date(gallery.updatedAt).toLocaleDateString(undefined, {
+                      month: 'long',
+                      year: 'numeric',
+                    })}`
+                  : ''}
+              </p>
+              <h1 className="gb-serif mt-2 text-[clamp(42px,8vw,78px)] font-medium leading-[.95] tracking-normal text-[var(--gb-ink)]">
+                {title}
+              </h1>
+              {gallery?.description && (
+                <p className="gb-story-description">{gallery.description}</p>
+              )}
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                <Stat value={`${photoCount.toLocaleString()} photos`} />
+                <Stat icon={<Heart className="h-3.5 w-3.5" />} value={likesCount} />
+                <Stat icon={<Star className="h-3.5 w-3.5" />} value={favoritesCount} />
+                <Stat icon={<MessageSquare className="h-3.5 w-3.5" />} value="Comments" />
+              </div>
+              {(gallery?.tags?.length ?? 0) > 0 && (
+                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                  {(gallery?.tags ?? []).map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-[var(--gb-accent-soft)] px-3 py-1 text-xs font-medium text-[var(--gb-accent)]"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+          {error && (
+            <div className="mx-auto mt-5 max-w-xl rounded-[14px] border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+        </header>
+
+        <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
+          <IconAction
+            label={favorited ? 'Remove favorite' : 'Favorite'}
+            active={favorited}
+            activeClass="text-[var(--gb-favorite)]"
+            busy={busyReaction === 'FAVORITE'}
+            onClick={() => void toggleGalleryReaction('FAVORITE')}
+          >
+            <Star className={cn('h-4 w-4', favorited && 'fill-current')} />
+          </IconAction>
+          <IconAction
+            label={liked ? 'Unlike' : 'Like'}
+            active={liked}
+            activeClass="text-[var(--gb-like)]"
+            busy={busyReaction === 'LIKE'}
+            onClick={() => void toggleGalleryReaction('LIKE')}
+          >
+            <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
+          </IconAction>
+          <IconAction label="Share">
+            <Share2 className="h-4 w-4" />
+          </IconAction>
+          {canManage && (
             <Button
               type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                blurActiveElement();
-                navigate(`/galleries/edit/${numericId}`);
-              }}
-              disabled={!gallery}
-            >
-              <Pencil className="h-4 w-4" />
-              Edit
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="destructive"
-              onClick={handleDelete}
+              onClick={() => setDeleteOpen(true)}
               disabled={deleting}
+              className="h-10 rounded-[11px] border border-red-500/30 bg-red-500/12 px-3 text-red-500 shadow-none hover:bg-red-500/18"
             >
               {deleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="mr-2 h-4 w-4" />
               )}
               Delete
             </Button>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      <div
-        className="gallery-container px-4 space-y-8 pb-12 [&_img]:cursor-zoom-in"
-        ref={containerRef}
-      >
-        {showSkeleton ? (
-          <div className="space-y-4">
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-11/12" />
-            <Skeleton className="h-4 w-10/12" />
-            <Skeleton className="h-64 w-full rounded-xl" />
-            <Skeleton className="h-4 w-9/12" />
-            <Skeleton className="h-4 w-10/12" />
-            <Skeleton className="h-4 w-7/12" />
-          </div>
-        ) : (
-          htmlChunks.map((html, i) => (
-            <div key={i}>
-              <div dangerouslySetInnerHTML={{ __html: html }} />
-              {/* Attach ref ONLY to last chunk if more chunks remain */}
-              {i === htmlChunks.length - 1 &&
-                chunkIndex * chunkSize < rawBlocks.length && (
-                  <div ref={ref} className="h-16" />
-                )}
+        <section ref={storyRef}>
+          {loading && !gallery ? (
+            <StorySkeleton />
+          ) : renderMasonry ? (
+            <MasonryPhotos photos={photos} />
+          ) : (
+            <article
+              className="gb-story-prose"
+              dangerouslySetInnerHTML={{ __html: storyHtml }}
+            />
+          )}
+
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => navigate(`/galleries/edit/${numericId}`)}
+              className="gb-chip mx-auto mt-10 flex w-full max-w-[720px] flex-col items-center justify-center gap-2 rounded-[7px] border-dashed border-[var(--gb-border-2)] bg-[var(--gb-surface)] p-10 text-center text-[var(--gb-ink-soft)] hover:border-[var(--gb-accent)] hover:bg-[var(--gb-accent-soft)]"
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--gb-border-2)]">
+                <ImagePlus className="h-5 w-5" />
+              </span>
+              <span className="gb-hand text-[23px] font-semibold">
+                Add photos to this story
+              </span>
+              <span className="text-[11.5px] text-[var(--gb-ink-mute)]">
+                Open the editor to upload or rearrange photos
+              </span>
+            </button>
+          )}
+        </section>
+
+        <Lightbox
+          open={open}
+          close={() => setOpen(false)}
+          index={lbIndex}
+          slides={slides}
+          plugins={[Zoom, Thumbnails]}
+          controller={{ closeOnBackdropClick: true }}
+        />
+
+        {numericId != null && (
+          <section className="mx-auto mt-12 max-w-[820px] rounded-[15px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] p-4">
+            <Comment galleryId={numericId} />
+          </section>
+        )}
+      </main>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="gb-panel border-0 text-[var(--gb-ink)] sm:max-w-[420px]">
+          <DialogHeader>
+            <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-[12px] bg-red-500/12 text-red-500">
+              <Trash2 className="h-5 w-5" />
             </div>
-          ))
-        )}
-      </div>
-
-      <Lightbox
-        open={open}
-        close={() => setOpen(false)}
-        index={lbIndex}
-        slides={slides}
-        plugins={[Zoom, Thumbnails]}
-        controller={{ closeOnBackdropClick: true }}
-      />
-
-      {/* Always pass the numeric id to comments (works for slug or id routes) */}
-      {numericId != null && <Comment galleryId={numericId} />}
+            <DialogTitle className="gb-serif text-[22px] font-medium">
+              Delete this story?
+            </DialogTitle>
+            <DialogDescription className="text-[var(--gb-ink-soft)]">
+              “{title}” and its {photoCount.toLocaleString()} photos will be
+              permanently removed. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteOpen(false)}
+              className="gb-chip rounded-[11px]"
+            >
+              Keep it
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleDelete()}
+              disabled={deleting}
+              className="rounded-[11px] bg-red-500 text-white hover:bg-red-600"
+            >
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete story
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function MasonryPhotos({ photos }: { photos: GalleryPhoto[] }) {
+  return (
+    <div className="gb-story-masonry">
+      {photos.map((photo, index) => (
+        <img
+          key={`${photo.src}-${index}`}
+          src={photo.src}
+          alt={photo.alt ?? photo.title}
+          loading="lazy"
+        />
+      ))}
+    </div>
+  );
+}
+
+function IconAction({
+  label,
+  children,
+  active,
+  activeClass,
+  busy,
+  onClick,
+}: {
+  label: string;
+  children: React.ReactNode;
+  active?: boolean;
+  activeClass?: string;
+  busy?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      size="icon"
+      variant="outline"
+      aria-label={label}
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'gb-chip h-10 w-10 rounded-[11px] text-[var(--gb-ink-soft)]',
+        active && activeClass
+      )}
+    >
+      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : children}
+    </Button>
+  );
+}
+
+function Stat({ icon, value }: { icon?: React.ReactNode; value: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-[12.5px] text-[var(--gb-ink-mute)]">
+      {icon}
+      {value}
+    </span>
+  );
+}
+
+function HeaderSkeleton() {
+  return (
+    <div className="mx-auto max-w-3xl space-y-4">
+      <Skeleton className="mx-auto h-7 w-56" />
+      <Skeleton className="mx-auto h-16 w-full max-w-xl" />
+      <Skeleton className="mx-auto h-4 w-full max-w-lg" />
+      <Skeleton className="mx-auto h-4 w-full max-w-md" />
+    </div>
+  );
+}
+
+function StorySkeleton() {
+  return (
+    <div className="gb-story-prose">
+      <Skeleton className="h-7 w-11/12" />
+      <Skeleton className="h-5 w-full" />
+      <Skeleton className="h-5 w-10/12" />
+      <Skeleton className="h-[380px] w-full rounded-[5px]" />
+      <Skeleton className="h-5 w-full" />
+      <Skeleton className="h-5 w-9/12" />
+    </div>
+  );
+}
+
+function extractPhotos(blocks: GalleryBlock[]): GalleryPhoto[] {
+  const photos: GalleryPhoto[] = [];
+
+  const walk = (node: unknown) => {
+    if (!node || typeof node !== 'object') return;
+    const current = node as GalleryBlock;
+    if (current.type === 'image') {
+      const attrs = current.attrs ?? {};
+      const src = attrs.src ?? attrs['data-full'];
+      if (typeof src === 'string' && src.length > 0) {
+        photos.push({
+          src,
+          alt: typeof attrs.alt === 'string' ? attrs.alt : undefined,
+          title: imageTitle(attrs, photos.length),
+          meta: imageMeta(attrs),
+        });
+      }
+    }
+    if (Array.isArray(current.content)) current.content.forEach(walk);
+  };
+
+  blocks.forEach(walk);
+  return photos;
+}
+
+function imageTitle(attrs: Record<string, unknown>, index: number) {
+  const title = attrs.title ?? attrs.alt ?? attrs.name;
+  if (typeof title === 'string' && title.trim()) return title.trim();
+  return `Photo ${String(index + 1).padStart(2, '0')}`;
+}
+
+function imageMeta(attrs: Record<string, unknown>) {
+  const width = Number(attrs.width);
+  const height = Number(attrs.height);
+  const dimensions =
+    Number.isFinite(width) && Number.isFinite(height)
+      ? `${width} x ${height}`
+      : null;
+  const type =
+    typeof attrs.type === 'string'
+      ? attrs.type.toUpperCase()
+      : typeof attrs.mimeType === 'string'
+        ? attrs.mimeType.split('/').pop()?.toUpperCase()
+        : null;
+  return [dimensions, type].filter(Boolean).join(' · ') || 'Gallery photo';
 }

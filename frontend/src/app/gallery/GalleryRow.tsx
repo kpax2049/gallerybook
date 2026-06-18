@@ -2,41 +2,22 @@ import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Heart,
-  Star,
-  MessageSquare,
   Loader2,
+  MessageSquare,
   MoreHorizontal,
+  Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { deleteGallery, Gallery, toggleReaction } from '@/api/gallery';
 import { useUserStore } from '@/stores/userStore';
 import { isAdmin } from '@/lib/authz';
-
-// tiny read-only tag strip (or import your TagStrip)
-const TagStrip = ({ tags = [] as string[] }) => (
-  <div className="flex flex-wrap items-center gap-1 min-w-0">
-    {tags.slice(0, 4).map((t) => (
-      <span
-        key={t}
-        className="px-1.5 py-0.5 text-[11px] rounded bg-muted text-muted-foreground max-w-[10rem] truncate"
-      >
-        {t}
-      </span>
-    ))}
-    {tags.length > 4 && (
-      <span className="px-1.5 py-0.5 text-[11px] rounded border text-muted-foreground">
-        +{tags.length - 4}
-      </span>
-    )}
-  </div>
-);
 
 type RowProps = {
   item: Gallery;
@@ -46,6 +27,8 @@ type RowProps = {
   likesCountOverride?: number;
   favoritesCountOverride?: number;
   onDeleted?: (id: number) => void;
+  onEditRequested?: () => void;
+  style?: React.CSSProperties;
 };
 
 export function GalleryRow({
@@ -56,6 +39,8 @@ export function GalleryRow({
   likesCountOverride,
   favoritesCountOverride,
   onDeleted,
+  onEditRequested,
+  style,
 }: RowProps) {
   const navigate = useNavigate();
   const currentUser = useUserStore((state) => state.user);
@@ -65,33 +50,27 @@ export function GalleryRow({
   const [deleting, setDeleting] = React.useState(false);
   const liked = !!myReaction?.like;
   const faved = !!myReaction?.favorite;
+  const likesDisplay = likesCountOverride ?? item.likesCount ?? 0;
+  const favsDisplay = favoritesCountOverride ?? item.favoritesCount ?? 0;
+  const tags = Array.isArray(item.tags) ? item.tags : [];
 
   const onToggle = async (type: 'LIKE' | 'FAVORITE') => {
+    if (deleting) return;
     const isLike = type === 'LIKE';
     const setBusy = isLike ? setBusyLike : setBusyFav;
-
     setBusy(true);
     try {
       const res = await toggleReaction(item.id, type);
       const prev = isLike ? liked : faved;
       const active = typeof res?.active === 'boolean' ? res.active : !prev;
-
-      if (isLike) {
-        onReactionChanged?.({ like: active });
-      } else {
-        onReactionChanged?.({ favorite: active });
-      }
+      onReactionChanged?.(isLike ? { like: active } : { favorite: active });
     } finally {
       setBusy(false);
     }
   };
 
-  const likesDisplay = likesCountOverride ?? item.likesCount ?? 0;
-  const favsDisplay = favoritesCountOverride ?? item.favoritesCount ?? 0;
-
   const onDelete = async () => {
     if (deleting) return;
-
     setDeleting(true);
     try {
       await deleteGallery(item.id);
@@ -103,68 +82,87 @@ export function GalleryRow({
     }
   };
 
+  const onEdit = () => {
+    if (onEditRequested) onEditRequested();
+    else navigate(`/galleries/edit/${item.id}`);
+  };
+
   return (
-    <li
+    <article
+      aria-busy={deleting}
       className={cn(
-        'relative p-3 hover:bg-muted/30',
+        'relative animate-[gb-card-enter_520ms_cubic-bezier(.2,.85,.3,1)_backwards] rounded-[14px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] p-3 text-[var(--gb-ink)] shadow-[0_18px_40px_-32px_rgba(0,0,0,.55)] transition hover:-translate-y-1 hover:border-[var(--gb-border-2)]',
         deleting && 'pointer-events-none opacity-75'
       )}
-      aria-busy={deleting}
+      style={style}
     >
       {deleting && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 text-foreground backdrop-blur-sm">
-          <div className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm shadow-sm">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[14px] bg-[var(--gb-scrim)] text-[var(--gb-ink)] backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-[9px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] px-3 py-2 text-sm shadow">
             <Loader2 className="h-4 w-4 animate-spin" />
             Deleting...
           </div>
         </div>
       )}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <Link
           to={`/galleries/${item.slug ?? item.id}`}
-          className="block shrink-0"
+          className="block h-[74px] w-full shrink-0 overflow-hidden rounded bg-[var(--gb-surface)] sm:w-[116px]"
         >
-          <img
-            src={item.thumbnail || ''}
-            alt={item.title ?? 'cover'}
-            className={cn(
-              'h-16 w-24 rounded object-cover bg-muted',
-              !item.thumbnail && 'opacity-60'
-            )}
-            loading="lazy"
-          />
+          {item.thumbnail ? (
+            <img
+              src={item.thumbnail}
+              alt={item.title ?? 'cover'}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-xs text-[var(--gb-ink-mute)]">
+              No cover
+            </div>
+          )}
         </Link>
 
         <div className="min-w-0 flex-1">
-          <Link to={`/galleries/${item.slug ?? item.id}`} className="block">
-            <div className="text-sm font-medium leading-tight truncate">
+          <Link to={`/galleries/${item.slug ?? item.id}`}>
+            <h2 className="gb-serif truncate text-lg font-medium">
               {item.title ?? 'Untitled gallery'}
-            </div>
+            </h2>
           </Link>
-          <div className="mt-1 flex items-center gap-3 text-[12px] text-muted-foreground">
+          <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-[var(--gb-ink-soft)]">
             <span className="inline-flex items-center gap-1">
-              <Heart className="h-3.5 w-3.5" aria-hidden />
-              {likesDisplay}
+              <Heart className="h-3.5 w-3.5" /> {likesDisplay}
             </span>
             <span className="inline-flex items-center gap-1">
-              <Star className="h-3.5 w-3.5" aria-hidden />
-              {favsDisplay}
+              <Star className="h-3.5 w-3.5" /> {favsDisplay}
             </span>
             <span className="inline-flex items-center gap-1">
-              <MessageSquare className="h-3.5 w-3.5" aria-hidden />
-              {comments}
+              <MessageSquare className="h-3.5 w-3.5" /> {comments}
             </span>
           </div>
-          <div className="mt-1">
-            <TagStrip tags={Array.isArray(item.tags) ? item.tags : []} />
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {tags.slice(0, 4).map((tag) => (
+              <span
+                key={tag}
+                className="max-w-32 truncate rounded-full bg-[var(--gb-accent-soft)] px-2 py-0.5 text-[11px] text-[var(--gb-ink-soft)]"
+              >
+                {tag}
+              </span>
+            ))}
+            {tags.length > 4 && (
+              <span className="rounded-full border border-[var(--gb-border)] px-2 py-0.5 text-[11px] text-[var(--gb-ink-soft)]">
+                +{tags.length - 4}
+              </span>
+            )}
           </div>
         </div>
 
         <div className="ml-auto flex items-center gap-1">
           <Button
+            type="button"
             size="icon"
             variant="outline"
-            className="h-8 w-8"
+            className="gb-chip h-9 w-9 rounded-full"
             aria-pressed={liked}
             disabled={deleting}
             onClick={() => onToggle('LIKE')}
@@ -174,16 +172,15 @@ export function GalleryRow({
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Heart
-                className={cn('h-4 w-4', liked && 'text-rose-500')}
-                fill={liked ? 'currentColor' : 'none'}
-                strokeWidth={liked ? 0 : 2}
+                className={cn('h-4 w-4', liked && 'text-[var(--gb-like)] fill-current')}
               />
             )}
           </Button>
           <Button
+            type="button"
             size="icon"
             variant="outline"
-            className="h-8 w-8"
+            className="gb-chip h-9 w-9 rounded-full"
             aria-pressed={faved}
             disabled={deleting}
             onClick={() => onToggle('FAVORITE')}
@@ -193,9 +190,7 @@ export function GalleryRow({
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Star
-                className={cn('h-4 w-4', faved && 'text-amber-500')}
-                fill={faved ? 'currentColor' : 'none'}
-                strokeWidth={faved ? 0 : 2}
+                className={cn('h-4 w-4', faved && 'text-[var(--gb-favorite)] fill-current')}
               />
             )}
           </Button>
@@ -204,9 +199,10 @@ export function GalleryRow({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
+                  type="button"
                   size="icon"
                   variant="ghost"
-                  className="h-8 w-8"
+                  className="h-9 w-9 rounded-full text-[var(--gb-ink-soft)] hover:bg-[var(--gb-accent-soft)]"
                   aria-label="More"
                   disabled={deleting}
                 >
@@ -217,18 +213,12 @@ export function GalleryRow({
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={6}>
-                <DropdownMenuItem
-                  disabled={deleting}
-                  onSelect={() => navigate(`/galleries/edit/${item.id}`)}
-                >
+              <DropdownMenuContent align="end" sideOffset={6} className="gb-menu p-1">
+                <DropdownMenuItem onSelect={onEdit} disabled={deleting}>
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={deleting}
-                  onSelect={() => void onDelete()}
-                >
-                  {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
+                <DropdownMenuItem onSelect={() => void onDelete()} disabled={deleting}>
+                  {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {deleting ? 'Deleting...' : 'Delete'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -236,6 +226,6 @@ export function GalleryRow({
           )}
         </div>
       </div>
-    </li>
+    </article>
   );
 }

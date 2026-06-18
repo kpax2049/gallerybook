@@ -7,7 +7,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { GalleryBreadcrumb } from '../gallery/GalleryBreadcrumb';
 import NewGalleryButton from './NewGalleryButton';
 interface DashboardProps {
@@ -16,6 +16,15 @@ interface DashboardProps {
   // handleLogin: (u: User) => void;
 }
 export default function Dashboard({ user, handleLogout }: DashboardProps) {
+  const location = useLocation();
+  const useDeskChrome =
+    location.pathname.startsWith('/galleries') ||
+    location.pathname.startsWith('/me/comments');
+
+  if (useDeskChrome) {
+    return <Outlet />;
+  }
+
   //props: DashboardProps
   return (
     <>

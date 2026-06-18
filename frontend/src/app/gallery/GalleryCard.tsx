@@ -1,13 +1,24 @@
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Star, Loader2, MessageSquare } from 'lucide-react';
+import {
+  Heart,
+  Loader2,
+  MessageSquare,
+  MoreHorizontal,
+  Star,
+  UserPlus,
+} from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { deleteGallery, Gallery, toggleReaction } from '@/api/gallery';
-import { ThreeDotMenu } from '@/components/three-dot-menu';
-import { TagStrip } from '@/components/ui/tags-strip';
-import { UserChip } from '../user/UserChip';
+import { getUserInitials } from '@/api/user';
 import { useUserStore } from '@/stores/userStore';
 import { isAdmin } from '@/lib/authz';
 
@@ -19,6 +30,8 @@ type Props = {
   likesCountOverride?: number;
   favoritesCountOverride?: number;
   onDeleted?: (id: number) => void;
+  onEditRequested?: () => void;
+  style?: React.CSSProperties;
   to?: string;
 };
 
@@ -30,23 +43,32 @@ export const GalleryCard = React.memo(function GalleryCard({
   likesCountOverride,
   favoritesCountOverride,
   onDeleted,
+  onEditRequested,
+  style,
   to = '#',
 }: Props) {
   const navigate = useNavigate();
   const currentUser = useUserStore((state) => state.user);
   const canManage = isAdmin(currentUser);
   const [deleting, setDeleting] = React.useState(false);
+  const [busyLike, setBusyLike] = React.useState(false);
+  const [busyFav, setBusyFav] = React.useState(false);
+  const liked = !!myReaction?.like;
+  const faved = !!myReaction?.favorite;
+  const authorName = item.author?.displayName ?? item.author?.username ?? 'admin';
+  const likesDisplay = likesCountOverride ?? item.likesCount ?? 0;
+  const favsDisplay = favoritesCountOverride ?? item.favoritesCount ?? 0;
+  const tags = Array.isArray(item.tags) ? item.tags : [];
 
-  const onEdit = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    navigate(`/galleries/edit/${item.id}`);
+  const onEdit = (event?: Event) => {
+    event?.preventDefault();
+    if (onEditRequested) onEditRequested();
+    else navigate(`/galleries/edit/${item.id}`);
   };
 
-  const onDelete = async (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    if (e && e.preventDefault) e.preventDefault();
+  const onDelete = async (event?: Event) => {
+    event?.preventDefault();
     if (deleting) return;
-
     setDeleting(true);
     try {
       await deleteGallery(item.id);
@@ -58,22 +80,15 @@ export const GalleryCard = React.memo(function GalleryCard({
     }
   };
 
-  const [busyLike, setBusyLike] = React.useState(false);
-  const [busyFav, setBusyFav] = React.useState(false);
-
-  const liked = !!myReaction?.like;
-  const faved = !!myReaction?.favorite;
-
   const handleToggle = async (
     type: 'LIKE' | 'FAVORITE',
-    e?: React.MouseEvent
+    event?: React.MouseEvent
   ) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (deleting) return;
     const isLike = type === 'LIKE';
-    const setBusy = (v: boolean) => (isLike ? setBusyLike(v) : setBusyFav(v));
-
+    const setBusy = isLike ? setBusyLike : setBusyFav;
     setBusy(true);
     try {
       const res = await toggleReaction(item.id, type);
@@ -83,176 +98,165 @@ export const GalleryCard = React.memo(function GalleryCard({
           : isLike
             ? !liked
             : !faved;
-
-      if (isLike) {
-        onReactionChanged?.({ like: active });
-      } else {
-        onReactionChanged?.({ favorite: active });
-      }
+      onReactionChanged?.(isLike ? { like: active } : { favorite: active });
     } finally {
       setBusy(false);
     }
   };
 
-  const Figure = (
+  const figure = (
     <figure
       aria-busy={deleting}
       className={cn(
-        'relative block w-full select-none rounded-[14px] p-3',
-        'bg-card text-card-foreground border border-border',
-        'shadow-sm hover:shadow-md transition-shadow',
-        'rotate-[-0.75deg] transition-transform duration-300 group-hover:rotate-0',
+        'gb-paper gb-print-card group p-[11px] pb-0',
         deleting && 'pointer-events-none opacity-75'
       )}
+      style={style}
     >
       {deleting && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center rounded-[14px] bg-background/70 text-foreground backdrop-blur-sm">
-          <div className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm shadow-sm">
+        <div className="absolute inset-0 z-30 flex items-center justify-center rounded-[5px] bg-[var(--gb-scrim)] text-[var(--gb-ink)] backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-[9px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] px-3 py-2 text-sm shadow">
             <Loader2 className="h-4 w-4 animate-spin" />
             Deleting...
           </div>
         </div>
       )}
-      {/* Photo card */}
-      <Card className="relative w-full rounded-[10px] overflow-hidden border border-border/60 bg-background">
-        {/* Photo */}
-        <div className="relative w-full aspect-[4/3] bg-muted">
-          {item.thumbnail ? (
-            <img
-              src={item.thumbnail}
-              alt={item.title ?? 'cover'}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-              loading="lazy"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
-              No cover
-            </div>
-          )}
-        </div>
+      {faved && (
+        <span className="absolute right-5 top-6 z-10 flex h-8 w-8 rotate-12 items-center justify-center rounded-full bg-[var(--gb-paper)] text-[var(--gb-favorite)] shadow-md">
+          <Star className="h-4 w-4 fill-current" />
+        </span>
+      )}
 
-        {/* Hover overlay (actions + stats/labels) */}
-        <div
-          className="
-            pointer-events-none absolute inset-0
-            md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100
-            transition-opacity
-          "
-        >
-          {/* Top-right actions */}
-          <div className="pointer-events-auto absolute top-2 right-2 flex gap-1">
-            <Button
-              size="icon"
-              variant="secondary"
-              className="h-8 w-8 rounded-full bg-background/70 backdrop-blur"
-              title={liked ? 'Unlike' : 'Like'}
-              aria-pressed={liked}
-              disabled={deleting}
-              onClick={(e) => handleToggle('LIKE', e)}
-              data-stop-link="true"
-            >
-              {busyLike ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Heart
-                  className={cn(
-                    'h-4 w-4',
-                    liked ? 'text-rose-500' : 'text-foreground'
-                  )}
-                  fill={liked ? 'currentColor' : 'none'}
-                  strokeWidth={liked ? 0 : 2}
-                />
-              )}
-            </Button>
-            <Button
-              size="icon"
-              variant="secondary"
-              className="h-8 w-8 rounded-full bg-background/70 backdrop-blur"
-              title={faved ? 'Remove favorite' : 'Favorite'}
-              aria-pressed={faved}
-              disabled={deleting}
-              onClick={(e) => handleToggle('FAVORITE', e)}
-              data-stop-link="true"
-            >
-              {busyFav ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Star
-                  className={cn(
-                    'h-4 w-4',
-                    faved ? 'text-amber-500' : 'text-foreground'
-                  )}
-                  fill={faved ? 'currentColor' : 'none'}
-                  strokeWidth={faved ? 0 : 2}
-                />
-              )}
-            </Button>
-          </div>
-
-          {/* Bottom gradient panel */}
-          <div className="pointer-events-auto absolute inset-x-0 bottom-0">
-            <div className="bg-gradient-to-t from-black/60 via-black/20 to-transparent text-white">
-              <div className="p-3 space-y-2">
-                <div className="text-[11px] opacity-80">
-                  {item.updatedAt &&
-                    new Date(item.updatedAt).toLocaleDateString()}
-                </div>
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="inline-flex items-center gap-1 opacity-90">
-                    <Heart className="h-3.5 w-3.5" aria-hidden />
-                    {likesCountOverride ?? item.likesCount ?? 0}
-                  </span>
-                  <span className="inline-flex items-center gap-1 opacity-90">
-                    <Star className="h-3.5 w-3.5" aria-hidden />
-                    {favoritesCountOverride ?? item.favoritesCount ?? 0}
-                  </span>
-                  <span className="inline-flex items-center gap-1 opacity-90">
-                    <MessageSquare className="h-3.5 w-3.5" aria-hidden />
-                    {comments}
-                  </span>
-                </div>
-                <TagStrip
-                  tags={Array.isArray(item.tags) ? item.tags : []}
-                  maxVisible={3}
-                  dense
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* User avatar and username chip; show on hover */}
-        <div
-          className="
-    absolute left-2 top-2 z-20
-    opacity-0 group-hover:opacity-100
-    transition-opacity duration-200
-    pointer-events-none  /* parent ignores events... */
-  "
-        >
-          <UserChip
-            user={item.author}
-            showFollow
-            insideClickableCard
-            className="pointer-events-auto" // ...chip restores them
+      <div className="relative h-[184px] overflow-hidden rounded-sm bg-[var(--gb-surface)]">
+        {item.thumbnail ? (
+          <img
+            src={item.thumbnail}
+            alt={item.title ?? 'cover'}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+            loading="lazy"
           />
-        </div>
-      </Card>
+        ) : (
+          <div className="flex h-full items-center justify-center text-sm text-[var(--gb-ink-mute)]">
+            No cover
+          </div>
+        )}
 
-      {/* Caption under the photo */}
-      <figcaption className="mt-2 px-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-[13px] font-medium text-foreground leading-tight line-clamp-1">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/12 to-black/72 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
+          <div className="flex translate-y-[-8px] items-center justify-between p-3 opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
+            <div className="inline-flex min-w-0 items-center gap-2 rounded-full bg-black/40 py-1 pl-1 pr-2 text-white backdrop-blur">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={item.author?.avatarUrl} alt={authorName} />
+                <AvatarFallback className="text-[10px]">
+                  {getUserInitials(item.author)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="max-w-24 truncate text-xs font-medium">
+                {authorName}
+              </span>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 rounded-full text-white hover:bg-white/15 hover:text-white"
+                data-stop-link="true"
+                aria-label={`Follow ${authorName}`}
+                onClick={(event) => event.preventDefault()}
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+
+            <div className="flex gap-1">
+              <ReactionButton
+                active={liked}
+                busy={busyLike}
+                label={liked ? 'Unlike' : 'Like'}
+                activeClass="text-[var(--gb-like)]"
+                onClick={(event) => handleToggle('LIKE', event)}
+                disabled={deleting}
+              >
+                <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
+              </ReactionButton>
+              <ReactionButton
+                active={faved}
+                busy={busyFav}
+                label={faved ? 'Remove favorite' : 'Favorite'}
+                activeClass="text-[var(--gb-favorite)]"
+                onClick={(event) => handleToggle('FAVORITE', event)}
+                disabled={deleting}
+              >
+                <Star className={cn('h-4 w-4', faved && 'fill-current')} />
+              </ReactionButton>
+            </div>
+          </div>
+
+          <div className="absolute inset-x-0 bottom-0 translate-y-3 space-y-2 p-3 text-white opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
+            <div className="text-[11px] text-white/78">
+              {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : 'Recently updated'}
+            </div>
+            <div className="flex items-center gap-3 text-xs">
+              <span className="inline-flex items-center gap-1">
+                <Heart className="h-3.5 w-3.5" /> {likesDisplay}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Star className="h-3.5 w-3.5" /> {favsDisplay}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <MessageSquare className="h-3.5 w-3.5" /> {comments}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {tags.slice(0, 3).map((tag) => (
+                <span key={tag} className="max-w-24 truncate rounded-full bg-white/18 px-2 py-0.5 text-[11px]">
+                  {tag}
+                </span>
+              ))}
+              {tags.length > 3 && (
+                <span className="rounded-full bg-white/18 px-2 py-0.5 text-[11px]">
+                  +{tags.length - 3}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <figcaption className="flex h-[58px] items-center gap-2 px-2">
+        <div className="min-w-0 flex-1">
+          <div className="gb-hand truncate text-[23px] font-semibold leading-none text-[var(--gb-hand)]">
             {item.title ?? 'Untitled gallery'}
           </div>
-          {canManage && (
-            <ThreeDotMenu
-              onEdit={onEdit}
-              onDelete={onDelete}
-              gallery={item}
-              deleting={deleting}
-            />
-          )}
+          <div className="mt-1 text-[11.5px] text-[var(--gb-ink-mute)]">
+            {item.viewsCount ?? 0} views
+          </div>
         </div>
+
+        {canManage && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-full text-[var(--gb-paper-ink)] opacity-0 transition hover:bg-black/5 group-hover:opacity-100 focus:opacity-100"
+                data-stop-link="true"
+                aria-label="Gallery actions"
+                disabled={deleting}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="gb-menu p-1">
+              <DropdownMenuItem onSelect={onEdit} disabled={deleting}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onDelete} disabled={deleting}>
+                {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {deleting ? 'Deleting...' : 'Delete'}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </figcaption>
     </figure>
   );
@@ -261,15 +265,53 @@ export const GalleryCard = React.memo(function GalleryCard({
     <Link
       to={to}
       aria-label={item.title ?? 'Open gallery'}
-      className="group block w-full rounded-[16px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      onClickCapture={(e) => {
-        const el = e.target as Element | null;
-        if (el && el.closest?.("[data-stop-link='true']")) e.preventDefault();
+      className="block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gb-accent)]"
+      onClickCapture={(event) => {
+        const el = event.target as Element | null;
+        if (el?.closest?.("[data-stop-link='true']")) event.preventDefault();
       }}
     >
-      {Figure}
+      {figure}
     </Link>
   ) : (
-    Figure
+    figure
   );
 });
+
+function ReactionButton({
+  active,
+  busy,
+  label,
+  activeClass,
+  onClick,
+  disabled,
+  children,
+}: {
+  active: boolean;
+  busy: boolean;
+  label: string;
+  activeClass: string;
+  onClick: (event: React.MouseEvent) => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      type="button"
+      size="icon"
+      variant="ghost"
+      aria-pressed={active}
+      aria-label={label}
+      title={label}
+      className={cn(
+        'h-8 w-8 rounded-full bg-black/40 text-white backdrop-blur hover:bg-white/18 hover:text-white',
+        active && activeClass
+      )}
+      data-stop-link="true"
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : children}
+    </Button>
+  );
+}
