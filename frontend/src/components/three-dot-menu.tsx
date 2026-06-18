@@ -10,20 +10,29 @@ import {
 } from './ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Button } from './ui/button';
-import { Check, Copy, Ellipsis, Pencil, Share2, Trash2 } from 'lucide-react';
+import {
+  Check,
+  Copy,
+  Ellipsis,
+  Loader2,
+  Pencil,
+  Share2,
+  Trash2,
+} from 'lucide-react';
 import { Gallery } from '@/api/gallery';
 
 interface ThreeDotMenuProps {
-  props?: React.ComponentProps<typeof ThreeDotMenu>;
   onEdit: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   onDelete: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   gallery: Gallery;
+  deleting?: boolean;
 }
 
 export function ThreeDotMenu({
   onEdit,
   onDelete,
   gallery,
+  deleting = false,
   ...props
 }: ThreeDotMenuProps) {
   const [copied, setCopied] = React.useState(false);
@@ -53,19 +62,36 @@ export function ThreeDotMenu({
             e.stopPropagation();
           }}
           aria-label="Open menu"
+          disabled={deleting}
         >
-          <Ellipsis className="h-4 w-4" />
+          {deleting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Ellipsis className="h-4 w-4" />
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent sideOffset={4}>
-        <DropdownMenuItem data-stop-link="true" onClick={(e) => onEdit(e)}>
+        <DropdownMenuItem
+          data-stop-link="true"
+          disabled={deleting}
+          onClick={(e) => onEdit(e)}
+        >
           {' '}
           <Pencil className="mr-2 h-4 w-4" />
           Edit
         </DropdownMenuItem>
-        <DropdownMenuItem data-stop-link="true" onClick={(e) => onDelete(e)}>
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete
+        <DropdownMenuItem
+          data-stop-link="true"
+          disabled={deleting}
+          onClick={(e) => onDelete(e)}
+        >
+          {deleting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="mr-2 h-4 w-4" />
+          )}
+          {deleting ? 'Deleting...' : 'Delete'}
         </DropdownMenuItem>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>

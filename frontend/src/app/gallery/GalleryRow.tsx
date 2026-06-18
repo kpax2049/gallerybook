@@ -55,6 +55,7 @@ export function GalleryRow({
   const tags = Array.isArray(item.tags) ? item.tags : [];
 
   const onToggle = async (type: 'LIKE' | 'FAVORITE') => {
+    if (deleting) return;
     const isLike = type === 'LIKE';
     const setBusy = isLike ? setBusyLike : setBusyFav;
     setBusy(true);
@@ -88,9 +89,21 @@ export function GalleryRow({
 
   return (
     <article
-      className="animate-[gb-card-enter_520ms_cubic-bezier(.2,.85,.3,1)_backwards] rounded-[14px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] p-3 text-[var(--gb-ink)] shadow-[0_18px_40px_-32px_rgba(0,0,0,.55)] transition hover:-translate-y-1 hover:border-[var(--gb-border-2)]"
+      aria-busy={deleting}
+      className={cn(
+        'relative animate-[gb-card-enter_520ms_cubic-bezier(.2,.85,.3,1)_backwards] rounded-[14px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] p-3 text-[var(--gb-ink)] shadow-[0_18px_40px_-32px_rgba(0,0,0,.55)] transition hover:-translate-y-1 hover:border-[var(--gb-border-2)]',
+        deleting && 'pointer-events-none opacity-75'
+      )}
       style={style}
     >
+      {deleting && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[14px] bg-[var(--gb-scrim)] text-[var(--gb-ink)] backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-[9px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] px-3 py-2 text-sm shadow">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Deleting...
+          </div>
+        </div>
+      )}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <Link
           to={`/galleries/${item.slug ?? item.id}`}
@@ -151,6 +164,7 @@ export function GalleryRow({
             variant="outline"
             className="gb-chip h-9 w-9 rounded-full"
             aria-pressed={liked}
+            disabled={deleting}
             onClick={() => onToggle('LIKE')}
             title={liked ? 'Unlike' : 'Like'}
           >
@@ -168,6 +182,7 @@ export function GalleryRow({
             variant="outline"
             className="gb-chip h-9 w-9 rounded-full"
             aria-pressed={faved}
+            disabled={deleting}
             onClick={() => onToggle('FAVORITE')}
             title={faved ? 'Unfavorite' : 'Favorite'}
           >
@@ -189,14 +204,22 @@ export function GalleryRow({
                   variant="ghost"
                   className="h-9 w-9 rounded-full text-[var(--gb-ink-soft)] hover:bg-[var(--gb-accent-soft)]"
                   aria-label="More"
+                  disabled={deleting}
                 >
-                  <MoreHorizontal className="h-5 w-5" />
+                  {deleting ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <MoreHorizontal className="h-5 w-5" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" sideOffset={6} className="gb-menu p-1">
-                <DropdownMenuItem onSelect={onEdit}>Edit</DropdownMenuItem>
+                <DropdownMenuItem onSelect={onEdit} disabled={deleting}>
+                  Edit
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => void onDelete()} disabled={deleting}>
-                  Delete
+                  {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {deleting ? 'Deleting...' : 'Delete'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

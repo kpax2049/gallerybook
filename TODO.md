@@ -46,13 +46,12 @@ No active items.
     they require.
   - Notes:
 
-- [ ] TODO-0004 `bug` Show delete progress from gallery card menu
-  - Context: In Galleries view, deleting from the gallery card three-dot menu has
-    no visual progress indication before the card disappears.
-  - Expected: Deleting should show immediate feedback, such as a disabled menu
-    item, spinner, optimistic pending state, or loading overlay.
-  - Notes:
-
 ## Done
 
-No completed items yet.
+- [x] TODO-0004 `bug` Show delete progress from gallery card menu
+  - Completed: 2026-06-16
+  - Context: In Galleries view, deleting from the gallery card three-dot menu had
+    no visual progress indication before the card disappeared.
+  - Outcome: Grid cards and list rows now show a disabled deleting state with a
+    spinner and overlay until removal completes.
+  - Commit: 2060000

@@ -86,6 +86,7 @@ export const GalleryCard = React.memo(function GalleryCard({
   ) => {
     event?.preventDefault();
     event?.stopPropagation();
+    if (deleting) return;
     const isLike = type === 'LIKE';
     const setBusy = isLike ? setBusyLike : setBusyFav;
     setBusy(true);
@@ -104,7 +105,22 @@ export const GalleryCard = React.memo(function GalleryCard({
   };
 
   const figure = (
-    <figure className="gb-paper gb-print-card group p-[11px] pb-0" style={style}>
+    <figure
+      aria-busy={deleting}
+      className={cn(
+        'gb-paper gb-print-card group p-[11px] pb-0',
+        deleting && 'pointer-events-none opacity-75'
+      )}
+      style={style}
+    >
+      {deleting && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center rounded-[5px] bg-[var(--gb-scrim)] text-[var(--gb-ink)] backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-[9px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] px-3 py-2 text-sm shadow">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Deleting...
+          </div>
+        </div>
+      )}
       {faved && (
         <span className="absolute right-5 top-6 z-10 flex h-8 w-8 rotate-12 items-center justify-center rounded-full bg-[var(--gb-paper)] text-[var(--gb-favorite)] shadow-md">
           <Star className="h-4 w-4 fill-current" />
@@ -157,6 +173,7 @@ export const GalleryCard = React.memo(function GalleryCard({
                 label={liked ? 'Unlike' : 'Like'}
                 activeClass="text-[var(--gb-like)]"
                 onClick={(event) => handleToggle('LIKE', event)}
+                disabled={deleting}
               >
                 <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
               </ReactionButton>
@@ -166,6 +183,7 @@ export const GalleryCard = React.memo(function GalleryCard({
                 label={faved ? 'Remove favorite' : 'Favorite'}
                 activeClass="text-[var(--gb-favorite)]"
                 onClick={(event) => handleToggle('FAVORITE', event)}
+                disabled={deleting}
               >
                 <Star className={cn('h-4 w-4', faved && 'fill-current')} />
               </ReactionButton>
@@ -223,14 +241,18 @@ export const GalleryCard = React.memo(function GalleryCard({
                 className="h-8 w-8 rounded-full text-[var(--gb-paper-ink)] opacity-0 transition hover:bg-black/5 group-hover:opacity-100 focus:opacity-100"
                 data-stop-link="true"
                 aria-label="Gallery actions"
+                disabled={deleting}
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="gb-menu p-1">
-              <DropdownMenuItem onSelect={onEdit}>Edit</DropdownMenuItem>
+              <DropdownMenuItem onSelect={onEdit} disabled={deleting}>
+                Edit
+              </DropdownMenuItem>
               <DropdownMenuItem onSelect={onDelete} disabled={deleting}>
-                Delete
+                {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {deleting ? 'Deleting...' : 'Delete'}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -262,6 +284,7 @@ function ReactionButton({
   label,
   activeClass,
   onClick,
+  disabled,
   children,
 }: {
   active: boolean;
@@ -269,6 +292,7 @@ function ReactionButton({
   label: string;
   activeClass: string;
   onClick: (event: React.MouseEvent) => void;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -285,6 +309,7 @@ function ReactionButton({
       )}
       data-stop-link="true"
       onClick={onClick}
+      disabled={disabled}
     >
       {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : children}
     </Button>
