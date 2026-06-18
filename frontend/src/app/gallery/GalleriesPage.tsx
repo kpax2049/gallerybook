@@ -6,7 +6,6 @@ import {
   ArrowRight,
   ArrowUpDown,
   Bell,
-  Camera,
   Check,
   Filter,
   Grid3X3,
@@ -69,6 +68,8 @@ import {
 } from './gallery-query-params';
 import { GalleryCard } from './GalleryCard';
 import { GalleryRow } from './GalleryRow';
+import logoMint from '@/assets/GB-logo-mint.png';
+import logoTeal from '@/assets/GB-logo-teal.png';
 
 type ReactionPatch = { like?: boolean; favorite?: boolean };
 type ViewMode = 'grid' | 'list';
@@ -555,12 +556,28 @@ export function DeskHeader({ onCreate }: { onCreate: () => void }) {
 
   return (
     <header className="gb-header">
-      <div className="gb-shell flex h-[66px] items-center justify-between gap-4 px-0 sm:px-3">
-        <Link to="/galleries" className="inline-flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-[var(--gb-border)] bg-[var(--gb-surface)]">
-            <Camera className="h-5 w-5 text-[var(--gb-accent)]" />
+      <div className="gb-shell gb-header-inner">
+        <Link to="/galleries" className="gb-brand" aria-label="Gallery Book home">
+          <span className="gb-brand-mark" aria-hidden="true">
+            <img
+              src={logoTeal}
+              alt=""
+              width={40}
+              height={40}
+              className="gb-brand-logo gb-brand-logo--teal"
+            />
+            <img
+              src={logoMint}
+              alt=""
+              width={40}
+              height={40}
+              className="gb-brand-logo gb-brand-logo--mint"
+            />
           </span>
-          <span className="gb-serif text-xl font-semibold">Gallery Book</span>
+          <span className="gb-wordmark">
+            <span className="gb-wordmark-gallery">Gallery</span>
+            <span className="gb-wordmark-book">Book</span>
+          </span>
         </Link>
 
         <div className="flex items-center gap-2">
