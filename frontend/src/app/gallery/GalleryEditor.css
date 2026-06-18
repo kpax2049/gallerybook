@@ -88,24 +88,31 @@
 
 .gb-editor-title-input {
   width: 100%;
-  appearance: none;
-  border: 0 !important;
+  min-height: 0 !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  border: none !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  color: var(--gb-ink);
+  color: var(--ink, var(--gb-ink)) !important;
   font-family: Newsreader, Georgia, serif;
-  font-size: 42px;
-  font-weight: 500;
-  line-height: 1.07;
-  padding: 0;
-  resize: none;
+  font-size: 42px !important;
+  font-weight: 500 !important;
+  line-height: 1.07 !important;
+  padding: 0 !important;
+  resize: none !important;
   text-align: center;
   outline: none !important;
 }
 
 .gb-editor-title-input:focus,
-.gb-editor-description-input:focus {
-  border: 0 !important;
+.gb-editor-title-input:focus-visible,
+.gb-editor-description-input:focus,
+.gb-editor-description-input:focus-visible {
+  border: none !important;
+  border-color: transparent !important;
   box-shadow: none !important;
   outline: none !important;
 }
@@ -131,14 +138,18 @@
 .gb-editor-description-input {
   width: min(680px, 100%);
   margin-top: 16px;
-  resize: none;
-  border: 0 !important;
-  appearance: none;
+  min-height: 0 !important;
+  resize: none !important;
+  border: none !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
   background: transparent !important;
   box-shadow: none !important;
   color: var(--gb-ink-soft);
   font: 18.5px/1.78 Newsreader, Georgia, serif;
-  padding: 0;
+  padding: 0 !important;
   text-align: center;
   outline: none !important;
 }
