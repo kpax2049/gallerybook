@@ -144,7 +144,7 @@ export const StoryImage = BaseImage.extend({
               align: options.align ?? 'center',
               size: options.size ?? 'measure',
               width: options.width,
-              height: options.height,
+              height: options.height ?? null,
               inline: options.inline ?? false,
               flipX: options.flipX ?? false,
               flipY: options.flipY ?? false,

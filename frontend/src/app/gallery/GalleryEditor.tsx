@@ -582,7 +582,7 @@ export function GalleryEditor({
               align: 'center',
               size: 'measure',
               width: dimensions.width ?? undefined,
-              height: dimensions.height ?? undefined,
+              height: null,
             },
           })
           .run();
