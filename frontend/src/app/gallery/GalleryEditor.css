@@ -455,6 +455,34 @@
   object-fit: contain;
 }
 
+.gb-story-editor-content .ProseMirror figure.gb-story-image,
+.gb-story-editor-content .ProseMirror .image-view > .image-view__body,
+.image-view > .image-view__body {
+  box-sizing: border-box !important;
+  border: 0 !important;
+  border-radius: 5px !important;
+  background: var(--gb-paper) !important;
+  background-color: var(--gb-paper) !important;
+  box-shadow: var(--gb-print-shadow) !important;
+  padding: 13px !important;
+}
+
+.gb-story-editor-content .ProseMirror .gb-story-image-mat,
+.gb-story-editor-content .ProseMirror .image-view__body > img,
+.image-view > .image-view__body > img {
+  overflow: hidden;
+  border-radius: 3px !important;
+}
+
+.gb-story-editor-content .ProseMirror .image-view__body > img,
+.image-view > .image-view__body > img {
+  display: block !important;
+  max-width: 100% !important;
+  height: auto !important;
+  background: rgba(30, 22, 12, .1) !important;
+  object-fit: contain !important;
+}
+
 .gb-story-editor-content .ProseMirror .image-resizer {
   pointer-events: none;
 }
