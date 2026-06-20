@@ -156,6 +156,11 @@ export function GalleryEditor({
   } | null>(null);
   const editorRef = useRef<any>(null);
 
+  const getGalleryViewPath = useCallback(
+    (id: number, slug?: string | null) => `/galleries/${slug ?? id}`,
+    []
+  );
+
   const extensions = useMemo<AnyExtension[]>(
     () => [
       StarterKit.configure({
@@ -390,6 +395,7 @@ export function GalleryEditor({
       if (imageFiles.length === 0) {
         await createGallery(updatedJson, draftId);
         setOpen(false);
+        navigate(getGalleryViewPath(draftId, (response as any).slug));
         return;
       }
 
@@ -405,6 +411,7 @@ export function GalleryEditor({
       await editGallery({ thumbnail: thumbnailUrl }, draftId);
       await createGallery(updatedJson, draftId);
       setOpen(false);
+      navigate(getGalleryViewPath(draftId, (response as any).slug));
     } catch (error) {
       console.error('Failed to save gallery:', error);
       if (draftId !== undefined) {
@@ -454,7 +461,7 @@ export function GalleryEditor({
         newPaths[index] ??
         newPaths[0] ?? // fallback to first image if needed
         null;
-      await editGallery(
+      return await editGallery(
         {
           thumbnail: thumbnailUrl,
           title: data.title,
@@ -475,12 +482,14 @@ export function GalleryEditor({
 
       if (imageFiles.length === 0) {
         normalizeImageSrcsToS3Keys(updatedJson);
-        await updateGalleryMeta(updatedJson);
+        const updatedGallery = await updateGalleryMeta(updatedJson);
         const result: any = await createGallery(updatedJson, resolvedGalleryId);
         if (result.success) {
           await handleDeletedImages(updatedJson);
           setOpen(false);
           setOriginalValue(updatedJson);
+          setGallery(updatedGallery);
+          navigate(getGalleryViewPath(resolvedGalleryId, updatedGallery.slug));
         }
         return;
       }
@@ -491,12 +500,14 @@ export function GalleryEditor({
       );
       await uploadFilesToS3(imageFiles, presignedUrls, paths);
       normalizeImageSrcsToS3Keys(updatedJson);
-      await updateGalleryMeta(updatedJson);
+      const updatedGallery = await updateGalleryMeta(updatedJson);
       const result: any = await createGallery(updatedJson, resolvedGalleryId);
       if (result.success) {
         await handleDeletedImages(updatedJson);
         setOpen(false);
         setOriginalValue(updatedJson);
+        setGallery(updatedGallery);
+        navigate(getGalleryViewPath(resolvedGalleryId, updatedGallery.slug));
       }
     } catch (error) {
       console.error('Failed to save gallery:', error);
@@ -562,34 +573,31 @@ export function GalleryEditor({
     setImageUploadOpen(true);
   }, []);
 
-  const handleInsertImages = useCallback(
-    async (files: File[]) => {
-      const activeEditor = editorRef.current;
-      if (!activeEditor) return;
+  const handleInsertImages = useCallback(async (files: File[]) => {
+    const activeEditor = editorRef.current;
+    if (!activeEditor) return;
 
-      for (const file of files) {
-        const src = await fileToBase64(file);
-        const dimensions = await readImageDimensions(src);
-        activeEditor
-          .chain()
-          .focus()
-          .insertContent({
-            type: 'image',
-            attrs: {
-              src,
-              alt: file.name,
-              title: file.name,
-              align: 'center',
-              size: 'measure',
-              width: dimensions.width ?? undefined,
-              height: null,
-            },
-          })
-          .run();
-      }
-    },
-    []
-  );
+    for (const file of files) {
+      const src = await fileToBase64(file);
+      const dimensions = await readImageDimensions(src);
+      activeEditor
+        .chain()
+        .focus()
+        .insertContent({
+          type: 'image',
+          attrs: {
+            src,
+            alt: file.name,
+            title: file.name,
+            align: 'center',
+            size: 'measure',
+            width: dimensions.width ?? undefined,
+            height: null,
+          },
+        })
+        .run();
+    }
+  }, []);
 
   const updateSelectedImage = useCallback((attrs: Record<string, unknown>) => {
     const activeEditor = editorRef.current;
@@ -685,26 +693,26 @@ export function GalleryEditor({
             <Check className="h-3.5 w-3.5" />
             Saved
           </span>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={handleCancelClick}
-          disabled={submitting}
-          className="gb-btn-cancel"
-        >
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="default"
-          onClick={isEdit ? handleEditSaveClick : handleSaveClick}
-          disabled={submitting}
-          className="gb-btn-save"
-        >
-          Save story
-        </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleCancelClick}
+            disabled={submitting}
+            className="gb-btn-cancel"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="default"
+            onClick={isEdit ? handleEditSaveClick : handleSaveClick}
+            disabled={submitting}
+            className="gb-btn-save"
+          >
+            Save story
+          </Button>
         </div>
       </div>
     );
