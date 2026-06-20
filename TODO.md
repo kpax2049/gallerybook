@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0001 `feature` Navigate away from editor after successful gallery save
-  - Context: After editing a gallery, saving successfully returns to the editor
-    still in edit mode.
-  - Expected: Successful edit save should close the save dialog and navigate to
-    the read-only gallery view.
-  - Notes: Use `/galleries/:slug` when available, with ID fallback.
-
 - [ ] TODO-0002 `feature` Display tags in gallery view
   - Context: Tags are visible on gallery cards but not on the read-only gallery
     detail page.
@@ -47,6 +40,15 @@ No active items.
   - Notes:
 
 ## Done
+
+- [x] TODO-0001 `feature` Navigate away from editor after successful gallery save
+  - Completed: 2026-06-20
+  - Context: After editing a gallery, saving successfully returned to the editor
+    still in edit mode.
+  - Outcome: Successful create and edit saves now close the save dialog and
+    navigate to the read-only gallery view, using slug when available and ID as
+    fallback.
+  - Commit: 415c5a8
 
 - [x] TODO-0004 `bug` Show delete progress from gallery card menu
   - Completed: 2026-06-16
