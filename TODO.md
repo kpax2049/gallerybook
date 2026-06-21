@@ -27,19 +27,36 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0002 `feature` Display tags in gallery view
-  - Context: Tags are visible on gallery cards but not on the read-only gallery
-    detail page.
-  - Expected: Gallery tags should be visible when viewing a gallery.
-  - Notes:
-
 - [ ] TODO-0003 `feature` Consider implementing folders
   - Context: Galleries may need a higher-level organization model beyond tags.
   - Expected: Evaluate whether folders should be added and what UX/data model
     they require.
   - Notes:
 
+- [ ] TODO-0005 `feature` Add breadcrumbs to gallery editor page
+  - Context: The gallery editor page needs breadcrumb navigation for better
+    orientation within the galleries workflow.
+  - Expected: Gallery editor should show breadcrumbs consistent with the rest of
+    the gallery/dashboard navigation.
+  - Notes:
+
+- [ ] TODO-0006 `bug` Fix gallery card edit menu navigation
+  - Context: In My Galleries view variants, clicking the gallery card three-dot
+    menu and then Edit navigates to the read-only gallery view instead of the
+    editor for that gallery.
+  - Expected: Edit from the gallery card action menu should open the editor view
+    for the selected gallery.
+  - Notes:
+
 ## Done
+
+- [x] TODO-0002 `feature` Display tags in gallery view
+  - Completed: 2026-06-21
+  - Context: Tags were visible on gallery cards but not reliably on the
+    read-only gallery detail page.
+  - Outcome: Gallery detail fetches by slug now return normalized tag strings,
+    matching ID fetches and allowing the existing gallery tag UI to render.
+  - Commit: 6ecd5bb
 
 - [x] TODO-0001 `feature` Navigate away from editor after successful gallery save
   - Completed: 2026-06-20
