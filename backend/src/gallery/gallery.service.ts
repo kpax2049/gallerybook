@@ -736,11 +736,20 @@ export class GalleryService {
     mode: 'view' | 'edit',
     user?: Pick<User, 'id' | 'role'>,
   ) {
-    const gallery = await this.prisma.gallery.findUnique({ where: { slug } });
+    const gallery = await this.prisma.gallery.findUnique({
+      where: { slug },
+      include: {
+        tags: {
+          include: { tag: { select: { slug: true, name: true } } },
+          orderBy: { tag: { name: 'asc' } },
+        },
+      },
+    });
     if (!gallery) throw new NotFoundException('Gallery not found');
     this.assertCanReadGallery(gallery, mode, user);
     const content = await this.rewriteGalleryImageSrcs(gallery.content, mode);
-    return { ...gallery, content };
+    const tagList = gallery.tags.map((row) => row.tag.slug ?? row.tag.name);
+    return { ...gallery, content, tags: tagList };
   }
 
   // Helper functions

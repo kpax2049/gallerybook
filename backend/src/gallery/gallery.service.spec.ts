@@ -178,6 +178,10 @@ describe('GalleryService', () => {
         status: GalleryStatus.PUBLISHED,
         visibility: Visibility.UNLISTED,
         content: { type: 'doc', content: [] },
+        tags: [
+          { tag: { slug: 'family', name: 'Family' } },
+          { tag: { slug: null, name: 'Road Trip' } },
+        ],
       };
       prisma.gallery.findUnique.mockResolvedValue(gallery);
 
@@ -186,7 +190,19 @@ describe('GalleryService', () => {
           id: 2,
           role: Role.USER,
         }),
-      ).resolves.toEqual(gallery);
+      ).resolves.toEqual({
+        ...gallery,
+        tags: ['family', 'Road Trip'],
+      });
+      expect(prisma.gallery.findUnique).toHaveBeenCalledWith({
+        where: { slug: 'family-trip' },
+        include: {
+          tags: {
+            include: { tag: { select: { slug: true, name: true } } },
+            orderBy: { tag: { name: 'asc' } },
+          },
+        },
+      });
     });
   });
 
