@@ -124,7 +124,7 @@ function GalleriesListPage() {
   );
   const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [editorOpen, setEditorOpen] = React.useState(false);
-  const [editingGallery, setEditingGallery] = React.useState<Gallery | null>(null);
+  const [editingGallery] = React.useState<Gallery | null>(null);
   const [reactionOverrides, setReactionOverrides] = React.useState<
     Record<number, { like: boolean; favorite: boolean }>
   >({});
@@ -287,8 +287,7 @@ function GalleriesListPage() {
   };
 
   const openEditGallery = (gallery: Gallery) => {
-    setEditingGallery(gallery);
-    setEditorOpen(true);
+    navigate(`/galleries/edit/${gallery.id}`);
   };
 
   const renderGridCard = (g: Gallery, index: number) => {

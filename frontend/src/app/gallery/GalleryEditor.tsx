@@ -154,6 +154,7 @@ export function GalleryEditor({
     top: number;
     left: number;
   } | null>(null);
+  const [richTextControlsReady, setRichTextControlsReady] = useState(false);
   const editorRef = useRef<any>(null);
 
   const getGalleryViewPath = useCallback(
@@ -655,8 +656,29 @@ export function GalleryEditor({
     !editor.isDestroyed &&
     Array.isArray(editor.extensionManager?.extensions);
 
+  const showEditor =
+    editorReady &&
+    (!isEdit || (isEdit && !loading && resolvedGalleryId !== undefined));
+
+  useEffect(() => {
+    setRichTextControlsReady(false);
+    if (!showEditor) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      if (
+        editor &&
+        !editor.isDestroyed &&
+        Array.isArray(editor.extensionManager?.extensions)
+      ) {
+        setRichTextControlsReady(true);
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [editor, showEditor]);
+
   const toolbar = useMemo(() => {
-    if (!editorReady) return null;
+    if (!editorReady || !richTextControlsReady) return null;
     return (
       <div
         className="gallery-editor-toolbar richtext-flex richtext-items-center richtext-gap-2 richtext-overflow-x-auto richtext-rounded-none richtext-border-0 richtext-border-b richtext-p-3"
@@ -723,12 +745,9 @@ export function GalleryEditor({
     handleImageUploadClick,
     handleSaveClick,
     isEdit,
+    richTextControlsReady,
     submitting,
   ]);
-
-  const showEditor =
-    editorReady &&
-    (!isEdit || (isEdit && !loading && resolvedGalleryId !== undefined));
 
   return (
     <div className="gb-page min-h-svh">

@@ -55,13 +55,18 @@ export const GalleryCard = React.memo(function GalleryCard({
   const [busyFav, setBusyFav] = React.useState(false);
   const liked = !!myReaction?.like;
   const faved = !!myReaction?.favorite;
-  const authorName = item.author?.displayName ?? item.author?.username ?? 'admin';
+  const authorName =
+    item.author?.displayName ?? item.author?.username ?? 'admin';
   const likesDisplay = likesCountOverride ?? item.likesCount ?? 0;
   const favsDisplay = favoritesCountOverride ?? item.favoritesCount ?? 0;
   const tags = Array.isArray(item.tags) ? item.tags : [];
 
-  const onEdit = (event?: Event) => {
-    event?.preventDefault();
+  const onEdit = (event?: {
+    preventDefault?: () => void;
+    stopPropagation?: () => void;
+  }) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
     if (onEditRequested) onEditRequested();
     else navigate(`/galleries/edit/${item.id}`);
   };
@@ -192,7 +197,9 @@ export const GalleryCard = React.memo(function GalleryCard({
 
           <div className="absolute inset-x-0 bottom-0 translate-y-3 space-y-2 p-3 text-white opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
             <div className="text-[11px] text-white/78">
-              {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : 'Recently updated'}
+              {item.updatedAt
+                ? new Date(item.updatedAt).toLocaleDateString()
+                : 'Recently updated'}
             </div>
             <div className="flex items-center gap-3 text-xs">
               <span className="inline-flex items-center gap-1">
@@ -207,7 +214,10 @@ export const GalleryCard = React.memo(function GalleryCard({
             </div>
             <div className="flex flex-wrap gap-1">
               {tags.slice(0, 3).map((tag) => (
-                <span key={tag} className="max-w-24 truncate rounded-full bg-white/18 px-2 py-0.5 text-[11px]">
+                <span
+                  key={tag}
+                  className="max-w-24 truncate rounded-full bg-white/18 px-2 py-0.5 text-[11px]"
+                >
                   {tag}
                 </span>
               ))}
@@ -247,7 +257,11 @@ export const GalleryCard = React.memo(function GalleryCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="gb-menu p-1">
-              <DropdownMenuItem onSelect={onEdit} disabled={deleting}>
+              <DropdownMenuItem
+                data-stop-link="true"
+                onClick={onEdit}
+                disabled={deleting}
+              >
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={onDelete} disabled={deleting}>
