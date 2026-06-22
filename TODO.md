@@ -40,15 +40,16 @@ No active items.
     the gallery/dashboard navigation.
   - Notes:
 
-- [ ] TODO-0006 `bug` Fix gallery card edit menu navigation
-  - Context: In My Galleries view variants, clicking the gallery card three-dot
-    menu and then Edit navigates to the read-only gallery view instead of the
-    editor for that gallery.
-  - Expected: Edit from the gallery card action menu should open the editor view
-    for the selected gallery.
-  - Notes:
-
 ## Done
+
+- [x] TODO-0006 `bug` Fix gallery card edit menu navigation
+  - Completed: 2026-06-22
+  - Context: In My Galleries view variants, clicking the gallery card three-dot
+    menu and then Edit navigated to the read-only gallery view instead of the
+    editor for that gallery.
+  - Outcome: The gallery list edit handler now opens the same full editor route
+    used by the read-only gallery view Edit button.
+  - Commit: 68a7888
 
 - [x] TODO-0002 `feature` Display tags in gallery view
   - Completed: 2026-06-21
