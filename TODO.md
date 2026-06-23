@@ -33,14 +33,16 @@ No active items.
     they require.
   - Notes:
 
-- [ ] TODO-0005 `feature` Add breadcrumbs to gallery editor page
-  - Context: The gallery editor page needs breadcrumb navigation for better
-    orientation within the galleries workflow.
-  - Expected: Gallery editor should show breadcrumbs consistent with the rest of
-    the gallery/dashboard navigation.
-  - Notes:
-
 ## Done
+
+- [x] TODO-0005 `feature` Add breadcrumbs to gallery editor page
+  - Completed: 2026-06-23
+  - Context: The gallery editor page needed breadcrumb navigation for better
+    orientation within the galleries workflow.
+  - Outcome: The gallery editor now shows the shared gallery breadcrumb above
+    the editor toolbar, with the current create/edit page label supplied by the
+    editor.
+  - Commit: ec82ab2
 
 - [x] TODO-0006 `bug` Fix gallery card edit menu navigation
   - Completed: 2026-06-22
