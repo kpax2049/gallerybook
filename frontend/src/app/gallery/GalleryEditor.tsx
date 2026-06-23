@@ -60,7 +60,6 @@ import { EditorContent, AnyExtension, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
-import { DragHandle as Drag } from '@tiptap/extension-drag-handle';
 import { NodeSelection } from '@tiptap/pm/state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fileToBase64 } from '@/lib/fileUtils';
@@ -96,6 +95,7 @@ import {
   StoryLink,
   StoryParagraph,
 } from './galleryStoryExtensions';
+import { GalleryBreadcrumb } from './GalleryBreadcrumb';
 
 export type DialogData = {
   html: string;
@@ -206,13 +206,6 @@ export function GalleryEditor({
       Emoji,
       Heading.configure({
         levels: [1, 2, 3, 4, 5, 6],
-      }),
-      Drag.configure({
-        render() {
-          const element = document.createElement('div');
-          element.className = 'drag-handle';
-          return element;
-        },
       }),
     ],
     []
@@ -749,9 +742,16 @@ export function GalleryEditor({
     submitting,
   ]);
 
+  const editorBreadcrumbLabel = isEdit
+    ? `Editing ${titleDraft || gallery?.title || resolvedGalleryId || 'Gallery'}`
+    : 'Create New Gallery';
+
   return (
     <div className="gb-page min-h-svh">
       <div className="gallery-editor-shell">
+        <div className="gallery-editor-breadcrumb">
+          <GalleryBreadcrumb leafLabel={editorBreadcrumbLabel} />
+        </div>
         {showEditor ? (
           <RichTextProvider editor={editor}>
             {toolbar}

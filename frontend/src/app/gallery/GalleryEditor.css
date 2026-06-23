@@ -19,6 +19,26 @@
   flex-direction: column;
 }
 
+.gallery-editor-breadcrumb {
+  width: min(1080px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 14px 0 8px;
+  color: var(--gb-ink-soft);
+}
+
+.gallery-editor-breadcrumb nav {
+  display: flex;
+  justify-content: center;
+}
+
+.gallery-editor-breadcrumb a {
+  color: inherit;
+}
+
+.gallery-editor-breadcrumb a:hover {
+  color: var(--gb-ink);
+}
+
 .gallery-editor-toolbar {
   position: sticky;
   top: 0;

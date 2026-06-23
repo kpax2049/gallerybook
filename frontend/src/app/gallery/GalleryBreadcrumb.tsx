@@ -65,7 +65,11 @@ function hubToCrumb(hub: Hub): { label: string; href: string } {
   }
 }
 
-export function GalleryBreadcrumb() {
+type GalleryBreadcrumbProps = {
+  leafLabel?: string;
+};
+
+export function GalleryBreadcrumb({ leafLabel }: GalleryBreadcrumbProps = {}) {
   const location = useLocation();
   const basePath = '/galleries';
 
@@ -108,14 +112,16 @@ export function GalleryBreadcrumb() {
           ? `${basePath}/${viewId}`
           : basePath;
 
-  const finalLabel = isCreating
-    ? 'Create New Gallery'
-    : isEditing && (gallery?.title || editId)
-      ? `Editing ${gallery?.title ?? editId}`
-      : (gallery?.title ??
-        (slug ? decodeURIComponent(slug) : undefined) ??
-        viewId ??
-        'Gallery');
+  const finalLabel =
+    leafLabel ??
+    (isCreating
+      ? 'Create New Gallery'
+      : isEditing && (gallery?.title || editId)
+        ? `Editing ${gallery?.title ?? editId}`
+        : (gallery?.title ??
+          (slug ? decodeURIComponent(slug) : undefined) ??
+          viewId ??
+          'Gallery'));
 
   // Show leaf only when there is a concrete target (create/edit/slug/id)
   const hasLeaf = isCreating || isEditing || Boolean(slug || viewId);
