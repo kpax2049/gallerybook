@@ -198,6 +198,17 @@ export class GalleryService {
     return this.assetUrl.thumbKeyToCdnUrl(key);
   }
 
+  private async incrementViewsCount(galleryId: number): Promise<number | null> {
+    const rows = await this.prisma.$queryRaw<{ viewsCount: number }[]>`
+      UPDATE "galleries"
+      SET "viewsCount" = "viewsCount" + 1
+      WHERE "id" = ${galleryId}
+      RETURNING "viewsCount"
+    `;
+
+    return rows[0]?.viewsCount ?? null;
+  }
+
   async checkGalleryOwnershipOrAdmin(
     galleryId: number,
     user: User,
@@ -358,11 +369,15 @@ export class GalleryService {
     }
     this.assertCanReadGallery(gallery, mode, user);
     const tagList = gallery.tags.map((row) => row.tag.slug ?? row.tag.name);
+    const viewsCount =
+      mode === 'view'
+        ? ((await this.incrementViewsCount(gallery.id)) ?? gallery.viewsCount)
+        : gallery.viewsCount;
     const rewritten = await this.rewriteGalleryImageSrcs(
       gallery.content,
       mode === 'view' ? 'view' : 'edit',
     );
-    return { ...gallery, content: rewritten, tags: tagList };
+    return { ...gallery, viewsCount, content: rewritten, tags: tagList };
     // if (mode === 'view') {
     //   // const cacheKey = this.getCacheKey(galleryId);
     //   // const cached = await this.cacheManager.get(cacheKey);
@@ -747,9 +762,13 @@ export class GalleryService {
     });
     if (!gallery) throw new NotFoundException('Gallery not found');
     this.assertCanReadGallery(gallery, mode, user);
+    const viewsCount =
+      mode === 'view'
+        ? ((await this.incrementViewsCount(gallery.id)) ?? gallery.viewsCount)
+        : gallery.viewsCount;
     const content = await this.rewriteGalleryImageSrcs(gallery.content, mode);
     const tagList = gallery.tags.map((row) => row.tag.slug ?? row.tag.name);
-    return { ...gallery, content, tags: tagList };
+    return { ...gallery, viewsCount, content, tags: tagList };
   }
 
   // Helper functions

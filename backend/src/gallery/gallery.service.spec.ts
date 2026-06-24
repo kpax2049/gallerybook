@@ -9,6 +9,7 @@ import { ListGalleriesDto } from './dto/list-galleries.dto';
 describe('GalleryService', () => {
   let service: GalleryService;
   let prisma: {
+    $queryRaw: jest.Mock;
     gallery: {
       findUnique: jest.Mock;
       findMany: jest.Mock;
@@ -23,6 +24,7 @@ describe('GalleryService', () => {
 
   beforeEach(() => {
     prisma = {
+      $queryRaw: jest.fn().mockResolvedValue([{ viewsCount: 1 }]),
       gallery: {
         findUnique: jest.fn(),
         findMany: jest.fn(),
@@ -178,11 +180,13 @@ describe('GalleryService', () => {
         status: GalleryStatus.PUBLISHED,
         visibility: Visibility.UNLISTED,
         content: { type: 'doc', content: [] },
+        viewsCount: 7,
         tags: [
           { tag: { slug: 'family', name: 'Family' } },
           { tag: { slug: null, name: 'Road Trip' } },
         ],
       };
+      prisma.$queryRaw.mockResolvedValue([{ viewsCount: 8 }]);
       prisma.gallery.findUnique.mockResolvedValue(gallery);
 
       await expect(
@@ -192,8 +196,10 @@ describe('GalleryService', () => {
         }),
       ).resolves.toEqual({
         ...gallery,
+        viewsCount: 8,
         tags: ['family', 'Road Trip'],
       });
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
       expect(prisma.gallery.findUnique).toHaveBeenCalledWith({
         where: { slug: 'family-trip' },
         include: {
@@ -203,6 +209,26 @@ describe('GalleryService', () => {
           },
         },
       });
+    });
+
+    it('does not increment views when opening a gallery for editing', async () => {
+      const gallery = {
+        id: 1,
+        status: GalleryStatus.DRAFT,
+        visibility: Visibility.PUBLIC,
+        content: { type: 'doc', content: [] },
+        viewsCount: 4,
+        tags: [],
+      };
+      prisma.gallery.findUnique.mockResolvedValue(gallery);
+
+      await expect(
+        service.getGalleryById(1, 'edit', { id: 2, role: Role.ADMIN }),
+      ).resolves.toEqual({
+        ...gallery,
+        tags: [],
+      });
+      expect(prisma.$queryRaw).not.toHaveBeenCalled();
     });
   });
 
