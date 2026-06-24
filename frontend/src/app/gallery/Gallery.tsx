@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
+  Eye,
   Heart,
   ImagePlus,
   Loader2,
@@ -209,6 +210,7 @@ export default function GalleryPage() {
   );
   const title = gallery?.title ?? 'Gallery';
   const photoCount = photos.length;
+  const viewsCount = gallery?.viewsCount ?? 0;
   const canManage = isAdmin(currentUser) && numericId != null;
   const renderMasonry = !storyHasProse && photos.length > 0;
 
@@ -335,6 +337,10 @@ export default function GalleryPage() {
               )}
               <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
                 <Stat value={`${photoCount.toLocaleString()} photos`} />
+                <Stat
+                  icon={<Eye className="h-3.5 w-3.5" />}
+                  value={`${viewsCount.toLocaleString()} views`}
+                />
                 <Stat icon={<Heart className="h-3.5 w-3.5" />} value={likesCount} />
                 <Stat icon={<Star className="h-3.5 w-3.5" />} value={favoritesCount} />
                 <Stat icon={<MessageSquare className="h-3.5 w-3.5" />} value="Comments" />
