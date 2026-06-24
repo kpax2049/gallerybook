@@ -35,6 +35,15 @@ No active items.
 
 ## Done
 
+- [x] TODO-0007 `feature` Make gallery view counter functional
+  - Completed: 2026-06-23
+  - Context: Gallery cards and detail pages display view counts, but the counter
+    was not yet confirmed to increment and persist reliably.
+  - Outcome: Read-only gallery fetches now increment the persisted view count
+    without touching the gallery update timestamp, and the detail masthead
+    displays the stored count alongside gallery cards.
+  - Commit: e92c7d9, f48f4e2
+
 - [x] TODO-0005 `feature` Add breadcrumbs to gallery editor page
   - Completed: 2026-06-23
   - Context: The gallery editor page needed breadcrumb navigation for better
