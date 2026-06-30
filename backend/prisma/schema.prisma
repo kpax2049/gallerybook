@@ -76,6 +76,7 @@ model User {
   oauthAccounts OauthAccount[]
 
   galleries        Gallery[]
+  folders          Folder[]
   comments         Comment[]
   commentReactions Reaction[]
   GalleryReaction  GalleryReaction[]
@@ -158,6 +159,25 @@ model GalleryReaction {
   @@index([galleryId, type])
 }
 
+model Folder {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  slug        String
+  description String?
+  color       String?
+
+  userId Int
+  owner  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  galleries Gallery[]
+
+  @@unique([userId, slug])
+  @@index([userId, updatedAt])
+  @@map("folders")
+}
+
 model Gallery {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -165,6 +185,9 @@ model Gallery {
 
   userId    Int
   createdBy User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  folderId Int?
+  folder   Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   title       String?
   description String?
@@ -185,6 +208,7 @@ model Gallery {
 
   @@index([status, updatedAt])
   @@index([userId, updatedAt])
+  @@index([folderId, updatedAt])
   @@index([visibility, updatedAt])
   @@map("galleries")
 }
