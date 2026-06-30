@@ -9,6 +9,7 @@ import { GalleryModule } from './gallery/gallery.module';
 import { CommentModule } from './comment/comment.module';
 import { ProfileModule } from './profile/profile.module';
 import { FollowModule } from './follow/follow.module';
+import { FolderModule } from './folder/folder.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -24,6 +25,7 @@ import { validateEnv } from './config/env.validation';
     CommentModule,
     ProfileModule,
     FollowModule,
+    FolderModule,
   ],
   providers: [
     {
