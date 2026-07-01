@@ -18,6 +18,9 @@ describe('GalleryService', () => {
     galleryReaction: {
       findMany: jest.Mock;
     };
+    folder: {
+      findUnique: jest.Mock;
+    };
   };
   let config: { get: jest.Mock };
   let assetUrl: { thumbKeyToCdnUrl: jest.Mock };
@@ -32,6 +35,9 @@ describe('GalleryService', () => {
       },
       galleryReaction: {
         findMany: jest.fn(),
+      },
+      folder: {
+        findUnique: jest.fn(),
       },
     };
 
@@ -370,6 +376,42 @@ describe('GalleryService', () => {
       });
       expect(res.total).toBe(0);
       expect(res.items).toEqual([]);
+    });
+  });
+
+  describe('folder assignment validation', () => {
+    it('allows undefined and null folder assignments', async () => {
+      await expect(
+        (service as any).resolveFolderIdForOwner(7, undefined),
+      ).resolves.toBeUndefined();
+      await expect(
+        (service as any).resolveFolderIdForOwner(7, null),
+      ).resolves.toBeNull();
+      expect(prisma.folder.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('allows folders owned by the gallery owner', async () => {
+      prisma.folder.findUnique.mockResolvedValue({ userId: 7 });
+
+      await expect(
+        (service as any).resolveFolderIdForOwner(7, 12),
+      ).resolves.toBe(12);
+      expect(prisma.folder.findUnique).toHaveBeenCalledWith({
+        where: { id: 12 },
+        select: { userId: true },
+      });
+    });
+
+    it('rejects missing or foreign folders', async () => {
+      prisma.folder.findUnique.mockResolvedValueOnce(null);
+      await expect(
+        (service as any).resolveFolderIdForOwner(7, 12),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      prisma.folder.findUnique.mockResolvedValueOnce({ userId: 99 });
+      await expect(
+        (service as any).resolveFolderIdForOwner(7, 12),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 
