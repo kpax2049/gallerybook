@@ -12,6 +12,19 @@ import {
   IsEnum,
 } from 'class-validator';
 
+const transformFolderId = ({ value }: { value: unknown }) => {
+  if (value === undefined) return undefined;
+  if (
+    value === null ||
+    value === '' ||
+    value === 'none' ||
+    value === 'unfiled'
+  ) {
+    return null;
+  }
+  return Number(value);
+};
+
 export type SortKey =
   | 'updatedAt'
   | 'createdAt'
@@ -136,4 +149,10 @@ export class ListGalleriesDto {
   @Transform(({ value }) => parseInt(value, 10))
   @IsInt()
   createdById?: number;
+
+  @IsOptional()
+  @Transform(transformFolderId)
+  @IsInt()
+  @Min(1)
+  folderId?: number | null;
 }

@@ -2,11 +2,26 @@ import { Transform } from 'class-transformer';
 import {
   ArrayUnique,
   IsArray,
+  IsInt,
   IsJSON,
   IsNotEmpty,
   IsOptional,
   IsString,
+  Min,
 } from 'class-validator';
+
+const transformFolderId = ({ value }: { value: unknown }) => {
+  if (value === undefined) return undefined;
+  if (
+    value === null ||
+    value === '' ||
+    value === 'none' ||
+    value === 'unfiled'
+  ) {
+    return null;
+  }
+  return Number(value);
+};
 
 export class CreateGalleryDto {
   @IsString()
@@ -23,6 +38,12 @@ export class CreateGalleryDto {
 
   @IsOptional()
   thumbnail?: any;
+
+  @IsOptional()
+  @Transform(transformFolderId)
+  @IsInt()
+  @Min(1)
+  folderId?: number | null;
 
   @IsOptional()
   @IsArray()

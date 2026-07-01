@@ -135,6 +135,8 @@ describe('GalleryService', () => {
         updatedAt: now,
         status: GalleryStatus.PUBLISHED,
         thumbnail: 'thumb.jpg',
+        folderId: null,
+        folder: null,
       },
     ]);
 
@@ -155,6 +157,8 @@ describe('GalleryService', () => {
         updatedAt: now,
         status: GalleryStatus.PUBLISHED,
         thumbnail: 'cdn/thumb.jpg',
+        folderId: null,
+        folder: null,
       },
     ]);
   });
@@ -203,6 +207,9 @@ describe('GalleryService', () => {
       expect(prisma.gallery.findUnique).toHaveBeenCalledWith({
         where: { slug: 'family-trip' },
         include: {
+          folder: {
+            select: { id: true, name: true, slug: true, color: true },
+          },
           tags: {
             include: { tag: { select: { slug: true, name: true } } },
             orderBy: { tag: { name: 'asc' } },
@@ -316,6 +323,30 @@ describe('GalleryService', () => {
           { comments: { some: {} } },
           { userId: 9 },
         ]),
+      );
+    });
+
+    it('filters by folder or unfiled galleries', () => {
+      const folderWhere = buildWhere(
+        7,
+        { folderId: 11 },
+        undefined,
+        undefined,
+        true,
+      );
+      expect(folderWhere.AND).toEqual(
+        expect.arrayContaining([{ folderId: 11 }]),
+      );
+
+      const unfiledWhere = buildWhere(
+        7,
+        { folderId: null },
+        undefined,
+        undefined,
+        true,
+      );
+      expect(unfiledWhere.AND).toEqual(
+        expect.arrayContaining([{ folderId: null }]),
       );
     });
   });

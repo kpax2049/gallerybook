@@ -50,6 +50,14 @@ interface ProseMirrorNode {
 }
 
 const SELECT_LIST = {
+  folder: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      color: true,
+    },
+  },
   tags: { include: { tag: true } },
   _count: { select: { comments: true } },
   // author fields for the card hover
@@ -259,6 +267,15 @@ export class GalleryService {
         updatedAt: true,
         status: true,
         thumbnail: true,
+        folderId: true,
+        folder: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+          },
+        },
       },
       orderBy: { updatedAt: 'desc' },
     });
@@ -271,12 +288,15 @@ export class GalleryService {
       updatedAt: g.updatedAt,
       status: g.status,
       thumbnail: this.thumbKeyToCdnUrl(g.thumbnail),
+      folderId: g.folderId,
+      folder: g.folder,
     }));
   }
 
   async createDraft(dto: CreateDraftGalleryDto, userId: number) {
     const normalized = this.normalizeTags(dto.tags ?? []);
     const slug = await this.generateUniqueSlug(dto.title);
+    const folderId = await this.resolveFolderIdForOwner(userId, dto.folderId);
 
     return this.prisma.$transaction(async (tx) => {
       const gallery = await tx.gallery.create({
@@ -286,6 +306,7 @@ export class GalleryService {
           thumbnail: dto.thumbnail,
           slug,
           userId,
+          ...(folderId !== undefined ? { folderId } : {}),
         },
       });
 
@@ -313,8 +334,12 @@ export class GalleryService {
   }
 
   async createGallery(userId: number, dto: CreateGalleryDto) {
-    const { tags: incomingTags, ...fields } = dto;
+    const { tags: incomingTags, folderId: incomingFolderId, ...fields } = dto;
     const normalized = this.normalizeTags(incomingTags ?? []);
+    const folderId = await this.resolveFolderIdForOwner(
+      userId,
+      incomingFolderId,
+    );
 
     const slug = await this.generateUniqueSlug(dto.title);
     const created = await this.prisma.gallery.create({
@@ -322,6 +347,7 @@ export class GalleryService {
         userId,
         slug,
         ...fields,
+        ...(folderId !== undefined ? { folderId } : {}),
         ...(normalized.length > 0 && {
           // "tags" is your explicit join relation (GalleryTag[])
           tags: {
@@ -337,6 +363,9 @@ export class GalleryService {
         }),
       },
       include: {
+        folder: {
+          select: { id: true, name: true, slug: true, color: true },
+        },
         tags: { include: { tag: { select: { name: true, slug: true } } } },
       },
     });
@@ -358,6 +387,9 @@ export class GalleryService {
         id: galleryId,
       },
       include: {
+        folder: {
+          select: { id: true, name: true, slug: true, color: true },
+        },
         tags: {
           include: { tag: { select: { slug: true, name: true } } },
           orderBy: { tag: { name: 'asc' } }, // optional: stable order
@@ -421,7 +453,16 @@ export class GalleryService {
     }
 
     // split fields
-    const { tags: incomingTags, title: incomingTitle, ...rest } = dto;
+    const {
+      tags: incomingTags,
+      title: incomingTitle,
+      folderId: incomingFolderId,
+      ...rest
+    } = dto;
+    const folderIdToSet = await this.resolveFolderIdForOwner(
+      existing.userId,
+      incomingFolderId,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       // If caller sent a (non-empty) title, normalize it and derive a unique slug from it.
@@ -441,6 +482,9 @@ export class GalleryService {
           ...rest,
           ...(titleToSet ? { title: titleToSet } : {}),
           ...(slugToSet ? { slug: slugToSet } : {}),
+          ...(incomingFolderId !== undefined
+            ? { folderId: folderIdToSet }
+            : {}),
         },
       });
 
@@ -477,6 +521,9 @@ export class GalleryService {
       const withTags = await tx.gallery.findUnique({
         where: { id: galleryId },
         include: {
+          folder: {
+            select: { id: true, name: true, slug: true, color: true },
+          },
           tags: {
             include: { tag: { select: { name: true, slug: true } } },
             orderBy: { tag: { name: 'asc' } },
@@ -754,6 +801,9 @@ export class GalleryService {
     const gallery = await this.prisma.gallery.findUnique({
       where: { slug },
       include: {
+        folder: {
+          select: { id: true, name: true, slug: true, color: true },
+        },
         tags: {
           include: { tag: { select: { slug: true, name: true } } },
           orderBy: { tag: { name: 'asc' } },
@@ -879,6 +929,12 @@ export class GalleryService {
     // author filter (single)
     if (dto.createdById) AND.push({ userId: dto.createdById });
 
+    if (dto.folderId !== undefined) {
+      AND.push(
+        dto.folderId === null ? { folderId: null } : { folderId: dto.folderId },
+      );
+    }
+
     const where: Prisma.GalleryWhereInput = {};
     if (AND.length) where.AND = AND;
     if (OR.length) where.OR = OR;
@@ -922,6 +978,15 @@ export class GalleryService {
       description: g.description,
       content: g.content as unknown,
       thumbnail: g.thumbnail,
+      folderId: g.folderId,
+      folder: g.folder
+        ? {
+            id: g.folder.id,
+            name: g.folder.name,
+            slug: g.folder.slug,
+            color: g.folder.color,
+          }
+        : null,
       status: g.status,
       createdAt: g.createdAt.toISOString(),
       updatedAt: g.updatedAt.toISOString(),
@@ -975,6 +1040,24 @@ export class GalleryService {
   private async ensureGallery(id: number) {
     const exists = await this.prisma.gallery.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException('Gallery not found');
+  }
+
+  private async resolveFolderIdForOwner(
+    userId: number,
+    folderId: number | null | undefined,
+  ) {
+    if (folderId === undefined || folderId === null) return folderId;
+
+    const folder = await this.prisma.folder.findUnique({
+      where: { id: folderId },
+      select: { userId: true },
+    });
+
+    if (!folder || folder.userId !== userId) {
+      throw new NotFoundException('Folder not found');
+    }
+
+    return folderId;
   }
 
   private assertCanReadGallery(
