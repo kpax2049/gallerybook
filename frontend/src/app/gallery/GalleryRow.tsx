@@ -28,6 +28,7 @@ type RowProps = {
   favoritesCountOverride?: number;
   onDeleted?: (id: number) => void;
   onEditRequested?: () => void;
+  onMoveRequested?: () => void;
   style?: React.CSSProperties;
 };
 
@@ -40,6 +41,7 @@ export function GalleryRow({
   favoritesCountOverride,
   onDeleted,
   onEditRequested,
+  onMoveRequested,
   style,
 }: RowProps) {
   const navigate = useNavigate();
@@ -172,7 +174,10 @@ export function GalleryRow({
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Heart
-                className={cn('h-4 w-4', liked && 'text-[var(--gb-like)] fill-current')}
+                className={cn(
+                  'h-4 w-4',
+                  liked && 'text-[var(--gb-like)] fill-current'
+                )}
               />
             )}
           </Button>
@@ -190,7 +195,10 @@ export function GalleryRow({
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Star
-                className={cn('h-4 w-4', faved && 'text-[var(--gb-favorite)] fill-current')}
+                className={cn(
+                  'h-4 w-4',
+                  faved && 'text-[var(--gb-favorite)] fill-current'
+                )}
               />
             )}
           </Button>
@@ -213,12 +221,29 @@ export function GalleryRow({
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={6} className="gb-menu p-1">
+              <DropdownMenuContent
+                align="end"
+                sideOffset={6}
+                className="gb-menu p-1"
+              >
                 <DropdownMenuItem onSelect={onEdit} disabled={deleting}>
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => void onDelete()} disabled={deleting}>
-                  {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {onMoveRequested && (
+                  <DropdownMenuItem
+                    onSelect={onMoveRequested}
+                    disabled={deleting}
+                  >
+                    Move to folder
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onSelect={() => void onDelete()}
+                  disabled={deleting}
+                >
+                  {deleting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   {deleting ? 'Deleting...' : 'Delete'}
                 </DropdownMenuItem>
               </DropdownMenuContent>

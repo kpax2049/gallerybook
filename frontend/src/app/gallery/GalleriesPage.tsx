@@ -14,6 +14,7 @@ import {
   Bell,
   Check,
   Filter,
+  FolderPlus,
   Grid3X3,
   ImageIcon,
   List,
@@ -43,6 +44,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Sheet,
   SheetClose,
@@ -54,13 +56,16 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { createDraftGallery, editGallery, Gallery } from '@/api/gallery';
+import { Folder } from '@/api/folder';
 import { getUserInitials } from '@/api/user';
 import { signout } from '@/api/auth';
 import { useGalleries } from '@/hooks/use-gallery';
+import { useFolders } from '@/hooks/use-folders';
 import { cn } from '@/lib/utils';
 import { isAdmin } from '@/lib/authz';
 import { useTheme } from '@/components/theme-provider';
 import { useGalleryListState } from '@/stores/galleryStore';
+import { useFolderStore } from '@/stores/folderStore';
 import { useUserStore } from '@/stores/userStore';
 import { UserProfileDialog } from '@/app/userProfile/UserProfileDialog';
 import { AccountLegalFooter, ShelfColophon } from '@/components/LegalColophon';
@@ -75,11 +80,22 @@ import {
 } from './gallery-query-params';
 import { GalleryCard } from './GalleryCard';
 import { GalleryRow } from './GalleryRow';
+import {
+  FOLDER_COLORS,
+  FolderAlbumCard,
+  FolderListRow,
+  NewFolderCard,
+} from './FolderAlbum';
 import logoMint from '@/assets/GB-logo-mint.png';
 import logoTeal from '@/assets/GB-logo-teal.png';
 
 type ReactionPatch = { like?: boolean; favorite?: boolean };
 type ViewMode = 'grid' | 'list';
+type FolderSummary = {
+  folder: Folder;
+  cover?: Gallery;
+  peek: string;
+};
 type FilterKey =
   | 'all'
   | 'favorites'
@@ -137,7 +153,27 @@ function GalleriesListPage() {
   const [deletedGalleryIds, setDeletedGalleryIds] = React.useState<Set<number>>(
     () => new Set()
   );
+  const [folderOverrides, setFolderOverrides] = React.useState<
+    Record<number, { folderId: number | null; folder?: Folder | null }>
+  >({});
+  const [folderEditorOpen, setFolderEditorOpen] = React.useState(false);
+  const [editingFolder, setEditingFolder] = React.useState<Folder | null>(null);
+  const [deletingFolder, setDeletingFolder] = React.useState<Folder | null>(
+    null
+  );
+  const [movingGallery, setMovingGallery] = React.useState<Gallery | null>(
+    null
+  );
+  const [addingToFolder, setAddingToFolder] = React.useState<Folder | null>(
+    null
+  );
   const canCreateGalleries = isAdmin(currentUser);
+  const canManageFolders = canCreateGalleries;
+  const { folders } = useFolders();
+  const createFolder = useFolderStore((state) => state.createFolder);
+  const updateFolder = useFolderStore((state) => state.updateFolder);
+  const deleteFolder = useFolderStore((state) => state.deleteFolder);
+  const reloadFolders = useFolderStore((state) => state.load);
 
   const activeFilter = getActiveFilter(filters, sort);
 
@@ -225,10 +261,37 @@ function GalleriesListPage() {
     pageSize: pager.pageSize,
   });
 
-  const items = React.useMemo(() => data?.items ?? [], [data?.items]);
+  const folderById = React.useMemo(
+    () => new Map(folders.map((folder) => [folder.id, folder])),
+    [folders]
+  );
+  const items = React.useMemo(
+    () =>
+      (data?.items ?? []).map((item) => {
+        const override = folderOverrides[item.id];
+        if (!override) return item;
+        return {
+          ...item,
+          folderId: override.folderId,
+          folder:
+            override.folder ??
+            (override.folderId ? folderById.get(override.folderId) : null) ??
+            null,
+        };
+      }),
+    [data?.items, folderById, folderOverrides]
+  );
   const visibleItems = React.useMemo(
-    () => items.filter((item) => !deletedGalleryIds.has(item.id)),
-    [deletedGalleryIds, items]
+    () =>
+      items.filter((item) => {
+        if (deletedGalleryIds.has(item.id)) return false;
+        if (filters.folderId === 'unfiled') return item.folderId == null;
+        if (typeof filters.folderId === 'number') {
+          return item.folderId === filters.folderId;
+        }
+        return true;
+      }),
+    [deletedGalleryIds, filters.folderId, items]
   );
   const serverReactions = React.useMemo(
     () => data?.myReactions ?? {},
@@ -237,6 +300,50 @@ function GalleriesListPage() {
   const availableTags = React.useMemo(
     () => Array.from(new Set(items.flatMap((item) => item.tags ?? []))).sort(),
     [items]
+  );
+  const folderSummaries = React.useMemo<FolderSummary[]>(
+    () =>
+      folders.map((folder) => {
+        const folderItems = items.filter((item) => item.folderId === folder.id);
+        const titles = folderItems
+          .map((item) => item.title || 'Untitled gallery')
+          .slice(0, 3);
+        const remaining = Math.max(0, folder.galleriesCount - titles.length);
+        return {
+          folder,
+          cover: folderItems.find((item) => item.thumbnail) ?? folderItems[0],
+          peek: [...titles, ...(remaining > 0 ? [`+${remaining}`] : [])].join(
+            ' · '
+          ),
+        };
+      }),
+    [folders, items]
+  );
+  const activeFolder = React.useMemo(
+    () =>
+      typeof filters.folderId === 'number'
+        ? (folderById.get(filters.folderId) ?? null)
+        : null,
+    [filters.folderId, folderById]
+  );
+  const looseItems = React.useMemo(
+    () => visibleItems.filter((item) => item.folderId == null),
+    [visibleItems]
+  );
+  const showingFolderSections =
+    !loading &&
+    !error &&
+    filters.folderId === undefined &&
+    activeFilter === 'all' &&
+    !filters.search.trim() &&
+    folders.length > 0;
+  const galleryItemsForDisplay = showingFolderSections
+    ? looseItems
+    : visibleItems;
+  const looseAlbumsCount = Math.max(
+    0,
+    (data?.total ?? visibleItems.length) -
+      folders.reduce((sum, folder) => sum + folder.galleriesCount, 0)
   );
 
   const handleReactionChanged = React.useCallback(
@@ -300,6 +407,74 @@ function GalleriesListPage() {
     navigate(`/galleries/edit/${gallery.id}`);
   };
 
+  const openFolder = (folder: Folder) => {
+    setFilters({ ...filters, folderId: folder.id });
+    setPager({ ...pager, page: 1 });
+  };
+
+  const clearFolderFilter = () => {
+    setFilters({ ...filters, folderId: undefined });
+    setPager({ ...pager, page: 1 });
+  };
+
+  const openNewFolder = () => {
+    setEditingFolder(null);
+    setFolderEditorOpen(true);
+  };
+
+  const openRenameFolder = (folder: Folder) => {
+    setEditingFolder(folder);
+    setFolderEditorOpen(true);
+  };
+
+  const assignGalleryToFolder = React.useCallback(
+    async (gallery: Gallery, folderId: number | null) => {
+      await editGallery({ folderId }, gallery.id);
+      const folder = folderId ? (folderById.get(folderId) ?? null) : null;
+      setFolderOverrides((prev) => ({
+        ...prev,
+        [gallery.id]: { folderId, folder },
+      }));
+      await reloadFolders({ force: true });
+    },
+    [folderById, reloadFolders]
+  );
+
+  const assignGalleryIdToFolder = React.useCallback(
+    async (galleryId: number, folderId: number | null) => {
+      const gallery = items.find((item) => item.id === galleryId);
+      if (!gallery) return;
+      await assignGalleryToFolder(gallery, folderId);
+    },
+    [assignGalleryToFolder, items]
+  );
+
+  const createOrUpdateFolder = async (data: {
+    name: string;
+    color?: string;
+  }) => {
+    if (editingFolder) await updateFolder(editingFolder.id, data);
+    else await createFolder(data);
+    setFolderEditorOpen(false);
+    setEditingFolder(null);
+  };
+
+  const confirmDeleteFolder = async () => {
+    if (!deletingFolder) return;
+    await deleteFolder(deletingFolder.id);
+    setFolderOverrides((prev) => {
+      const next = { ...prev };
+      for (const item of items) {
+        if (item.folderId === deletingFolder.id) {
+          next[item.id] = { folderId: null, folder: null };
+        }
+      }
+      return next;
+    });
+    if (filters.folderId === deletingFolder.id) clearFolderFilter();
+    setDeletingFolder(null);
+  };
+
   const renderGridCard = (g: Gallery, index: number) => {
     const base = serverReactions[g.id] ?? { like: false, favorite: false };
     const current = reactionOverrides[g.id] ?? base;
@@ -320,6 +495,10 @@ function GalleriesListPage() {
           setDeletedGalleryIds((prev) => new Set(prev).add(id))
         }
         onEditRequested={() => openEditGallery(g)}
+        onMoveRequested={
+          canManageFolders ? () => setMovingGallery(g) : undefined
+        }
+        draggableCard={canManageFolders}
         style={
           {
             '--gb-tilt': tiltFor(index),
@@ -349,6 +528,9 @@ function GalleriesListPage() {
           setDeletedGalleryIds((prev) => new Set(prev).add(id))
         }
         onEditRequested={() => openEditGallery(g)}
+        onMoveRequested={
+          canManageFolders ? () => setMovingGallery(g) : undefined
+        }
         style={{ '--gb-delay': `${index * 45}ms` } as React.CSSProperties}
       />
     );
@@ -448,6 +630,127 @@ function GalleriesListPage() {
           ))}
         </nav>
 
+        {activeFolder && (
+          <section className="mt-6 rounded-[16px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] p-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <button
+                  type="button"
+                  onClick={clearFolderFilter}
+                  className="inline-flex items-center gap-2 text-sm text-[var(--gb-ink-soft)] hover:text-[var(--gb-accent)]"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Folders
+                </button>
+                <div className="mt-3 flex items-center gap-3">
+                  <span
+                    className="h-8 w-8 rounded-[3px_7px_7px_3px] shadow"
+                    style={{
+                      background: `linear-gradient(135deg, ${activeFolder.color ?? FOLDER_COLORS[0]}, rgba(0,0,0,.22))`,
+                    }}
+                    aria-hidden="true"
+                  />
+                  <div>
+                    <h2 className="gb-serif text-2xl font-medium leading-none">
+                      {activeFolder.name}
+                    </h2>
+                    <div className="gb-hand mt-1 text-[19px] text-[var(--gb-hand)]">
+                      {activeFolder.galleriesCount.toLocaleString()} albums in
+                      this folder
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {canManageFolders && (
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gb-chip rounded-[11px]"
+                    onClick={() => openRenameFolder(activeFolder)}
+                  >
+                    Rename
+                  </Button>
+                  <Button
+                    type="button"
+                    className="rounded-[11px] bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]/90"
+                    onClick={() => setAddingToFolder(activeFolder)}
+                  >
+                    <FolderPlus className="mr-2 h-4 w-4" />
+                    Add albums
+                  </Button>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {showingFolderSections && (
+          <section className="mt-7">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="gb-serif text-[26px] font-medium leading-none text-[var(--gb-ink)]">
+                  Folders
+                </h2>
+                <p className="gb-hand mt-1 text-[20px] font-semibold text-[var(--gb-hand)]">
+                  {folders.length.toLocaleString()} folders ·{' '}
+                  {looseAlbumsCount.toLocaleString()} loose albums
+                </p>
+              </div>
+              {canManageFolders && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={openNewFolder}
+                  className="gb-chip h-10 rounded-[11px] px-3 shadow-none"
+                >
+                  <FolderPlus className="mr-2 h-4 w-4" />
+                  New folder
+                </Button>
+              )}
+            </div>
+
+            {view === 'grid' ? (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(188px,1fr))] gap-x-[26px] gap-y-[34px]">
+                {folderSummaries.map(({ folder, cover, peek }) => (
+                  <FolderAlbumCard
+                    key={folder.id}
+                    folder={folder}
+                    cover={cover}
+                    peek={peek}
+                    canManage={canManageFolders}
+                    onOpen={() => openFolder(folder)}
+                    onRename={() => openRenameFolder(folder)}
+                    onDelete={() => setDeletingFolder(folder)}
+                    onAddAlbums={() => setAddingToFolder(folder)}
+                    onGalleryDropped={(galleryId) =>
+                      void assignGalleryIdToFolder(galleryId, folder.id)
+                    }
+                  />
+                ))}
+                {canManageFolders && <NewFolderCard onClick={openNewFolder} />}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <SectionHeader label="Folders" count={folders.length} />
+                {folderSummaries.map(({ folder, cover, peek }) => (
+                  <FolderListRow
+                    key={folder.id}
+                    folder={folder}
+                    cover={cover}
+                    peek={peek}
+                    canManage={canManageFolders}
+                    onOpen={() => openFolder(folder)}
+                    onRename={() => openRenameFolder(folder)}
+                    onDelete={() => setDeletingFolder(folder)}
+                    onAddAlbums={() => setAddingToFolder(folder)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
         {error && !loading && (
           <div className="mt-6 rounded-[14px] border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             {error.message}
@@ -456,42 +759,70 @@ function GalleriesListPage() {
 
         <section className={cn('mt-8', fetching && 'opacity-80')}>
           {view === 'grid' ? (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(252px,1fr))] gap-x-[30px] gap-y-[44px]">
-              {loading
-                ? Array.from({ length: 8 }).map((_, index) => (
-                    <GridSkeleton key={index} />
-                  ))
-                : visibleItems.map(renderGridCard)}
-              {!loading && canCreateGalleries && (
-                <button
-                  type="button"
-                  onClick={openNewGallery}
-                  className="flex min-h-[276px] flex-col items-center justify-center gap-3 rounded border border-dashed border-[var(--gb-border-2)] bg-[var(--gb-surface)] p-6 text-center text-[var(--gb-ink-soft)] transition hover:-translate-y-1 hover:border-[var(--gb-accent)] hover:bg-[var(--gb-accent-soft)]"
-                >
-                  <span className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--gb-border)]">
-                    <Plus className="h-5 w-5" />
-                  </span>
-                  <span className="gb-hand text-2xl font-semibold">
-                    Start an album
-                  </span>
-                </button>
+            <div>
+              {showingFolderSections && (
+                <SectionHeader
+                  label="Loose albums"
+                  count={galleryItemsForDisplay.length}
+                  className="mb-4"
+                />
               )}
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(252px,1fr))] gap-x-[30px] gap-y-[44px]">
+                {loading
+                  ? Array.from({ length: 8 }).map((_, index) => (
+                      <GridSkeleton key={index} />
+                    ))
+                  : galleryItemsForDisplay.map(renderGridCard)}
+                {!loading && canCreateGalleries && !activeFolder && (
+                  <button
+                    type="button"
+                    onClick={openNewGallery}
+                    className="flex min-h-[276px] flex-col items-center justify-center gap-3 rounded border border-dashed border-[var(--gb-border-2)] bg-[var(--gb-surface)] p-6 text-center text-[var(--gb-ink-soft)] transition hover:-translate-y-1 hover:border-[var(--gb-accent)] hover:bg-[var(--gb-accent-soft)]"
+                  >
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--gb-border)]">
+                      <Plus className="h-5 w-5" />
+                    </span>
+                    <span className="gb-hand text-2xl font-semibold">
+                      Start an album
+                    </span>
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
+              {showingFolderSections && (
+                <SectionHeader
+                  label="Loose albums"
+                  count={galleryItemsForDisplay.length}
+                />
+              )}
               {loading
                 ? Array.from({ length: 6 }).map((_, index) => (
                     <ListSkeleton key={index} />
                   ))
-                : visibleItems.map(renderRow)}
+                : galleryItemsForDisplay.map(renderRow)}
             </div>
           )}
         </section>
 
-        {!loading && visibleItems.length === 0 && !error && (
+        {!loading && galleryItemsForDisplay.length === 0 && !error && (
           <div className="mt-14 flex flex-col items-center gap-3 text-center text-[var(--gb-ink-soft)]">
-            <p className="gb-hand text-2xl">No galleries found.</p>
-            {canCreateGalleries && (
+            <p className="gb-hand text-2xl">
+              {activeFolder
+                ? 'No albums in this folder.'
+                : 'No galleries found.'}
+            </p>
+            {activeFolder && canManageFolders && (
+              <Button
+                onClick={() => setAddingToFolder(activeFolder)}
+                className="rounded-[11px] bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]/90"
+              >
+                <FolderPlus className="mr-2 h-4 w-4" />
+                Add albums
+              </Button>
+            )}
+            {!activeFolder && canCreateGalleries && (
               <Button
                 onClick={openNewGallery}
                 className="rounded-[11px] bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]/90"
@@ -564,6 +895,48 @@ function GalleriesListPage() {
         onOpenChange={setEditorOpen}
         gallery={editingGallery}
         canSave={isAdmin(currentUser)}
+      />
+      <FolderEditorDialog
+        open={folderEditorOpen}
+        onOpenChange={(open) => {
+          setFolderEditorOpen(open);
+          if (!open) setEditingFolder(null);
+        }}
+        folder={editingFolder}
+        onSubmit={createOrUpdateFolder}
+      />
+      <DeleteFolderDialog
+        folder={deletingFolder}
+        onOpenChange={(open) => {
+          if (!open) setDeletingFolder(null);
+        }}
+        onConfirm={confirmDeleteFolder}
+      />
+      <MoveGalleryDialog
+        gallery={movingGallery}
+        folders={folders}
+        onOpenChange={(open) => {
+          if (!open) setMovingGallery(null);
+        }}
+        onMove={async (folderId) => {
+          if (!movingGallery) return;
+          await assignGalleryToFolder(movingGallery, folderId);
+          setMovingGallery(null);
+        }}
+      />
+      <AddAlbumsDialog
+        folder={addingToFolder}
+        galleries={items}
+        onOpenChange={(open) => {
+          if (!open) setAddingToFolder(null);
+        }}
+        onAdd={async (folder, galleryIds) => {
+          const selected = items.filter((item) => galleryIds.includes(item.id));
+          await Promise.all(
+            selected.map((gallery) => assignGalleryToFolder(gallery, folder.id))
+          );
+          setAddingToFolder(null);
+        }}
       />
     </div>
   );
@@ -950,6 +1323,423 @@ function FiltersDrawer({
   );
 }
 
+function FolderEditorDialog({
+  open,
+  onOpenChange,
+  folder,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  folder: Folder | null;
+  onSubmit: (data: { name: string; color?: string }) => Promise<void>;
+}) {
+  const [name, setName] = React.useState('');
+  const [color, setColor] = React.useState(FOLDER_COLORS[0]);
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    setName(folder?.name ?? '');
+    setColor(folder?.color || FOLDER_COLORS[0]);
+  }, [folder, open]);
+
+  const submit = async () => {
+    const trimmed = name.trim();
+    if (!trimmed || saving) return;
+    setSaving(true);
+    try {
+      await onSubmit({ name: trimmed, color });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="gb-panel border-[var(--gb-border)] text-[var(--gb-ink)] sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle className="gb-serif text-2xl font-medium">
+            {folder ? 'Rename folder' : 'New folder'}
+          </DialogTitle>
+          <DialogDescription>
+            Group albums by a year, place, person, or season.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <label className="block space-y-2">
+            <span className="text-sm font-medium">Name</span>
+            <Input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="gb-field h-11 rounded-[11px]"
+              autoFocus
+            />
+          </label>
+          <div>
+            <div className="mb-2 text-sm font-medium">Cover color</div>
+            <div className="flex flex-wrap gap-2">
+              {FOLDER_COLORS.map((swatch) => (
+                <button
+                  key={swatch}
+                  type="button"
+                  aria-label={`Use folder color ${swatch}`}
+                  aria-pressed={color === swatch}
+                  onClick={() => setColor(swatch)}
+                  className={cn(
+                    'h-8 w-8 rounded-lg border border-[var(--gb-border)] transition',
+                    color === swatch &&
+                      'ring-2 ring-[var(--gb-accent)] ring-offset-2 ring-offset-[var(--gb-panel)]'
+                  )}
+                  style={{ backgroundColor: swatch }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            className="rounded-[11px]"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={submit}
+            disabled={!name.trim() || saving}
+            className="rounded-[11px] bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]/90"
+          >
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {folder ? 'Save folder' : 'Create folder'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteFolderDialog({
+  folder,
+  onOpenChange,
+  onConfirm,
+}: {
+  folder: Folder | null;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => Promise<void>;
+}) {
+  const [deleting, setDeleting] = React.useState(false);
+  const open = !!folder;
+
+  const confirm = async () => {
+    if (!folder || deleting) return;
+    setDeleting(true);
+    try {
+      await onConfirm();
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="gb-panel border-[var(--gb-border)] text-[var(--gb-ink)] sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle className="gb-serif text-2xl font-medium">
+            Delete "{folder?.name}"?
+          </DialogTitle>
+          <DialogDescription>
+            Your albums are safe. Deleting this folder only returns its albums
+            to the shelf as unfiled.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="gb-chip rounded-[11px]"
+          >
+            Keep folder
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={confirm}
+            disabled={deleting}
+            className="rounded-[11px]"
+          >
+            {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Delete folder
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MoveGalleryDialog({
+  gallery,
+  folders,
+  onOpenChange,
+  onMove,
+}: {
+  gallery: Gallery | null;
+  folders: Folder[];
+  onOpenChange: (open: boolean) => void;
+  onMove: (folderId: number | null) => Promise<void>;
+}) {
+  const [saving, setSaving] = React.useState<number | 'unfiled' | null>(null);
+  const open = !!gallery;
+
+  const move = async (folderId: number | null) => {
+    setSaving(folderId ?? 'unfiled');
+    try {
+      await onMove(folderId);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="gb-panel border-[var(--gb-border)] text-[var(--gb-ink)] sm:max-w-[460px]">
+        <DialogHeader>
+          <DialogTitle className="gb-serif text-2xl font-medium">
+            Move to folder
+          </DialogTitle>
+          <DialogDescription>
+            {gallery?.title || 'Untitled gallery'}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+          <FolderChoice
+            label="Unfiled"
+            active={gallery?.folderId == null}
+            saving={saving === 'unfiled'}
+            onClick={() => void move(null)}
+          />
+          {folders.map((folder) => (
+            <FolderChoice
+              key={folder.id}
+              label={folder.name}
+              color={folder.color}
+              count={folder.galleriesCount}
+              active={gallery?.folderId === folder.id}
+              saving={saving === folder.id}
+              onClick={() => void move(folder.id)}
+            />
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FolderChoice({
+  label,
+  color,
+  count,
+  active,
+  saving,
+  onClick,
+}: {
+  label: string;
+  color?: string | null;
+  count?: number;
+  active?: boolean;
+  saving?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={saving}
+      className={cn(
+        'flex w-full items-center gap-3 rounded-[11px] border border-[var(--gb-border)] bg-[var(--gb-surface)] px-3 py-2 text-left transition hover:border-[var(--gb-accent)] hover:bg-[var(--gb-accent-soft)]',
+        active && 'border-[var(--gb-accent)] bg-[var(--gb-accent-soft)]'
+      )}
+    >
+      <span
+        className="h-8 w-8 rounded-[3px_7px_7px_3px]"
+        style={{ backgroundColor: color || FOLDER_COLORS[0] }}
+      />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium">{label}</span>
+        {typeof count === 'number' && (
+          <span className="block text-xs text-[var(--gb-ink-mute)]">
+            {count} albums
+          </span>
+        )}
+      </span>
+      {saving ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : active ? (
+        <Check className="h-4 w-4 text-[var(--gb-accent)]" />
+      ) : null}
+    </button>
+  );
+}
+
+function AddAlbumsDialog({
+  folder,
+  galleries,
+  onOpenChange,
+  onAdd,
+}: {
+  folder: Folder | null;
+  galleries: Gallery[];
+  onOpenChange: (open: boolean) => void;
+  onAdd: (folder: Folder, galleryIds: number[]) => Promise<void>;
+}) {
+  const [search, setSearch] = React.useState('');
+  const [selected, setSelected] = React.useState<Set<number>>(() => new Set());
+  const [saving, setSaving] = React.useState(false);
+  const open = !!folder;
+
+  React.useEffect(() => {
+    setSearch('');
+    setSelected(new Set());
+  }, [folder?.id]);
+
+  const candidates = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return galleries
+      .filter((gallery) => gallery.folderId !== folder?.id)
+      .filter((gallery) =>
+        q ? (gallery.title || '').toLowerCase().includes(q) : true
+      );
+  }, [folder?.id, galleries, search]);
+
+  const toggle = (galleryId: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(galleryId)) next.delete(galleryId);
+      else next.add(galleryId);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelected(new Set(candidates.map((gallery) => gallery.id)));
+  };
+
+  const submit = async () => {
+    if (!folder || selected.size === 0 || saving) return;
+    setSaving(true);
+    try {
+      await onAdd(folder, Array.from(selected));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="gb-panel border-[var(--gb-border)] text-[var(--gb-ink)] sm:max-w-[620px]">
+        <DialogHeader>
+          <DialogTitle className="gb-serif text-2xl font-medium">
+            Add albums to {folder?.name}
+          </DialogTitle>
+          <DialogDescription>
+            Selecting albums already filed elsewhere moves them here.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <label className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--gb-ink-mute)]" />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search albums..."
+                className="gb-field h-10 rounded-[11px] pl-9"
+              />
+            </label>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={selectAll}
+              className="rounded-[11px] text-[var(--gb-accent)]"
+            >
+              Select all
+            </Button>
+          </div>
+          <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
+            {candidates.map((gallery) => {
+              const checked = selected.has(gallery.id);
+              return (
+                <button
+                  key={gallery.id}
+                  type="button"
+                  onClick={() => toggle(gallery.id)}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-[12px] border border-[var(--gb-border)] bg-[var(--gb-surface)] p-2 text-left transition hover:border-[var(--gb-accent)]',
+                    checked &&
+                      'border-[var(--gb-accent)] bg-[var(--gb-accent-soft)]'
+                  )}
+                >
+                  <Checkbox checked={checked} className="pointer-events-none" />
+                  <div className="h-[38px] w-[52px] shrink-0 overflow-hidden rounded bg-[var(--gb-surface-2)]">
+                    {gallery.thumbnail ? (
+                      <img
+                        src={gallery.thumbnail}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">
+                      {gallery.title || 'Untitled gallery'}
+                    </div>
+                    {gallery.folder?.name && (
+                      <div className="truncate text-xs text-[var(--gb-ink-mute)]">
+                        in {gallery.folder.name} · moves here if selected
+                      </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+            {candidates.length === 0 && (
+              <div className="rounded-[12px] border border-dashed border-[var(--gb-border)] p-6 text-center text-sm text-[var(--gb-ink-mute)]">
+                No albums available.
+              </div>
+            )}
+          </div>
+        </div>
+        <DialogFooter className="items-center justify-between sm:justify-between">
+          <div className="text-sm text-[var(--gb-ink-soft)]">
+            {selected.size} selected
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="rounded-[11px]"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={submit}
+              disabled={selected.size === 0 || saving}
+              className="rounded-[11px] bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]/90"
+            >
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Add {selected.size} albums
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function GalleryEditDialog({
   open,
   onOpenChange,
@@ -1166,6 +1956,26 @@ function GridSkeleton() {
     <div className="gb-paper p-[11px] pb-10">
       <Skeleton className="h-[184px] rounded-sm" />
       <Skeleton className="mt-4 h-5 w-3/4" />
+    </div>
+  );
+}
+
+function SectionHeader({
+  label,
+  count,
+  className,
+}: {
+  label: string;
+  count: number;
+  className?: string;
+}) {
+  return (
+    <div className={cn('flex items-center gap-3', className)}>
+      <span className="gb-serif text-sm italic text-[var(--gb-ink-soft)]">
+        {label}
+      </span>
+      <span className="h-px flex-1 bg-[var(--gb-border)]" />
+      <span className="text-xs text-[var(--gb-ink-mute)]">{count}</span>
     </div>
   );
 }

@@ -31,6 +31,8 @@ type Props = {
   favoritesCountOverride?: number;
   onDeleted?: (id: number) => void;
   onEditRequested?: () => void;
+  onMoveRequested?: () => void;
+  draggableCard?: boolean;
   style?: React.CSSProperties;
   to?: string;
 };
@@ -44,6 +46,8 @@ export const GalleryCard = React.memo(function GalleryCard({
   favoritesCountOverride,
   onDeleted,
   onEditRequested,
+  onMoveRequested,
+  draggableCard,
   style,
   to = '#',
 }: Props) {
@@ -264,6 +268,19 @@ export const GalleryCard = React.memo(function GalleryCard({
               >
                 Edit
               </DropdownMenuItem>
+              {onMoveRequested && (
+                <DropdownMenuItem
+                  data-stop-link="true"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onMoveRequested();
+                  }}
+                  disabled={deleting}
+                >
+                  Move to folder
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onSelect={onDelete} disabled={deleting}>
                 {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {deleting ? 'Deleting...' : 'Delete'}
@@ -280,6 +297,12 @@ export const GalleryCard = React.memo(function GalleryCard({
       to={to}
       aria-label={item.title ?? 'Open gallery'}
       className="block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gb-accent)]"
+      draggable={draggableCard}
+      onDragStart={(event) => {
+        if (!draggableCard) return;
+        event.dataTransfer.setData('text/gallery-id', String(item.id));
+        event.dataTransfer.effectAllowed = 'move';
+      }}
       onClickCapture={(event) => {
         const el = event.target as Element | null;
         if (el?.closest?.("[data-stop-link='true']")) event.preventDefault();
