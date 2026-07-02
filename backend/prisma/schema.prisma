@@ -160,21 +160,24 @@ model GalleryReaction {
 }
 
 model Folder {
-  id          Int      @id @default(autoincrement())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  name        String
-  slug        String
-  description String?
-  color       String?
+  id             Int      @id @default(autoincrement())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  name           String
+  slug           String
+  description    String?
+  color          String?
+  coverGalleryId Int?
 
   userId Int
   owner  User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  galleries Gallery[]
+  coverGallery Gallery?  @relation("FolderCoverGallery", fields: [coverGalleryId], references: [id], onDelete: SetNull)
+  galleries    Gallery[] @relation("FolderGalleries")
 
   @@unique([userId, slug])
   @@index([userId, updatedAt])
+  @@index([coverGalleryId])
   @@map("folders")
 }
 
@@ -187,7 +190,7 @@ model Gallery {
   createdBy User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   folderId Int?
-  folder   Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folder   Folder? @relation("FolderGalleries", fields: [folderId], references: [id], onDelete: SetNull)
 
   title       String?
   description String?
@@ -202,9 +205,10 @@ model Gallery {
   publishedAt    DateTime?
   visibility     Visibility @default(PUBLIC)
 
-  comments  Comment[]
-  tags      GalleryTag[]
-  reactions GalleryReaction[]
+  comments        Comment[]
+  tags            GalleryTag[]
+  reactions       GalleryReaction[]
+  coverForFolders Folder[]          @relation("FolderCoverGallery")
 
   @@index([status, updatedAt])
   @@index([userId, updatedAt])

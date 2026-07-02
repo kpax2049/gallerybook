@@ -1,9 +1,11 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { AssetUrlService } from 'src/common/asset-url.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { FolderService } from './folder.service';
 
 describe('FolderService', () => {
   let service: FolderService;
+  let assetUrl: { thumbKeyToCdnUrl: jest.Mock };
   let prisma: {
     folder: {
       findMany: jest.Mock;
@@ -12,6 +14,9 @@ describe('FolderService', () => {
       create: jest.Mock;
       update: jest.Mock;
       delete: jest.Mock;
+    };
+    gallery: {
+      findUnique: jest.Mock;
     };
   };
 
@@ -25,9 +30,18 @@ describe('FolderService', () => {
         update: jest.fn(),
         delete: jest.fn(),
       },
+      gallery: {
+        findUnique: jest.fn(),
+      },
+    };
+    assetUrl = {
+      thumbKeyToCdnUrl: jest.fn((key) => (key ? `cdn/${key}` : null)),
     };
 
-    service = new FolderService(prisma as unknown as PrismaService);
+    service = new FolderService(
+      prisma as unknown as PrismaService,
+      assetUrl as unknown as AssetUrlService,
+    );
   });
 
   it('lists owner folders with gallery counts', async () => {
@@ -41,7 +55,15 @@ describe('FolderService', () => {
         slug: 'travel',
         description: 'Trips',
         color: '#14b8a6',
+        coverGalleryId: 11,
         userId: 7,
+        coverGallery: {
+          id: 11,
+          title: 'Cover',
+          thumbnail: 'cover.jpg',
+          slug: 'cover',
+          folderId: 1,
+        },
         _count: { galleries: 3 },
       },
     ]);
@@ -55,14 +77,33 @@ describe('FolderService', () => {
         slug: 'travel',
         description: 'Trips',
         color: '#14b8a6',
+        coverGalleryId: 11,
         userId: 7,
         galleriesCount: 3,
+        coverGallery: {
+          id: 11,
+          title: 'Cover',
+          thumbnail: 'cdn/cover.jpg',
+          slug: 'cover',
+          folderId: 1,
+        },
       },
     ]);
     expect(prisma.folder.findMany).toHaveBeenCalledWith({
       where: { userId: 7 },
       orderBy: [{ updatedAt: 'desc' }, { name: 'asc' }],
-      include: { _count: { select: { galleries: true } } },
+      include: {
+        _count: { select: { galleries: true } },
+        coverGallery: {
+          select: {
+            id: true,
+            title: true,
+            thumbnail: true,
+            slug: true,
+            folderId: true,
+          },
+        },
+      },
     });
   });
 
@@ -70,15 +111,35 @@ describe('FolderService', () => {
     prisma.folder.findFirst
       .mockResolvedValueOnce({ id: 1 })
       .mockResolvedValueOnce(null);
-    prisma.folder.create.mockResolvedValue({ id: 2, slug: 'travel-2' });
+    prisma.gallery.findUnique.mockResolvedValue({ userId: 7 });
+    prisma.folder.create.mockResolvedValue({
+      id: 2,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      name: 'Travel',
+      slug: 'travel-2',
+      description: 'Trips',
+      color: '#14b8a6',
+      coverGalleryId: 12,
+      userId: 7,
+      coverGallery: null,
+      _count: { galleries: 0 },
+    });
 
     await expect(
       service.create(7, {
         name: '  Travel  ',
         description: 'Trips',
         color: '#14b8a6',
+        coverGalleryId: 12,
       }),
-    ).resolves.toEqual({ id: 2, slug: 'travel-2' });
+    ).resolves.toMatchObject({
+      id: 2,
+      slug: 'travel-2',
+      coverGalleryId: 12,
+      coverGallery: null,
+      galleriesCount: 0,
+    });
 
     expect(prisma.folder.findFirst).toHaveBeenNthCalledWith(1, {
       where: { userId: 7, slug: 'travel' },
@@ -95,6 +156,19 @@ describe('FolderService', () => {
         slug: 'travel-2',
         description: 'Trips',
         color: '#14b8a6',
+        coverGalleryId: 12,
+      },
+      include: {
+        _count: { select: { galleries: true } },
+        coverGallery: {
+          select: {
+            id: true,
+            title: true,
+            thumbnail: true,
+            slug: true,
+            folderId: true,
+          },
+        },
       },
     });
   });
@@ -106,7 +180,19 @@ describe('FolderService', () => {
       name: 'Old',
     });
     prisma.folder.findFirst.mockResolvedValue(null);
-    prisma.folder.update.mockResolvedValue({ id: 3, name: 'New' });
+    prisma.folder.update.mockResolvedValue({
+      id: 3,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      name: 'New',
+      slug: 'new',
+      description: null,
+      color: null,
+      coverGalleryId: null,
+      userId: 7,
+      coverGallery: null,
+      _count: { galleries: 0 },
+    });
 
     await expect(
       service.update(7, 3, {
@@ -114,18 +200,88 @@ describe('FolderService', () => {
         description: undefined,
         color: undefined,
       }),
-    ).resolves.toEqual({ id: 3, name: 'New' });
+    ).resolves.toMatchObject({ id: 3, name: 'New' });
 
     expect(prisma.folder.update).toHaveBeenCalledWith({
       where: { id: 3 },
       data: { name: 'New', slug: 'new' },
+      include: {
+        _count: { select: { galleries: true } },
+        coverGallery: {
+          select: {
+            id: true,
+            title: true,
+            thumbnail: true,
+            slug: true,
+            folderId: true,
+          },
+        },
+      },
     });
 
-    await service.update(7, 3, { description: null as any, color: null as any });
+    await service.update(7, 3, {
+      description: null as any,
+      color: null as any,
+    });
     expect(prisma.folder.update).toHaveBeenLastCalledWith({
       where: { id: 3 },
       data: { description: null, color: null },
+      include: {
+        _count: { select: { galleries: true } },
+        coverGallery: {
+          select: {
+            id: true,
+            title: true,
+            thumbnail: true,
+            slug: true,
+            folderId: true,
+          },
+        },
+      },
     });
+  });
+
+  it('updates cover galleries only when they belong to the owner', async () => {
+    prisma.folder.findUnique.mockResolvedValue({
+      id: 3,
+      userId: 7,
+      name: 'Travel',
+    });
+    prisma.gallery.findUnique.mockResolvedValueOnce({ userId: 7 });
+    prisma.folder.update.mockResolvedValue({
+      id: 3,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      name: 'Travel',
+      slug: 'travel',
+      description: null,
+      color: null,
+      coverGalleryId: 12,
+      userId: 7,
+      coverGallery: {
+        id: 12,
+        title: 'Cover',
+        thumbnail: 'cover.jpg',
+        slug: 'cover',
+        folderId: 3,
+      },
+      _count: { galleries: 2 },
+    });
+
+    await expect(service.update(7, 3, { coverGalleryId: 12 })).resolves.toEqual(
+      expect.objectContaining({
+        coverGalleryId: 12,
+        coverGallery: expect.objectContaining({ thumbnail: 'cdn/cover.jpg' }),
+      }),
+    );
+    expect(prisma.folder.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { coverGalleryId: 12 } }),
+    );
+
+    prisma.gallery.findUnique.mockResolvedValueOnce({ userId: 99 });
+    await expect(
+      service.update(7, 3, { coverGalleryId: 20 }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('deletes only owned folders', async () => {

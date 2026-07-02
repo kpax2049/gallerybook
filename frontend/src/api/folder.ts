@@ -1,5 +1,13 @@
 import { apiRequest } from '@/lib/apiClient';
 
+export interface FolderCoverGallery {
+  id: number;
+  title?: string | null;
+  thumbnail?: string | null;
+  slug?: string | null;
+  folderId?: number | null;
+}
+
 export interface Folder {
   id: number;
   createdAt: string;
@@ -8,6 +16,8 @@ export interface Folder {
   slug: string;
   description?: string | null;
   color?: string | null;
+  coverGalleryId?: number | null;
+  coverGallery?: FolderCoverGallery | null;
   userId: number;
   galleriesCount: number;
 }
@@ -16,6 +26,7 @@ export interface CreateFolderRequest {
   name: string;
   description?: string;
   color?: string;
+  coverGalleryId?: number | null;
 }
 
 export type UpdateFolderRequest = Partial<CreateFolderRequest>;

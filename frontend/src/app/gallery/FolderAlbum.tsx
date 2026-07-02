@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { FolderOpen, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
-import { Folder } from '@/api/folder';
+import { Folder, FolderCoverGallery } from '@/api/folder';
 import { Gallery } from '@/api/gallery';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +24,7 @@ export const FOLDER_COLORS = [
 ];
 
 const fallbackPhoto = 'linear-gradient(150deg,#caa86d,#7e8d6c 60%,#4f5b44)';
+type FolderCover = Pick<Gallery, 'title' | 'thumbnail'> | FolderCoverGallery;
 
 function darken(hex: string, amount: number) {
   const clean = hex.replace('#', '');
@@ -48,7 +49,7 @@ function albumStyle(color?: string | null) {
   } as React.CSSProperties;
 }
 
-function photoStyle(cover?: Gallery) {
+function photoStyle(cover?: FolderCover | null) {
   return cover?.thumbnail
     ? ({
         backgroundImage: `url(${cover.thumbnail})`,
@@ -69,7 +70,7 @@ export function FolderAlbumObject({
   size = 'grid',
 }: {
   folder: Pick<Folder, 'name' | 'color' | 'galleriesCount'>;
-  cover?: Gallery;
+  cover?: FolderCover | null;
   label?: string;
   size?: 'grid' | 'row';
 }) {
@@ -152,7 +153,7 @@ export function FolderAlbumCard({
   onGalleryDropped,
 }: {
   folder: Folder;
-  cover?: Gallery;
+  cover?: FolderCover | null;
   peek: string;
   active?: boolean;
   canManage: boolean;
@@ -201,7 +202,7 @@ export function FolderAlbumCard({
           <FolderAlbumObject
             folder={folder}
             cover={cover}
-            label={cover?.title}
+            label={cover?.title ?? undefined}
           />
         </span>
         {dragOver && (
@@ -248,7 +249,7 @@ export function FolderListRow({
   onAddAlbums,
 }: {
   folder: Folder;
-  cover?: Gallery;
+  cover?: FolderCover | null;
   peek: string;
   canManage: boolean;
   onOpen: () => void;

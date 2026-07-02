@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 const trimOptionalString = ({ value }: { value: unknown }) => {
@@ -10,6 +17,12 @@ const trimOptionalString = ({ value }: { value: unknown }) => {
 const trimRequiredString = ({ value }: { value: unknown }) => {
   if (value === undefined || value === null) return value;
   return String(value).trim();
+};
+
+const optionalId = ({ value }: { value: unknown }) => {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  return Number(value);
 };
 
 export class CreateFolderDto {
@@ -30,4 +43,10 @@ export class CreateFolderDto {
   @MaxLength(32)
   @Transform(trimOptionalString)
   color?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Transform(optionalId)
+  coverGalleryId?: number | null;
 }

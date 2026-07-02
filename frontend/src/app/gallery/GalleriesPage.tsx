@@ -56,7 +56,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { createDraftGallery, editGallery, Gallery } from '@/api/gallery';
-import { Folder } from '@/api/folder';
+import { Folder, FolderCoverGallery } from '@/api/folder';
 import { getUserInitials } from '@/api/user';
 import { signout } from '@/api/auth';
 import { useGalleries } from '@/hooks/use-gallery';
@@ -93,7 +93,7 @@ type ReactionPatch = { like?: boolean; favorite?: boolean };
 type ViewMode = 'grid' | 'list';
 type FolderSummary = {
   folder: Folder;
-  cover?: Gallery;
+  cover?: Gallery | FolderCoverGallery | null;
   peek: string;
 };
 type FilterKey =
@@ -311,7 +311,10 @@ function GalleriesListPage() {
         const remaining = Math.max(0, folder.galleriesCount - titles.length);
         return {
           folder,
-          cover: folderItems.find((item) => item.thumbnail) ?? folderItems[0],
+          cover:
+            folder.coverGallery ??
+            folderItems.find((item) => item.thumbnail) ??
+            folderItems[0],
           peek: [...titles, ...(remaining > 0 ? [`+${remaining}`] : [])].join(
             ' · '
           ),
@@ -452,6 +455,7 @@ function GalleriesListPage() {
   const createOrUpdateFolder = async (data: {
     name: string;
     color?: string;
+    coverGalleryId?: number | null;
   }) => {
     if (editingFolder) await updateFolder(editingFolder.id, data);
     else await createFolder(data);
@@ -903,6 +907,7 @@ function GalleriesListPage() {
           if (!open) setEditingFolder(null);
         }}
         folder={editingFolder}
+        galleries={items}
         onSubmit={createOrUpdateFolder}
       />
       <DeleteFolderDialog
@@ -1327,20 +1332,44 @@ function FolderEditorDialog({
   open,
   onOpenChange,
   folder,
+  galleries,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   folder: Folder | null;
-  onSubmit: (data: { name: string; color?: string }) => Promise<void>;
+  galleries: Gallery[];
+  onSubmit: (data: {
+    name: string;
+    color?: string;
+    coverGalleryId?: number | null;
+  }) => Promise<void>;
 }) {
   const [name, setName] = React.useState('');
   const [color, setColor] = React.useState(FOLDER_COLORS[0]);
+  const [coverGalleryId, setCoverGalleryId] = React.useState<number | null>(
+    null
+  );
   const [saving, setSaving] = React.useState(false);
+  const coverOptions = React.useMemo(
+    () =>
+      galleries
+        .filter((gallery) => gallery.title || gallery.thumbnail)
+        .sort((a, b) =>
+          (a.title || 'Untitled gallery').localeCompare(
+            b.title || 'Untitled gallery'
+          )
+        ),
+    [galleries]
+  );
+  const selectedCover = coverOptions.find(
+    (gallery) => gallery.id === coverGalleryId
+  );
 
   React.useEffect(() => {
     setName(folder?.name ?? '');
     setColor(folder?.color || FOLDER_COLORS[0]);
+    setCoverGalleryId(folder?.coverGalleryId ?? null);
   }, [folder, open]);
 
   const submit = async () => {
@@ -1348,7 +1377,7 @@ function FolderEditorDialog({
     if (!trimmed || saving) return;
     setSaving(true);
     try {
-      await onSubmit({ name: trimmed, color });
+      await onSubmit({ name: trimmed, color, coverGalleryId });
     } finally {
       setSaving(false);
     }
@@ -1395,6 +1424,49 @@ function FolderEditorDialog({
               ))}
             </div>
           </div>
+          <label className="block space-y-2">
+            <span className="text-sm font-medium">Cover photo</span>
+            <select
+              value={coverGalleryId ?? ''}
+              onChange={(event) =>
+                setCoverGalleryId(
+                  event.target.value ? Number(event.target.value) : null
+                )
+              }
+              className="gb-field h-11 w-full rounded-[11px] px-3 text-sm"
+            >
+              <option value="">Auto-select from folder</option>
+              {coverOptions.map((gallery) => (
+                <option key={gallery.id} value={gallery.id}>
+                  {gallery.title || 'Untitled gallery'}
+                </option>
+              ))}
+            </select>
+            {selectedCover && (
+              <div className="flex items-center gap-3 rounded-[11px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] p-2">
+                <div
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[var(--gb-surface)] bg-cover bg-center text-[var(--gb-ink-mute)]"
+                  style={
+                    selectedCover.thumbnail
+                      ? { backgroundImage: `url(${selectedCover.thumbnail})` }
+                      : undefined
+                  }
+                >
+                  {!selectedCover.thumbnail && (
+                    <ImageIcon className="h-5 w-5" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium">
+                    {selectedCover.title || 'Untitled gallery'}
+                  </div>
+                  <div className="text-xs text-[var(--gb-ink-mute)]">
+                    Fixed cover
+                  </div>
+                </div>
+              </div>
+            )}
+          </label>
         </div>
         <DialogFooter>
           <Button
