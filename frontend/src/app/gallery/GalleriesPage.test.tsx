@@ -5,6 +5,9 @@ import { MemoryRouter } from 'react-router-dom';
 
 import GalleriesPage from './GalleriesPage';
 import { useGalleryListState } from '@/stores/galleryStore';
+import { useFolderStore } from '@/stores/folderStore';
+import { useUserStore } from '@/stores/userStore';
+import { UserRole } from '@/common/enums';
 
 const useGalleriesMock = vi.fn();
 
@@ -71,6 +74,15 @@ beforeEach(() => {
   cardCalls.length = 0;
   rowCalls.length = 0;
   useGalleryListState.getState().reset();
+  useFolderStore.getState().reset();
+  useFolderStore.getState().setFolders([]);
+  useUserStore.getState().setUser({
+    id: 1,
+    role: UserRole.ADMIN,
+    email: 'admin@example.com',
+    username: 'admin',
+    profile: { id: 1, userId: 1 },
+  });
   useGalleriesMock.mockReturnValue({
     data: {
       items: [baseGallery],
@@ -110,5 +122,17 @@ describe('GalleriesPage', () => {
       expect(last.favoritesCountOverride).toBe(1);
       expect(last.myReaction).toEqual({ like: true, favorite: true });
     });
+  });
+
+  it('shows the new-folder affordance before any folders exist', async () => {
+    render(
+      <MemoryRouter initialEntries={['/galleries']}>
+        <GalleriesPage />
+      </MemoryRouter>
+    );
+
+    expect(
+      await screen.findAllByRole('button', { name: /new folder/i })
+    ).not.toHaveLength(0);
   });
 });

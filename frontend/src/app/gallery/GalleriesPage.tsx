@@ -339,7 +339,7 @@ function GalleriesListPage() {
     filters.folderId === undefined &&
     activeFilter === 'all' &&
     !filters.search.trim() &&
-    folders.length > 0;
+    (folders.length > 0 || canManageFolders);
   const galleryItemsForDisplay = showingFolderSections
     ? looseItems
     : visibleItems;
