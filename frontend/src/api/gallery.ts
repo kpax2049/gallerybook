@@ -5,6 +5,13 @@ import axios from 'axios';
 import { Visibility } from '@/common/enums';
 
 export type GalleryStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export interface GalleryFolder {
+  id: number;
+  name: string;
+  slug: string;
+  color?: string | null;
+}
+
 export interface Gallery {
   id: number;
   createdAt?: Date;
@@ -22,6 +29,8 @@ export interface Gallery {
   likesCount?: number;
   favoritesCount?: number;
   tags?: string[]; // tag slugs or names
+  folderId?: number | null;
+  folder?: GalleryFolder | null;
   visibility: Visibility;
   author: Author;
 }
@@ -40,6 +49,7 @@ interface CreateDraftGalleryRequest {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   thumbnail?: any;
   tags: string[];
+  folderId?: number | null;
 }
 
 interface CreateGalleryRequest {
@@ -58,6 +68,7 @@ export interface EditGalleryRequest {
   content?: Record<string, string>;
   thumbnail?: string;
   tags?: string[];
+  folderId?: number | null;
 }
 
 export interface GalleriesListResponse {

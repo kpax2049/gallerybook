@@ -1,5 +1,11 @@
 import * as React from 'react';
-import { Link, useLocation, useMatch, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Link,
+  useLocation,
+  useMatch,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
 import {
   ArrowDownAZ,
   ArrowLeft,
@@ -159,7 +165,8 @@ function GalleriesListPage() {
         view: nextView === 'list' ? 'list' : undefined,
       };
       for (const [k, v] of Object.entries(entries)) {
-        if (v == null || v === '' || (Array.isArray(v) && v.length === 0)) continue;
+        if (v == null || v === '' || (Array.isArray(v) && v.length === 0))
+          continue;
         if (Array.isArray(v)) next.set(k, v.join(','));
         else next.set(k, String(v));
       }
@@ -172,7 +179,9 @@ function GalleriesListPage() {
     const aKeys = Array.from(a.keys()).sort();
     const bKeys = Array.from(b.keys()).sort();
     if (aKeys.length !== bKeys.length) return false;
-    return aKeys.every((key, index) => key === bKeys[index] && a.get(key) === b.get(key));
+    return aKeys.every(
+      (key, index) => key === bKeys[index] && a.get(key) === b.get(key)
+    );
   };
 
   const initFromUrlRef = React.useRef(false);
@@ -260,6 +269,7 @@ function GalleriesListPage() {
       favoriteBy: undefined,
       likedBy: undefined,
       followedOnly: false,
+      folderId: undefined,
     };
     let nextSort = sort;
     let nextFilters = base;
@@ -306,7 +316,9 @@ function GalleriesListPage() {
         likesCountOverride={(g.likesCount ?? 0) + likesDelta}
         favoritesCountOverride={(g.favoritesCount ?? 0) + favsDelta}
         onReactionChanged={(next) => handleReactionChanged(g.id, next)}
-        onDeleted={(id) => setDeletedGalleryIds((prev) => new Set(prev).add(id))}
+        onDeleted={(id) =>
+          setDeletedGalleryIds((prev) => new Set(prev).add(id))
+        }
         onEditRequested={() => openEditGallery(g)}
         style={
           {
@@ -333,7 +345,9 @@ function GalleriesListPage() {
         likesCountOverride={(g.likesCount ?? 0) + likesDelta}
         favoritesCountOverride={(g.favoritesCount ?? 0) + favsDelta}
         onReactionChanged={(next) => handleReactionChanged(g.id, next)}
-        onDeleted={(id) => setDeletedGalleryIds((prev) => new Set(prev).add(id))}
+        onDeleted={(id) =>
+          setDeletedGalleryIds((prev) => new Set(prev).add(id))
+        }
         onEditRequested={() => openEditGallery(g)}
         style={{ '--gb-delay': `${index * 45}ms` } as React.CSSProperties}
       />
@@ -350,7 +364,8 @@ function GalleriesListPage() {
               My Galleries
             </h1>
             <p className="gb-hand mt-1 text-[22px] font-semibold text-[var(--gb-hand)]">
-              your shelf · {(data?.total ?? visibleItems.length).toLocaleString()} albums
+              your shelf ·{' '}
+              {(data?.total ?? visibleItems.length).toLocaleString()} albums
             </p>
           </div>
 
@@ -394,7 +409,8 @@ function GalleriesListPage() {
                 onClick={() => setView('grid')}
                 className={cn(
                   'h-8 w-8 rounded-lg text-[var(--gb-ink-soft)] hover:bg-[var(--gb-accent-soft)]',
-                  view === 'grid' && 'bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]'
+                  view === 'grid' &&
+                    'bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]'
                 )}
               >
                 <Grid3X3 className="h-4 w-4" />
@@ -408,7 +424,8 @@ function GalleriesListPage() {
                 onClick={() => setView('list')}
                 className={cn(
                   'h-8 w-8 rounded-lg text-[var(--gb-ink-soft)] hover:bg-[var(--gb-accent-soft)]',
-                  view === 'list' && 'bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]'
+                  view === 'list' &&
+                    'bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]'
                 )}
               >
                 <List className="h-4 w-4" />
@@ -441,7 +458,9 @@ function GalleriesListPage() {
           {view === 'grid' ? (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(252px,1fr))] gap-x-[30px] gap-y-[44px]">
               {loading
-                ? Array.from({ length: 8 }).map((_, index) => <GridSkeleton key={index} />)
+                ? Array.from({ length: 8 }).map((_, index) => (
+                    <GridSkeleton key={index} />
+                  ))
                 : visibleItems.map(renderGridCard)}
               {!loading && canCreateGalleries && (
                 <button
@@ -452,14 +471,18 @@ function GalleriesListPage() {
                   <span className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--gb-border)]">
                     <Plus className="h-5 w-5" />
                   </span>
-                  <span className="gb-hand text-2xl font-semibold">Start an album</span>
+                  <span className="gb-hand text-2xl font-semibold">
+                    Start an album
+                  </span>
                 </button>
               )}
             </div>
           ) : (
             <div className="space-y-3">
               {loading
-                ? Array.from({ length: 6 }).map((_, index) => <ListSkeleton key={index} />)
+                ? Array.from({ length: 6 }).map((_, index) => (
+                    <ListSkeleton key={index} />
+                  ))
                 : visibleItems.map(renderRow)}
             </div>
           )}
@@ -469,7 +492,10 @@ function GalleriesListPage() {
           <div className="mt-14 flex flex-col items-center gap-3 text-center text-[var(--gb-ink-soft)]">
             <p className="gb-hand text-2xl">No galleries found.</p>
             {canCreateGalleries && (
-              <Button onClick={openNewGallery} className="rounded-[11px] bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]/90">
+              <Button
+                onClick={openNewGallery}
+                className="rounded-[11px] bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]/90"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Start an album
               </Button>
@@ -527,6 +553,7 @@ function GalleriesListPage() {
             favoriteBy: undefined,
             likedBy: undefined,
             followedOnly: false,
+            folderId: undefined,
           });
           setPager({ ...pager, page: 1 });
           setFiltersOpen(false);
@@ -559,7 +586,11 @@ export function DeskHeader({ onCreate }: { onCreate: () => void }) {
   return (
     <header className="gb-header">
       <div className="gb-shell gb-header-inner">
-        <Link to="/galleries" className="gb-brand" aria-label="Gallery Book home">
+        <Link
+          to="/galleries"
+          className="gb-brand"
+          aria-label="Gallery Book home"
+        >
           <span className="gb-brand-mark" aria-hidden="true">
             <img
               src={logoTeal}
@@ -614,23 +645,41 @@ function AccountMenu({ onLogout }: { onLogout: () => void }) {
           className="h-10 gap-2 rounded-full border border-[var(--gb-border)] bg-[var(--gb-surface)] px-2 text-[var(--gb-ink)] hover:bg-[var(--gb-accent-soft)]"
         >
           <Avatar className="h-7 w-7">
-            <AvatarImage src={avatarSrc} alt={currentUser?.fullName ?? currentUser?.username ?? 'Account'} />
-            <AvatarFallback>{getUserInitials(currentUser ?? undefined)}</AvatarFallback>
+            <AvatarImage
+              src={avatarSrc}
+              alt={currentUser?.fullName ?? currentUser?.username ?? 'Account'}
+            />
+            <AvatarFallback>
+              {getUserInitials(currentUser ?? undefined)}
+            </AvatarFallback>
           </Avatar>
           <span className="hidden max-w-32 truncate text-sm font-medium sm:block">
             {currentUser?.fullName ?? currentUser?.username ?? 'Account'}
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={10} className="gb-menu w-[316px] p-3">
+      <DropdownMenuContent
+        align="end"
+        sideOffset={10}
+        className="gb-menu w-[316px] p-3"
+      >
         <div className="flex items-center gap-3 px-1 pb-3">
           <Avatar className="h-11 w-11">
-            <AvatarImage src={avatarSrc} alt={currentUser?.fullName ?? currentUser?.username ?? 'Account'} />
-            <AvatarFallback>{getUserInitials(currentUser ?? undefined)}</AvatarFallback>
+            <AvatarImage
+              src={avatarSrc}
+              alt={currentUser?.fullName ?? currentUser?.username ?? 'Account'}
+            />
+            <AvatarFallback>
+              {getUserInitials(currentUser ?? undefined)}
+            </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold">{currentUser?.fullName ?? currentUser?.username}</div>
-            <div className="truncate text-xs text-[var(--gb-ink-soft)]">{currentUser?.email}</div>
+            <div className="truncate text-sm font-semibold">
+              {currentUser?.fullName ?? currentUser?.username}
+            </div>
+            <div className="truncate text-xs text-[var(--gb-ink-soft)]">
+              {currentUser?.email}
+            </div>
           </div>
         </div>
 
@@ -647,7 +696,8 @@ function AccountMenu({ onLogout }: { onLogout: () => void }) {
               onClick={() => setTheme(key)}
               className={cn(
                 'inline-flex h-9 items-center justify-center gap-1 rounded-lg text-xs text-[var(--gb-ink-soft)] transition hover:bg-[var(--gb-accent-soft)] hover:text-[var(--gb-ink)]',
-                theme === key && 'bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)] hover:text-[var(--gb-accent-ink)]'
+                theme === key &&
+                  'bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)] hover:text-[var(--gb-accent-ink)]'
               )}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -684,7 +734,11 @@ function SortMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" className="gb-chip h-10 rounded-[11px] px-3 shadow-none">
+        <Button
+          type="button"
+          variant="outline"
+          className="gb-chip h-10 rounded-[11px] px-3 shadow-none"
+        >
           <ArrowUpDown className="mr-2 h-4 w-4" />
           <span className="hidden sm:inline">{SORT_LABELS[sort.key]}</span>
         </Button>
@@ -697,11 +751,15 @@ function SortMenu({
             className="rounded-[10px] focus:bg-[var(--gb-accent-soft)]"
           >
             <span className="flex-1">{SORT_LABELS[key]}</span>
-            {sort.key === key && <Check className="h-4 w-4 text-[var(--gb-accent)]" />}
+            {sort.key === key && (
+              <Check className="h-4 w-4 text-[var(--gb-accent)]" />
+            )}
           </DropdownMenuItem>
         ))}
         <DropdownMenuItem
-          onSelect={() => onChange({ ...sort, dir: sort.dir === 'asc' ? 'desc' : 'asc' })}
+          onSelect={() =>
+            onChange({ ...sort, dir: sort.dir === 'asc' ? 'desc' : 'asc' })
+          }
           className="rounded-[10px] focus:bg-[var(--gb-accent-soft)]"
         >
           <ArrowDownAZ className="mr-2 h-4 w-4" />
@@ -755,7 +813,10 @@ function FiltersDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="gb-panel w-[392px] max-w-[calc(100vw-20px)] border-l-0 p-6 [&>button]:text-[var(--gb-ink)]">
+      <SheetContent
+        side="right"
+        className="gb-panel w-[392px] max-w-[calc(100vw-20px)] border-l-0 p-6 [&>button]:text-[var(--gb-ink)]"
+      >
         <SheetHeader className="text-left">
           <SheetTitle className="gb-serif text-2xl font-medium text-[var(--gb-ink)]">
             Filters
@@ -765,26 +826,62 @@ function FiltersDrawer({
         <div className="mt-6 space-y-6">
           <FilterSection title="Status">
             {(['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const).map((status) => (
-              <Pill key={status} active={draft.status.has(status)} onClick={() => toggleStatus(status)}>
+              <Pill
+                key={status}
+                active={draft.status.has(status)}
+                onClick={() => toggleStatus(status)}
+              >
                 {titleCase(status)}
               </Pill>
             ))}
           </FilterSection>
 
           <FilterSection title="Owner">
-            <Pill active={draft.owner === 'me'} onClick={() => setDraft({ ...draft, owner: draft.owner === 'me' ? 'any' : 'me' })}>
+            <Pill
+              active={draft.owner === 'me'}
+              onClick={() =>
+                setDraft({
+                  ...draft,
+                  owner: draft.owner === 'me' ? 'any' : 'me',
+                })
+              }
+            >
               My galleries
             </Pill>
           </FilterSection>
 
           <FilterSection title="Flags">
-            <Pill active={draft.hasCover === true} onClick={() => setDraft({ ...draft, hasCover: draft.hasCover === true ? null : true })}>
+            <Pill
+              active={draft.hasCover === true}
+              onClick={() =>
+                setDraft({
+                  ...draft,
+                  hasCover: draft.hasCover === true ? null : true,
+                })
+              }
+            >
               Has cover
             </Pill>
-            <Pill active={draft.hasTags === true} onClick={() => setDraft({ ...draft, hasTags: draft.hasTags === true ? null : true })}>
+            <Pill
+              active={draft.hasTags === true}
+              onClick={() =>
+                setDraft({
+                  ...draft,
+                  hasTags: draft.hasTags === true ? null : true,
+                })
+              }
+            >
               Has tags
             </Pill>
-            <Pill active={draft.hasComments === true} onClick={() => setDraft({ ...draft, hasComments: draft.hasComments === true ? null : true })}>
+            <Pill
+              active={draft.hasComments === true}
+              onClick={() =>
+                setDraft({
+                  ...draft,
+                  hasComments: draft.hasComments === true ? null : true,
+                })
+              }
+            >
               Has comments
             </Pill>
           </FilterSection>
@@ -799,7 +896,9 @@ function FiltersDrawer({
               <Pill
                 key={key}
                 active={draft.range === key}
-                onClick={() => setDraft({ ...draft, range: key as FilterState['range'] })}
+                onClick={() =>
+                  setDraft({ ...draft, range: key as FilterState['range'] })
+                }
               >
                 {label}
               </Pill>
@@ -816,7 +915,11 @@ function FiltersDrawer({
             {availableTags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {availableTags.slice(0, 18).map((tag) => (
-                  <Pill key={tag} active={draft.tags.includes(tag)} onClick={() => toggleTag(tag)}>
+                  <Pill
+                    key={tag}
+                    active={draft.tags.includes(tag)}
+                    onClick={() => toggleTag(tag)}
+                  >
                     {tag}
                   </Pill>
                 ))}
@@ -826,11 +929,18 @@ function FiltersDrawer({
         </div>
 
         <SheetFooter className="mt-8 flex-row justify-between sm:justify-between sm:space-x-0">
-          <Button variant="ghost" onClick={onReset} className="rounded-[11px] text-[var(--gb-ink-soft)] hover:bg-[var(--gb-accent-soft)]">
+          <Button
+            variant="ghost"
+            onClick={onReset}
+            className="rounded-[11px] text-[var(--gb-ink-soft)] hover:bg-[var(--gb-accent-soft)]"
+          >
             Reset
           </Button>
           <SheetClose asChild>
-            <Button onClick={() => onApply(draft)} className="rounded-[11px] bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]/90">
+            <Button
+              onClick={() => onApply(draft)}
+              className="rounded-[11px] bg-[var(--gb-accent)] text-[var(--gb-accent-ink)] hover:bg-[var(--gb-accent)]/90"
+            >
               Apply
             </Button>
           </SheetClose>
@@ -924,12 +1034,21 @@ function GalleryEditDialog({
           <div className="space-y-2">
             <div className="text-sm font-medium">Gallery cover</div>
             <div className="flex items-center gap-3">
-              <Button type="button" size="icon" variant="outline" className="gb-chip rounded-full">
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                className="gb-chip rounded-full"
+              >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="h-28 flex-1 overflow-hidden rounded bg-[var(--gb-surface)]">
                 {gallery?.thumbnail ? (
-                  <img src={gallery.thumbnail} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={gallery.thumbnail}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <div className="flex h-full items-center justify-center text-[var(--gb-ink-mute)]">
                     <ImageIcon className="mr-2 h-5 w-5" />
@@ -937,7 +1056,12 @@ function GalleryEditDialog({
                   </div>
                 )}
               </div>
-              <Button type="button" size="icon" variant="outline" className="gb-chip rounded-full">
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                className="gb-chip rounded-full"
+              >
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
@@ -971,7 +1095,12 @@ function GalleryEditDialog({
                 className="gb-field h-10 rounded-[11px]"
                 placeholder="Add a tag..."
               />
-              <Button type="button" variant="outline" onClick={addTag} className="gb-chip rounded-[11px]">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addTag}
+                className="gb-chip rounded-[11px]"
+              >
                 Add
               </Button>
             </div>
@@ -1076,7 +1205,8 @@ function countActiveFilters(filters: FilterState) {
     (filters.tags?.length ?? 0) +
     (filters.favoriteBy != null ? 1 : 0) +
     (filters.likedBy != null ? 1 : 0) +
-    (filters.followedOnly ? 1 : 0)
+    (filters.followedOnly ? 1 : 0) +
+    (filters.folderId != null ? 1 : 0)
   );
 }
 

@@ -26,6 +26,7 @@ describe('gallery query params', () => {
       likedBy: 'me' as const,
       followedOnly: true,
       createdById: 12,
+      folderId: 'unfiled',
     };
 
     const query = filtersToQuery(filters);
@@ -42,6 +43,7 @@ describe('gallery query params', () => {
     expect(query.search).toBe('hello');
     expect(query.followedOnly).toBe('true');
     expect(query.createdById).toBe('12');
+    expect(query.folderId).toBe('unfiled');
   });
 
   it('parses URLSearchParams into typed filters', () => {
@@ -58,6 +60,7 @@ describe('gallery query params', () => {
       likedBy: '123',
       followedOnly: 'true',
       createdById: '7',
+      folderId: '42',
     });
 
     const filters = queryToFilters(sp);
@@ -74,13 +77,15 @@ describe('gallery query params', () => {
     expect(filters.likedBy).toBe(123);
     expect(filters.followedOnly).toBe(true);
     expect(filters.createdById).toBe(7);
+    expect(filters.folderId).toBe(42);
   });
 
-  it('handles numeric favoriteBy and invalid createdById', () => {
+  it('handles numeric favoriteBy, unfiled folders, and invalid IDs', () => {
     const sp = new URLSearchParams({
       favoriteBy: '123',
       likedBy: 'me',
       createdById: 'not-a-number',
+      folderId: 'unfiled',
     });
 
     const filters = queryToFilters(sp);
@@ -88,6 +93,7 @@ describe('gallery query params', () => {
     expect(filters.favoriteBy).toBe(123);
     expect(filters.likedBy).toBe('me');
     expect(filters.createdById).toBeUndefined();
+    expect(filters.folderId).toBe('unfiled');
   });
 
   it('round-trips filters through URLSearchParams', () => {
@@ -98,6 +104,7 @@ describe('gallery query params', () => {
       status: new Set<GalleryStatus>(['ARCHIVED']),
       tags: ['x'],
       likedBy: 'me',
+      folderId: 5,
     };
 
     const query = filtersToQuery(filters);
@@ -115,6 +122,7 @@ describe('gallery query params', () => {
     expect(Array.from(parsed.status)).toEqual(['ARCHIVED']);
     expect(parsed.tags).toEqual(['x']);
     expect(parsed.likedBy).toBe('me');
+    expect(parsed.folderId).toBe(5);
   });
 
   it('serializes and parses sort defaults', () => {

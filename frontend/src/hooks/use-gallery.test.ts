@@ -6,15 +6,14 @@ import type { GalleriesListResponse } from '@/api/gallery';
 import type { FilterState } from '@/app/gallery/gallery-query-params';
 
 const getGalleriesListMock =
-  vi.fn<typeof import('@/api/gallery')['getGalleriesList']>();
+  vi.fn<(typeof import('@/api/gallery'))['getGalleriesList']>();
 
 vi.mock('@/api/gallery', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/api/gallery')>();
   return {
     ...actual,
-    getGalleriesList: (
-      ...args: Parameters<typeof getGalleriesListMock>
-    ) => getGalleriesListMock(...args),
+    getGalleriesList: (...args: Parameters<typeof getGalleriesListMock>) =>
+      getGalleriesListMock(...args),
   };
 });
 
@@ -123,5 +122,24 @@ describe('useGalleries', () => {
     });
 
     expect(result.current.data?.items[0].id).toBe(2);
+  });
+
+  it('passes folder filters to the gallery list API', async () => {
+    getGalleriesListMock.mockResolvedValueOnce(baseResponse);
+
+    renderHook(() =>
+      useGalleries({
+        sort: defaultSort,
+        filters: { ...defaultFilters, folderId: 'unfiled' },
+        page: 1,
+        pageSize: 24,
+      })
+    );
+
+    await waitFor(() => {
+      expect(getGalleriesListMock).toHaveBeenCalledWith(
+        expect.objectContaining({ folderId: 'unfiled' })
+      );
+    });
   });
 });

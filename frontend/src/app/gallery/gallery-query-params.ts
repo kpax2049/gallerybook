@@ -22,6 +22,7 @@ export interface FilterState {
   likedBy?: 'me' | number;
   followedOnly?: boolean;
   createdById?: number;
+  folderId?: number | 'unfiled';
 }
 
 export interface SortState {
@@ -42,7 +43,15 @@ export const defaultFilters: FilterState = {
   likedBy: undefined,
   followedOnly: false,
   createdById: undefined,
+  folderId: undefined,
 };
+
+function parseFolderId(value: string | null): number | 'unfiled' | undefined {
+  if (value == null || value === '') return undefined;
+  if (value === 'none' || value === 'unfiled') return 'unfiled';
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : undefined;
+}
 
 export function filtersToQuery(f: FilterState) {
   const followedOnly = !!f.followedOnly;
@@ -60,10 +69,10 @@ export function filtersToQuery(f: FilterState) {
     search: f.search || undefined,
     favoriteBy:
       !followedOnly && f.favoriteBy != null ? String(f.favoriteBy) : undefined,
-    likedBy:
-      !followedOnly && f.likedBy != null ? String(f.likedBy) : undefined,
+    likedBy: !followedOnly && f.likedBy != null ? String(f.likedBy) : undefined,
     followedOnly: followedOnly ? 'true' : undefined,
     createdById: f.createdById != null ? String(f.createdById) : undefined,
+    folderId: f.folderId != null ? String(f.folderId) : undefined,
   };
 }
 
@@ -109,6 +118,7 @@ export function queryToFilters(q: URLSearchParams): FilterState {
     createdByIdRaw != null && !Number.isNaN(Number(createdByIdRaw))
       ? Number(createdByIdRaw)
       : undefined;
+  const folderId = parseFolderId(q.get('folderId'));
 
   return {
     status: new Set<GalleryStatus>(status ?? []),
@@ -123,6 +133,7 @@ export function queryToFilters(q: URLSearchParams): FilterState {
     likedBy,
     followedOnly: q.get('followedOnly') === 'true',
     createdById,
+    folderId,
   };
 }
 

@@ -82,6 +82,7 @@ export const defaultFilters: FilterState = {
   search: '',
   favoriteBy: undefined,
   likedBy: undefined,
+  folderId: undefined,
 };
 
 function GalleryListToolbarInner(props: GalleryListToolbarProps) {
@@ -615,5 +616,6 @@ function countActiveFilters(f: FilterState) {
   if (f.hasTags !== null) n += 1;
   if (f.hasComments !== null) n += 1;
   if (f.tags.length) n += 1;
+  if (f.folderId != null) n += 1;
   return n;
 }
