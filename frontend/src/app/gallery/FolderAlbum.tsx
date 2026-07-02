@@ -167,51 +167,53 @@ export function FolderAlbumCard({
 
   return (
     <div className="group text-center">
-      <button
-        type="button"
-        onClick={onOpen}
-        onDragOver={
-          onGalleryDropped
-            ? (event) => {
-                event.preventDefault();
-                setDragOver(true);
-              }
-            : undefined
-        }
-        onDragLeave={() => setDragOver(false)}
-        onDrop={
-          onGalleryDropped
-            ? (event) => {
-                event.preventDefault();
-                setDragOver(false);
-                const raw = event.dataTransfer.getData('text/gallery-id');
-                const galleryId = Number(raw);
-                if (Number.isFinite(galleryId)) onGalleryDropped(galleryId);
-              }
-            : undefined
-        }
-        className={cn(
-          'relative inline-flex rounded-md p-2 transition hover:-translate-y-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gb-accent)]',
-          active && 'ring-2 ring-[var(--gb-accent)]',
-          dragOver &&
-            'scale-[1.03] ring-2 ring-[var(--gb-accent)] ring-offset-[6px] ring-offset-[var(--gb-accent-soft)]'
-        )}
-        aria-label={`Open ${folder.name}`}
-      >
-        <span className="transition duration-300">
-          <FolderAlbumObject
-            folder={folder}
-            cover={cover}
-            label={cover?.title ?? undefined}
-          />
-        </span>
-        {dragOver && (
-          <span className="absolute inset-2 z-20 flex items-center justify-center rounded-md bg-[var(--gb-scrim)] text-sm font-semibold text-[var(--gb-ink)] backdrop-blur-sm">
-            Drop into {folder.name}
+      <div className="relative inline-flex">
+        <button
+          type="button"
+          onClick={onOpen}
+          onDragOver={
+            onGalleryDropped
+              ? (event) => {
+                  event.preventDefault();
+                  setDragOver(true);
+                }
+              : undefined
+          }
+          onDragLeave={() => setDragOver(false)}
+          onDrop={
+            onGalleryDropped
+              ? (event) => {
+                  event.preventDefault();
+                  setDragOver(false);
+                  const raw = event.dataTransfer.getData('text/gallery-id');
+                  const galleryId = Number(raw);
+                  if (Number.isFinite(galleryId)) onGalleryDropped(galleryId);
+                }
+              : undefined
+          }
+          className={cn(
+            'relative inline-flex rounded-md p-2 transition hover:-translate-y-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gb-accent)]',
+            active && 'ring-2 ring-[var(--gb-accent)]',
+            dragOver &&
+              'scale-[1.03] ring-2 ring-[var(--gb-accent)] ring-offset-[6px] ring-offset-[var(--gb-accent-soft)]'
+          )}
+          aria-label={`Open ${folder.name}`}
+        >
+          <span className="transition duration-300">
+            <FolderAlbumObject
+              folder={folder}
+              cover={cover}
+              label={cover?.title ?? undefined}
+            />
           </span>
-        )}
+          {dragOver && (
+            <span className="absolute inset-2 z-20 flex items-center justify-center rounded-md bg-[var(--gb-scrim)] text-sm font-semibold text-[var(--gb-ink)] backdrop-blur-sm">
+              Drop into {folder.name}
+            </span>
+          )}
+        </button>
         {canManage && (
-          <span className="absolute right-0 top-0 opacity-0 transition group-hover:opacity-100">
+          <span className="absolute right-0 top-0 z-30 opacity-0 transition group-hover:opacity-100">
             <FolderMenu
               onOpen={onOpen}
               onRename={onRename}
@@ -220,7 +222,7 @@ export function FolderAlbumCard({
             />
           </span>
         )}
-      </button>
+      </div>
       <div className="mt-2 min-w-0">
         <div className="gb-serif truncate text-[18px] font-medium text-[var(--gb-ink)]">
           {folder.name}
