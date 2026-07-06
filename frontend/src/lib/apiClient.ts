@@ -3,6 +3,7 @@ import { toast } from '@/hooks/use-toast';
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL ?? '';
+export const UNAUTHORIZED_SESSION_EVENT = 'gallerybook:unauthorized-session';
 
 const safeStorage = () => {
   try {
@@ -45,9 +46,11 @@ const clearAccessToken = () => {
 };
 
 export const errorHandler = (error: AxiosError | undefined) => {
-  if (error?.status === 401) {
+  const status = error?.response?.status ?? error?.status;
+
+  if (status === 401) {
     clearAccessToken();
-    //TODO: redirect back to root/login page
+    notifyUnauthorizedSession();
     toast({
       variant: 'destructive',
       title: 'Uh oh! Something went wrong.',
@@ -55,7 +58,7 @@ export const errorHandler = (error: AxiosError | undefined) => {
     });
   } else {
     const responseData = error?.response?.data;
-    const message = (responseData as any).message || error?.message;
+    const message = (responseData as any)?.message || error?.message;
     toast({
       variant: 'destructive',
       title: 'Uh oh! Something went wrong.',
@@ -63,6 +66,11 @@ export const errorHandler = (error: AxiosError | undefined) => {
       ${message}`,
     });
   }
+};
+
+const notifyUnauthorizedSession = () => {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(UNAUTHORIZED_SESSION_EVENT));
 };
 
 const client = axios.create({

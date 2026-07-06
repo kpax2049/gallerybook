@@ -20,6 +20,7 @@ import FollowingPage from './app/following/FollowingPage';
 import { useFollowStore } from './stores/followStore';
 import { signout } from './api/auth';
 import { LegalPage } from './app/legal/LegalPage';
+import { UNAUTHORIZED_SESSION_EVENT } from './lib/apiClient';
 
 const Home = () => {
   return <h2>Home (Protected: authenticated user required)</h2>;
@@ -108,6 +109,26 @@ const App = () => {
       cancelled = true;
     };
   }, [setGlobalUser]);
+
+  useEffect(() => {
+    const handleUnauthorizedSession = () => {
+      useUserStore.getState().clearUser();
+      useFollowStore.getState().reset();
+      localStorage.removeItem('ACCESS_TOKEN');
+      navigate('/login', { replace: true });
+    };
+
+    window.addEventListener(
+      UNAUTHORIZED_SESSION_EVENT,
+      handleUnauthorizedSession
+    );
+    return () => {
+      window.removeEventListener(
+        UNAUTHORIZED_SESSION_EVENT,
+        handleUnauthorizedSession
+      );
+    };
+  }, [navigate]);
   // useEffect(() => {
   //   getUser().then((user: User) => {
   //     setGlobalUser(user);
