@@ -89,21 +89,24 @@ describe('GalleryController', () => {
   it('verifies ownership before generating presigned URLs', async () => {
     const admin = { id: 1, role: 'ADMIN' } as any;
     galleryService.verifyManageAccess.mockResolvedValue(undefined);
+    galleryService.findById.mockResolvedValue({ id: 1, userId: 7 });
     galleryService.generatePresignedUrls.mockResolvedValue({
-      'a.jpg': 'url',
+      'uploads/users/7/galleries/1/a.jpg': 'url',
     });
 
     const result = await controller.getPresignedUrls(
       1,
-      { paths: ['a.jpg'] },
+      { paths: ['uploads/users/7/galleries/1/a.jpg'] },
       admin,
     );
 
     expect(galleryService.verifyManageAccess).toHaveBeenCalledWith(1, admin);
-    expect(galleryService.generatePresignedUrls).toHaveBeenCalledWith([
-      'a.jpg',
-    ]);
-    expect(result).toEqual({ 'a.jpg': 'url' });
+    expect(galleryService.findById).toHaveBeenCalledWith(1);
+    expect(galleryService.generatePresignedUrls).toHaveBeenCalledWith(
+      ['uploads/users/7/galleries/1/a.jpg'],
+      { userId: 7, galleryId: 1 },
+    );
+    expect(result).toEqual({ 'uploads/users/7/galleries/1/a.jpg': 'url' });
   });
 
   it('rejects presigned url requests for non-admin users', async () => {

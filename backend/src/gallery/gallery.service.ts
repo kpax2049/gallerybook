@@ -49,6 +49,11 @@ interface ProseMirrorNode {
   content?: ProseMirrorNode[];
 }
 
+interface PresignScope {
+  userId: number;
+  galleryId: number;
+}
+
 const SELECT_LIST = {
   folder: {
     select: {
@@ -101,20 +106,17 @@ export class GalleryService {
 
   async generatePresignedUrls(
     paths: string[],
+    scope: PresignScope,
   ): Promise<Record<string, string>> {
     const result: Record<string, string> = {};
+
+    paths.forEach((path) => this.validatePresignPath(path, scope));
 
     try {
       await Promise.all(
         paths.map(async (path) => {
-          const ext = extname(path); // e.g. ".webp"
-          const mime = mimeLookup(ext) || '';
-          const normalizedType = mime === 'image/jpg' ? 'image/jpeg' : mime;
-
-          if (!allowedMimeTypes.includes(normalizedType)) {
-            throw new BadRequestException(`Unsupported image type: ${mime}`);
-          }
-          const contentType = mimeLookup(ext) || 'application/octet-stream'; // fallback safe type
+          const contentType =
+            mimeLookup(extname(path)) || 'application/octet-stream';
 
           const command = new PutObjectCommand({
             Bucket: this.bucket,
@@ -133,6 +135,27 @@ export class GalleryService {
       throw new InternalServerErrorException(
         'Could not generate presigned URLs',
       );
+    }
+  }
+
+  private validatePresignPath(path: string, scope: PresignScope) {
+    const prefix = `uploads/users/${scope.userId}/galleries/${scope.galleryId}/`;
+    const ext = extname(path);
+    const mime = mimeLookup(ext) || '';
+    const normalizedType = mime === 'image/jpg' ? 'image/jpeg' : mime;
+
+    if (!allowedMimeTypes.includes(normalizedType)) {
+      throw new BadRequestException(`Unsupported image type: ${mime}`);
+    }
+
+    if (
+      path.startsWith('/') ||
+      path.includes('\\') ||
+      /^[a-z][a-z0-9+.-]*:/i.test(path) ||
+      path.split('/').includes('..') ||
+      !path.startsWith(prefix)
+    ) {
+      throw new BadRequestException('Invalid upload path');
     }
   }
 

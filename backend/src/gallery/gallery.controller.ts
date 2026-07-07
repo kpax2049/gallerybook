@@ -61,8 +61,12 @@ export class GalleryController {
   ) {
     this.requireAdmin(user);
     await this.galleryService.verifyManageAccess(galleryId, user);
+    const gallery = await this.galleryService.findById(galleryId);
 
-    return this.galleryService.generatePresignedUrls(body.paths);
+    return this.galleryService.generatePresignedUrls(body.paths, {
+      userId: gallery.userId,
+      galleryId,
+    });
   }
 
   @Post('draft')

@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GalleryStatus, Role, Visibility } from '@prisma/client';
 import { AssetUrlService } from 'src/common/asset-url.service';
@@ -167,6 +171,42 @@ describe('GalleryService', () => {
         folder: null,
       },
     ]);
+  });
+
+  describe('presigned upload paths', () => {
+    it('rejects upload paths outside the gallery owner prefix', async () => {
+      await expect(
+        service.generatePresignedUrls(
+          ['uploads/users/99/galleries/1/photo.jpg'],
+          { userId: 7, galleryId: 1 },
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects absolute, URL-like, backslash, and traversal paths', async () => {
+      const scope = { userId: 7, galleryId: 1 };
+      const invalidPaths = [
+        '/uploads/users/7/galleries/1/photo.jpg',
+        'https://example.com/photo.jpg',
+        'uploads\\users\\7\\galleries\\1\\photo.jpg',
+        'uploads/users/7/galleries/1/../photo.jpg',
+      ];
+
+      for (const path of invalidPaths) {
+        await expect(
+          service.generatePresignedUrls([path], scope),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      }
+    });
+
+    it('rejects unsupported image types as bad requests', async () => {
+      await expect(
+        service.generatePresignedUrls(
+          ['uploads/users/7/galleries/1/photo.gif'],
+          { userId: 7, galleryId: 1 },
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
   });
 
   describe('read access', () => {

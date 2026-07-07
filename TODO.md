@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0009 `bug` Harden presigned S3 upload path validation
-  - Context: Presigned URL generation validates image type from extension, but
-    not that requested keys stay under the expected user/gallery upload prefix.
-  - Expected: Reject presign paths outside
-    `uploads/users/:userId/galleries/:galleryId/`.
-  - Notes: From codebase review candidate #3.
-
 - [ ] TODO-0010 `bug` Make gallery image URL rewriting idempotent
   - Context: Gallery image rewriting treats image `src` values as raw S3 keys.
   - Expected: Skip already-signed, absolute, or CDN URLs and preserve image
@@ -134,6 +127,16 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0009 `bug` Harden presigned S3 upload path validation
+  - Completed: 2026-07-07
+  - Context: Presigned URL generation validated image type from extension, but
+    not that requested keys stayed under the expected user/gallery upload
+    prefix.
+  - Outcome: Presign requests now resolve the gallery owner after manage-access
+    verification and reject upload keys outside
+    `uploads/users/:userId/galleries/:galleryId/`, plus absolute, URL-like,
+    backslash, traversal, and unsupported image paths.
 
 - [x] TODO-0008 `bug` Redirect users after unrecoverable 401s
   - Completed: 2026-07-06
