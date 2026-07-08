@@ -27,12 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0010 `bug` Make gallery image URL rewriting idempotent
-  - Context: Gallery image rewriting treats image `src` values as raw S3 keys.
-  - Expected: Skip already-signed, absolute, or CDN URLs and preserve image
-    metadata reliably.
-  - Notes: From codebase review candidate #4.
-
 - [ ] TODO-0011 `chore` Simplify async recursion in image rewriting
   - Context: Gallery image rewriting has un-awaited recursive calls before the
     awaited traversal path.
@@ -127,6 +121,15 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0010 `bug` Make gallery image URL rewriting idempotent
+  - Completed: 2026-07-08
+  - Context: Gallery image rewriting treated image `src` values as raw S3 keys,
+    which could double-rewrite already signed, CDN, or externally hosted image
+    URLs.
+  - Outcome: Image rewriting now only rewrites raw stored keys and preserves
+    absolute, CDN, signed, protocol-relative, data, blob, query, and fragment
+    sources with their existing metadata.
 
 - [x] TODO-0009 `bug` Harden presigned S3 upload path validation
   - Completed: 2026-07-07

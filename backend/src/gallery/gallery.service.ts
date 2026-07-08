@@ -43,6 +43,8 @@ const allowedMimeTypes = [
   'image/avif',
 ];
 
+const URL_SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
+
 interface ProseMirrorNode {
   type: string;
   attrs?: Record<string, any>;
@@ -176,6 +178,10 @@ export class GalleryService {
     // Rewrite image src
     if (node.type === 'image' && node.attrs?.src) {
       const originalSrc = node.attrs.src; // e.g., 'uploads/user1/photo.jpg'
+      if (!this.isRawStorageKey(originalSrc)) {
+        return updatedNode;
+      }
+
       if (mode === 'view') {
         // Replace with CloudFront + transforms
         const cloudfrontDomain = this.config.get<string>('CLOUDFRONT_DOMAIN');
@@ -216,6 +222,20 @@ export class GalleryService {
     }
 
     return updatedNode;
+  }
+
+  private isRawStorageKey(src: unknown): src is string {
+    if (typeof src !== 'string') return false;
+    const trimmed = src.trim();
+    if (!trimmed || trimmed !== src) return false;
+    return (
+      !trimmed.startsWith('/') &&
+      !trimmed.startsWith('//') &&
+      !URL_SCHEME_RE.test(trimmed) &&
+      !trimmed.includes('\\') &&
+      !trimmed.includes('?') &&
+      !trimmed.includes('#')
+    );
   }
 
   async rewriteGalleryImageSrcs(

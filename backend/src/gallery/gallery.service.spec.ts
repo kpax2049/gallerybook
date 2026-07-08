@@ -209,6 +209,86 @@ describe('GalleryService', () => {
     });
   });
 
+  describe('image URL rewriting', () => {
+    it('rewrites raw storage keys for view mode while preserving metadata', async () => {
+      const result = await service.rewriteGalleryImageSrcs(
+        {
+          type: 'doc',
+          content: [
+            {
+              type: 'image',
+              attrs: {
+                src: 'uploads/users/7/galleries/1/photo.jpg',
+                alt: 'Beach',
+                width: 640,
+              },
+            },
+          ],
+        },
+        'view',
+      );
+
+      expect(result.content?.[0].attrs).toEqual({
+        src: 'https://cdn.example.com/uploads/users/7/galleries/1/photo.jpg?w=100',
+        alt: 'Beach',
+        width: 640,
+      });
+    });
+
+    it('leaves already rewritten or externally hosted image URLs unchanged', async () => {
+      const urls = [
+        'https://cdn.example.com/uploads/users/7/galleries/1/photo.jpg?w=100',
+        'https://bucket.s3.amazonaws.com/uploads/users/7/galleries/1/photo.jpg?X-Amz-Signature=abc',
+        '//cdn.example.com/uploads/users/7/galleries/1/photo.jpg',
+        'data:image/png;base64,abc',
+        'blob:https://app.example.com/image-id',
+      ];
+
+      for (const src of urls) {
+        await expect(
+          service.rewriteGalleryImageSrcs(
+            {
+              type: 'doc',
+              content: [
+                {
+                  type: 'image',
+                  attrs: { src, alt: 'Already rewritten', width: 320 },
+                },
+              ],
+            },
+            'view',
+          ),
+        ).resolves.toEqual({
+          type: 'doc',
+          content: [
+            {
+              type: 'image',
+              attrs: { src, alt: 'Already rewritten', width: 320 },
+            },
+          ],
+        });
+      }
+    });
+
+    it('does not generate edit-mode signed URLs for absolute sources', async () => {
+      const src =
+        'https://cdn.example.com/uploads/users/7/galleries/1/photo.jpg?w=100';
+
+      await expect(
+        service.rewriteGalleryImageSrcs(
+          {
+            type: 'doc',
+            content: [{ type: 'image', attrs: { src, title: 'Cover' } }],
+          },
+          'edit',
+        ),
+      ).resolves.toEqual({
+        type: 'doc',
+        content: [{ type: 'image', attrs: { src, title: 'Cover' } }],
+      });
+    });
+  });
+
   describe('read access', () => {
     it('hides draft galleries from non-admin registered users', async () => {
       prisma.gallery.findUnique.mockResolvedValue({
