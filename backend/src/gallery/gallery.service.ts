@@ -164,26 +164,25 @@ export class GalleryService {
   async rewriteImageSrcsInNode(
     node: ProseMirrorNode,
     mode: Mode,
-  ): Promise<ProseMirrorNode> {
+  ): Promise<ProseMirrorNode>;
+  async rewriteImageSrcsInNode(
+    node: ProseMirrorNode[],
+    mode: Mode,
+  ): Promise<ProseMirrorNode[]>;
+  async rewriteImageSrcsInNode(
+    node: ProseMirrorNode | ProseMirrorNode[],
+    mode: Mode,
+  ): Promise<ProseMirrorNode | ProseMirrorNode[]> {
     if (Array.isArray(node)) {
-      for (const n of node) {
-        this.rewriteImageSrcsInNode(n, mode);
-      }
-      return;
+      return Promise.all(
+        node.map((child) => this.rewriteImageSrcsInNode(child, mode)),
+      ) as Promise<ProseMirrorNode[]>;
     }
-    // console.log('Visiting node type:', node.type);
-    // console.log('Node content:', node.content);
     const updatedNode: ProseMirrorNode = { ...node };
 
-    // Rewrite image src
-    if (node.type === 'image' && node.attrs?.src) {
-      const originalSrc = node.attrs.src; // e.g., 'uploads/user1/photo.jpg'
-      if (!this.isRawStorageKey(originalSrc)) {
-        return updatedNode;
-      }
-
+    if (node.type === 'image' && this.isRawStorageKey(node.attrs?.src)) {
+      const originalSrc = node.attrs.src;
       if (mode === 'view') {
-        // Replace with CloudFront + transforms
         const cloudfrontDomain = this.config.get<string>('CLOUDFRONT_DOMAIN');
         const transformParams = this.config.get<string>(
           'LAMBDA_TRANSFORM_PARAMS',
@@ -193,7 +192,6 @@ export class GalleryService {
           src: `${cloudfrontDomain}/${originalSrc}?${transformParams}`,
         };
       } else if (mode === 'edit') {
-        // Replace with presigned S3 URL
         const command = new GetObjectCommand({
           Bucket: this.bucket,
           Key: originalSrc,
@@ -208,16 +206,13 @@ export class GalleryService {
         };
       }
     }
-    if (Array.isArray(node.content)) {
-      for (const child of node.content) {
-        this.rewriteImageSrcsInNode(child, mode);
-      }
-    }
 
-    // Recursively process content
-    if (node.content && Array.isArray(node.content)) {
+    if (Array.isArray(node.content)) {
       updatedNode.content = await Promise.all(
-        node.content.map((child) => this.rewriteImageSrcsInNode(child, mode)),
+        node.content.map(
+          (child) =>
+            this.rewriteImageSrcsInNode(child, mode) as Promise<ProseMirrorNode>,
+        ),
       );
     }
 
@@ -241,7 +236,7 @@ export class GalleryService {
   async rewriteGalleryImageSrcs(
     content: any,
     mode: Mode,
-  ): Promise<ProseMirrorNode> {
+  ): Promise<any> {
     return await this.rewriteImageSrcsInNode(content, mode);
   }
 

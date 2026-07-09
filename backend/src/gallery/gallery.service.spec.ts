@@ -287,6 +287,83 @@ describe('GalleryService', () => {
         content: [{ type: 'image', attrs: { src, title: 'Cover' } }],
       });
     });
+
+    it('rewrites nested image nodes through a single awaited traversal', async () => {
+      const result = await service.rewriteGalleryImageSrcs(
+        {
+          type: 'doc',
+          content: [
+            {
+              type: 'section',
+              content: [
+                {
+                  type: 'image',
+                  attrs: {
+                    src: 'uploads/users/7/galleries/1/nested.webp',
+                    alt: 'Nested',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        'view',
+      );
+
+      expect(result.content[0].content[0].attrs).toEqual({
+        src: 'https://cdn.example.com/uploads/users/7/galleries/1/nested.webp?w=100',
+        alt: 'Nested',
+      });
+    });
+
+    it('rewrites array content directly', async () => {
+      const result = await service.rewriteGalleryImageSrcs(
+        [
+          {
+            type: 'image',
+            attrs: {
+              src: 'uploads/users/7/galleries/1/one.avif',
+              alt: 'One',
+            },
+          },
+          {
+            type: 'paragraph',
+            content: [
+              {
+                type: 'image',
+                attrs: {
+                  src: 'uploads/users/7/galleries/1/two.png',
+                  alt: 'Two',
+                },
+              },
+            ],
+          },
+        ],
+        'view',
+      );
+
+      expect(result).toEqual([
+        {
+          type: 'image',
+          attrs: {
+            src: 'https://cdn.example.com/uploads/users/7/galleries/1/one.avif?w=100',
+            alt: 'One',
+          },
+        },
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'image',
+              attrs: {
+                src: 'https://cdn.example.com/uploads/users/7/galleries/1/two.png?w=100',
+                alt: 'Two',
+              },
+            },
+          ],
+        },
+      ]);
+    });
   });
 
   describe('read access', () => {

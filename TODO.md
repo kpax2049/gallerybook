@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0011 `chore` Simplify async recursion in image rewriting
-  - Context: Gallery image rewriting has un-awaited recursive calls before the
-    awaited traversal path.
-  - Expected: Use one clear recursive traversal with tests for nested images and
-    array content.
-  - Notes: From codebase review candidate #5.
-
 - [ ] TODO-0012 `bug` Add a max page size to gallery pagination
   - Context: Gallery list pagination clamps page size to at least 1 but has no
     upper bound.
@@ -121,6 +114,14 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0011 `chore` Simplify async recursion in image rewriting
+  - Completed: 2026-07-09
+  - Context: Gallery image rewriting had un-awaited recursive calls before the
+    awaited traversal path.
+  - Outcome: Replaced the duplicate traversal with a single awaited recursive
+    path that handles both node and array content, with focused coverage for
+    nested image nodes and direct array content.
 
 - [x] TODO-0010 `bug` Make gallery image URL rewriting idempotent
   - Completed: 2026-07-08
