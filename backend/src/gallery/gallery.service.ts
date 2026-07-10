@@ -43,6 +43,8 @@ const allowedMimeTypes = [
   'image/avif',
 ];
 
+const DEFAULT_GALLERY_PAGE_SIZE = 24;
+const MAX_GALLERY_PAGE_SIZE = 100;
 const URL_SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
 
 interface ProseMirrorNode {
@@ -638,14 +640,18 @@ export class GalleryService {
     let favoriteIds: number[] | undefined;
     let likedIds: number[] | undefined;
     const canManageGalleries = role === Role.ADMIN;
+    const { skip, take, page, pageSize } = this.getPagination(
+      dto.page,
+      dto.pageSize,
+    );
 
     if (dto.favoriteBy !== undefined) {
       const favUserId = this.coerceFavUserId(dto.favoriteBy, userId);
       if (favUserId === undefined) {
         return {
           total: 0,
-          page: dto.page ?? 1,
-          pageSize: dto.pageSize ?? 24,
+          page,
+          pageSize,
           items: [],
           commentCounts: {},
           myReactions: {},
@@ -661,8 +667,8 @@ export class GalleryService {
       if (!favoriteIds.length) {
         return {
           total: 0,
-          page: dto.page ?? 1,
-          pageSize: dto.pageSize ?? 24,
+          page,
+          pageSize,
           items: [],
           commentCounts: {},
           myReactions: {},
@@ -675,8 +681,8 @@ export class GalleryService {
       if (likedUserId === undefined) {
         return {
           total: 0,
-          page: dto.page ?? 1,
-          pageSize: dto.pageSize ?? 24,
+          page,
+          pageSize,
           items: [],
           commentCounts: {},
           myReactions: {},
@@ -692,8 +698,8 @@ export class GalleryService {
       if (!likedIds.length) {
         return {
           total: 0,
-          page: dto.page ?? 1,
-          pageSize: dto.pageSize ?? 24,
+          page,
+          pageSize,
           items: [],
           commentCounts: {},
           myReactions: {},
@@ -711,10 +717,6 @@ export class GalleryService {
     const orderBy = this.buildOrderBy(
       dto.sortKey ?? 'updatedAt',
       dto.sortDir ?? 'desc',
-    );
-    const { skip, take, page, pageSize } = this.getPagination(
-      dto.page,
-      dto.pageSize,
     );
 
     const [total, rows] = await this.prisma.$transaction([
@@ -1002,9 +1004,12 @@ export class GalleryService {
     }
   }
 
-  private getPagination(page = 1, pageSize = 24) {
+  private getPagination(
+    page = 1,
+    pageSize = DEFAULT_GALLERY_PAGE_SIZE,
+  ) {
     const p = Math.max(1, page);
-    const ps = Math.max(1, pageSize);
+    const ps = Math.min(MAX_GALLERY_PAGE_SIZE, Math.max(1, pageSize));
     return { page: p, pageSize: ps, skip: (p - 1) * ps, take: ps };
   }
 

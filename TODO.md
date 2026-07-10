@@ -27,12 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0012 `bug` Add a max page size to gallery pagination
-  - Context: Gallery list pagination clamps page size to at least 1 but has no
-    upper bound.
-  - Expected: Cap list requests, for example at 100, to avoid expensive queries.
-  - Notes: From codebase review candidate #6.
-
 - [ ] TODO-0013 `feature` Add public and shareable folder pages
   - Context: Folder APIs are owner-scoped today, while galleries expose folder
     metadata.
@@ -114,6 +108,14 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0012 `bug` Add a max page size to gallery pagination
+  - Completed: 2026-07-10
+  - Context: Gallery list pagination clamped page size to at least 1 but had no
+    upper bound.
+  - Outcome: Gallery list pagination now caps page size at 100 and uses the
+    same clamped metadata for normal list queries and early empty
+    favorite/liked responses.
 
 - [x] TODO-0011 `chore` Simplify async recursion in image rewriting
   - Completed: 2026-07-09

@@ -14,9 +14,11 @@ describe('GalleryService', () => {
   let service: GalleryService;
   let prisma: {
     $queryRaw: jest.Mock;
+    $transaction: jest.Mock;
     gallery: {
       findUnique: jest.Mock;
       findMany: jest.Mock;
+      count: jest.Mock;
       delete: jest.Mock;
     };
     galleryReaction: {
@@ -32,9 +34,13 @@ describe('GalleryService', () => {
   beforeEach(() => {
     prisma = {
       $queryRaw: jest.fn().mockResolvedValue([{ viewsCount: 1 }]),
+      $transaction: jest.fn((operations: Promise<unknown>[]) =>
+        Promise.all(operations),
+      ),
       gallery: {
         findUnique: jest.fn(),
         findMany: jest.fn(),
+        count: jest.fn(),
         delete: jest.fn(),
       },
       galleryReaction: {
@@ -573,6 +579,52 @@ describe('GalleryService', () => {
       });
       expect(res.total).toBe(0);
       expect(res.items).toEqual([]);
+    });
+  });
+
+  describe('list pagination', () => {
+    it('caps page size for gallery list queries', async () => {
+      prisma.gallery.count.mockResolvedValue(0);
+      prisma.gallery.findMany.mockResolvedValue([]);
+
+      const result = await service.list(
+        7,
+        { page: 0, pageSize: 250, includeMyReactions: true },
+        Role.ADMIN,
+      );
+
+      expect(prisma.gallery.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 0,
+          take: 100,
+        }),
+      );
+      expect(result).toEqual({
+        total: 0,
+        page: 1,
+        pageSize: 100,
+        items: [],
+        commentCounts: {},
+        myReactions: {},
+      });
+    });
+
+    it('uses capped pagination metadata for early empty favorite responses', async () => {
+      const result = await service.list(null, {
+        favoriteBy: 'me',
+        page: 0,
+        pageSize: 250,
+      });
+
+      expect(result).toEqual({
+        total: 0,
+        page: 1,
+        pageSize: 100,
+        items: [],
+        commentCounts: {},
+        myReactions: {},
+      });
+      expect(prisma.gallery.findMany).not.toHaveBeenCalled();
     });
   });
 
