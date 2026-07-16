@@ -1,13 +1,15 @@
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { JwtGuard } from 'src/auth/guard';
-import { FolderController } from './folder.controller';
+import { FolderController, PublicFolderController } from './folder.controller';
 import { FolderService } from './folder.service';
 
 describe('FolderController', () => {
   let controller: FolderController;
+  let publicController: PublicFolderController;
   const folderService = {
     listForUser: jest.fn(),
+    getPublicFolder: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
@@ -15,7 +17,7 @@ describe('FolderController', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      controllers: [FolderController],
+      controllers: [FolderController, PublicFolderController],
       providers: [{ provide: FolderService, useValue: folderService }],
     })
       .overrideGuard(JwtGuard)
@@ -23,6 +25,7 @@ describe('FolderController', () => {
       .compile();
 
     controller = module.get(FolderController);
+    publicController = module.get(PublicFolderController);
     Object.values(folderService).forEach((mock) => mock.mockReset());
   });
 
@@ -75,5 +78,20 @@ describe('FolderController', () => {
     expect(folderService.create).not.toHaveBeenCalled();
     expect(folderService.update).not.toHaveBeenCalled();
     expect(folderService.delete).not.toHaveBeenCalled();
+  });
+
+  it('fetches public folders by owner username and folder slug', async () => {
+    folderService.getPublicFolder.mockResolvedValue({
+      folder: { id: 1 },
+      galleries: [],
+    });
+
+    await expect(
+      publicController.getPublicFolder('artist', 'summer-trips'),
+    ).resolves.toEqual({ folder: { id: 1 }, galleries: [] });
+    expect(folderService.getPublicFolder).toHaveBeenCalledWith(
+      'artist',
+      'summer-trips',
+    );
   });
 });

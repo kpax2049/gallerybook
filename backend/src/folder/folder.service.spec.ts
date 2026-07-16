@@ -107,6 +107,138 @@ describe('FolderService', () => {
     });
   });
 
+  it('returns a public folder with published public and unlisted galleries', async () => {
+    const now = new Date('2026-01-01T00:00:00.000Z');
+    prisma.folder.findFirst.mockResolvedValue({
+      id: 1,
+      createdAt: now,
+      updatedAt: now,
+      name: 'Travel',
+      slug: 'travel',
+      description: 'Trips',
+      color: '#14b8a6',
+      coverGalleryId: 11,
+      userId: 7,
+      owner: {
+        id: 7,
+        fullName: 'Artist Name',
+        username: 'artist',
+        profile: { avatarUrl: 'avatar.jpg' },
+      },
+      coverGallery: {
+        id: 11,
+        title: 'Cover',
+        thumbnail: 'cover.jpg',
+        slug: 'cover',
+        folderId: 1,
+      },
+      galleries: [
+        {
+          id: 11,
+          userId: 7,
+          title: 'Cover',
+          description: 'First trip',
+          content: null,
+          thumbnail: 'cover.jpg',
+          folderId: 1,
+          status: 'PUBLISHED',
+          visibility: 'UNLISTED',
+          createdAt: now,
+          updatedAt: now,
+          slug: 'cover',
+          viewsCount: 4,
+          likesCount: 2,
+          favoritesCount: 1,
+          tags: [{ tag: { name: 'Travel', slug: 'travel' } }],
+          _count: { comments: 3 },
+          createdBy: {
+            id: 7,
+            fullName: 'Artist Name',
+            username: 'artist',
+            profile: { avatarUrl: 'avatar.jpg' },
+          },
+        },
+      ],
+    });
+
+    await expect(service.getPublicFolder('artist', 'travel')).resolves.toEqual({
+      folder: {
+        id: 1,
+        createdAt: now,
+        updatedAt: now,
+        name: 'Travel',
+        slug: 'travel',
+        description: 'Trips',
+        color: '#14b8a6',
+        coverGalleryId: 11,
+        userId: 7,
+        galleriesCount: 1,
+        coverGallery: {
+          id: 11,
+          title: 'Cover',
+          thumbnail: 'cdn/cover.jpg',
+          slug: 'cover',
+          folderId: 1,
+        },
+        owner: {
+          id: 7,
+          displayName: 'Artist Name',
+          username: 'artist',
+          avatarUrl: 'avatar.jpg',
+        },
+      },
+      galleries: [
+        {
+          id: 11,
+          userId: 7,
+          title: 'Cover',
+          description: 'First trip',
+          content: null,
+          thumbnail: 'cdn/cover.jpg',
+          folderId: 1,
+          status: 'PUBLISHED',
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+          slug: 'cover',
+          viewsCount: 4,
+          likesCount: 2,
+          favoritesCount: 1,
+          visibility: 'UNLISTED',
+          tags: ['travel'],
+          author: {
+            id: 7,
+            displayName: 'Artist Name',
+            username: 'artist',
+            avatarUrl: 'avatar.jpg',
+          },
+        },
+      ],
+      commentCounts: { 11: 3 },
+    });
+    expect(prisma.folder.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          slug: 'travel',
+          owner: { username: 'artist' },
+        },
+      }),
+    );
+    expect(
+      prisma.folder.findFirst.mock.calls[0][0].include.galleries.where,
+    ).toEqual({
+      status: 'PUBLISHED',
+      visibility: { in: ['PUBLIC', 'UNLISTED'] },
+    });
+  });
+
+  it('throws not found for missing public folders', async () => {
+    prisma.folder.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.getPublicFolder('artist', 'missing'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
   it('creates folders with trimmed names and unique slugs', async () => {
     prisma.folder.findFirst
       .mockResolvedValueOnce({ id: 1 })

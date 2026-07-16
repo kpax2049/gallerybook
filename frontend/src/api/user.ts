@@ -42,8 +42,19 @@ export const getUsers = async (): Promise<User[]> => {
 };
 
 // Fetching current user
-export const getUser = async (): Promise<User> => {
-  return await apiRequest<User>('/users/me', 'GET');
+export const getUser = async (options?: {
+  suppressUnauthorizedRedirect?: boolean;
+}): Promise<User> => {
+  return await apiRequest<User>(
+    '/users/me',
+    'GET',
+    undefined,
+    undefined,
+    undefined,
+    {
+      suppressUnauthorizedRedirect: options?.suppressUnauthorizedRedirect,
+    }
+  );
 };
 
 export const updateUser = async (

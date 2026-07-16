@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0013 `feature` Add public and shareable folder pages
-  - Context: Folder APIs are owner-scoped today, while galleries expose folder
-    metadata.
-  - Expected: Add routes and API support for viewing a folder's published
-    public/unlisted gallery collection by owner and folder slug.
-  - Notes: From codebase review candidate #7.
-
 - [ ] TODO-0014 `feature` Finish followed feed filtering
   - Context: Gallery list filtering currently ignores owner, favorite, and liked
     filters when `followedOnly` is enabled.
@@ -108,6 +101,14 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0013 `feature` Add public and shareable folder pages
+  - Completed: 2026-07-16
+  - Context: Folder APIs were owner-scoped, while galleries exposed folder
+    metadata.
+  - Outcome: Added an unguarded `/public/folders/:username/:slug` API that
+    returns folder metadata plus published public/unlisted galleries, and added
+    a shareable frontend route at `/folders/:username/:folderSlug`.
 
 - [x] TODO-0012 `bug` Add a max page size to gallery pagination
   - Completed: 2026-07-10

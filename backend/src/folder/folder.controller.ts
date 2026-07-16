@@ -69,3 +69,16 @@ export class FolderController {
     }
   }
 }
+
+@Controller('public/folders')
+export class PublicFolderController {
+  constructor(private readonly folderService: FolderService) {}
+
+  @Get(':username/:slug')
+  getPublicFolder(
+    @Param('username') username: string,
+    @Param('slug') slug: string,
+  ) {
+    return this.folderService.getPublicFolder(username, slug);
+  }
+}

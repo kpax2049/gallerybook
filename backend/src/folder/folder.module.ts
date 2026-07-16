@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { CommonModule } from 'src/common/common.module';
-import { FolderController } from './folder.controller';
+import { FolderController, PublicFolderController } from './folder.controller';
 import { FolderService } from './folder.service';
 
 @Module({
   imports: [CommonModule],
-  controllers: [FolderController],
+  controllers: [FolderController, PublicFolderController],
   providers: [FolderService],
   exports: [FolderService],
 })

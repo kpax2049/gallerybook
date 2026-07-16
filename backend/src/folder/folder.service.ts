@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { GalleryStatus, Visibility } from '@prisma/client';
 import { AssetUrlService } from 'src/common/asset-url.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { slugify } from 'src/utils/slug.util';
@@ -36,6 +37,76 @@ export class FolderService {
     });
 
     return folders.map((folder) => this.mapFolder(folder));
+  }
+
+  async getPublicFolder(username: string, folderSlug: string) {
+    const folder = await this.prisma.folder.findFirst({
+      where: {
+        slug: folderSlug,
+        owner: { username },
+      },
+      include: {
+        coverGallery: {
+          select: {
+            id: true,
+            title: true,
+            thumbnail: true,
+            slug: true,
+            folderId: true,
+          },
+        },
+        owner: {
+          select: {
+            id: true,
+            fullName: true,
+            username: true,
+            profile: { select: { avatarUrl: true } },
+          },
+        },
+        galleries: {
+          where: {
+            status: GalleryStatus.PUBLISHED,
+            visibility: { in: [Visibility.PUBLIC, Visibility.UNLISTED] },
+          },
+          orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+          include: {
+            tags: { include: { tag: { select: { name: true, slug: true } } } },
+            _count: { select: { comments: true } },
+            createdBy: {
+              select: {
+                id: true,
+                fullName: true,
+                username: true,
+                profile: { select: { avatarUrl: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!folder) throw new NotFoundException('Folder not found');
+
+    return {
+      folder: {
+        ...this.mapFolder({
+          ...folder,
+          _count: { galleries: folder.galleries.length },
+        }),
+        owner: {
+          id: folder.owner.id,
+          displayName: folder.owner.fullName ?? null,
+          username: folder.owner.username,
+          avatarUrl: folder.owner.profile?.avatarUrl ?? null,
+        },
+      },
+      galleries: folder.galleries.map((gallery) =>
+        this.mapPublicGallery(gallery),
+      ),
+      commentCounts: Object.fromEntries(
+        folder.galleries.map((gallery) => [gallery.id, gallery._count.comments]),
+      ),
+    };
   }
 
   async create(userId: number, dto: CreateFolderDto) {
@@ -173,6 +244,33 @@ export class FolderService {
             ),
           }
         : null,
+    };
+  }
+
+  private mapPublicGallery(gallery: any) {
+    return {
+      id: gallery.id,
+      userId: gallery.userId,
+      title: gallery.title,
+      description: gallery.description,
+      content: gallery.content,
+      thumbnail: this.assetUrl.thumbKeyToCdnUrl(gallery.thumbnail),
+      folderId: gallery.folderId,
+      status: gallery.status,
+      createdAt: gallery.createdAt.toISOString(),
+      updatedAt: gallery.updatedAt.toISOString(),
+      slug: gallery.slug ?? null,
+      viewsCount: gallery.viewsCount ?? 0,
+      likesCount: gallery.likesCount ?? 0,
+      favoritesCount: gallery.favoritesCount ?? 0,
+      visibility: gallery.visibility,
+      tags: (gallery.tags ?? []).map((gt) => gt.tag.slug || gt.tag.name),
+      author: {
+        id: gallery.createdBy.id,
+        displayName: gallery.createdBy.fullName ?? null,
+        username: gallery.createdBy.username,
+        avatarUrl: gallery.createdBy.profile?.avatarUrl ?? null,
+      },
     };
   }
 }

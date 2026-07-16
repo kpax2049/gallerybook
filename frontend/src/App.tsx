@@ -21,6 +21,7 @@ import { useFollowStore } from './stores/followStore';
 import { signout } from './api/auth';
 import { LegalPage } from './app/legal/LegalPage';
 import { UNAUTHORIZED_SESSION_EVENT } from './lib/apiClient';
+import { PublicFolderPage } from './app/folder/PublicFolderPage';
 
 const Home = () => {
   return <h2>Home (Protected: authenticated user required)</h2>;
@@ -86,7 +87,9 @@ const App = () => {
 
     (async () => {
       try {
-        const user: User = await getUser();
+        const user: User = await getUser({
+          suppressUnauthorizedRedirect: true,
+        });
         if (cancelled) return;
         setGlobalUser(user);
 
@@ -290,6 +293,7 @@ const App = () => {
           path="/auth/oauth/callback"
           element={<OAuthCallback handleLogin={handleLogin} />}
         />
+        <Route path="/folders/:username/:folderSlug" element={<PublicFolderPage />} />
         <Route path="/signup" element={<SignupForm />} />
 
         <Route path="*" element={<p>There's nothing here: 404!</p>} />

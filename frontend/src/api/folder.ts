@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/apiClient';
+import { Gallery } from './gallery';
 
 export interface FolderCoverGallery {
   id: number;
@@ -20,6 +21,23 @@ export interface Folder {
   coverGallery?: FolderCoverGallery | null;
   userId: number;
   galleriesCount: number;
+}
+
+export interface PublicFolderOwner {
+  id: number;
+  displayName?: string | null;
+  username: string;
+  avatarUrl?: string | null;
+}
+
+export interface PublicFolder extends Folder {
+  owner: PublicFolderOwner;
+}
+
+export interface PublicFolderResponse {
+  folder: PublicFolder;
+  galleries: Gallery[];
+  commentCounts: Record<number, number>;
 }
 
 export interface CreateFolderRequest {
@@ -50,4 +68,16 @@ export const updateFolder = async (
 
 export const deleteFolder = async (folderId: number): Promise<void> => {
   await apiRequest<void>(`/folders/${folderId}`, 'DELETE');
+};
+
+export const getPublicFolder = async (
+  username: string,
+  folderSlug: string
+): Promise<PublicFolderResponse> => {
+  return await apiRequest<PublicFolderResponse>(
+    `/public/folders/${encodeURIComponent(username)}/${encodeURIComponent(
+      folderSlug
+    )}`,
+    'GET'
+  );
 };

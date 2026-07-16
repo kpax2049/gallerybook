@@ -5,6 +5,11 @@ import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 const VITE_API_URL = import.meta.env.VITE_API_URL ?? '';
 export const UNAUTHORIZED_SESSION_EVENT = 'gallerybook:unauthorized-session';
 
+type ApiRequestOptions = {
+  signal?: AbortSignal;
+  suppressUnauthorizedRedirect?: boolean;
+};
+
 const safeStorage = () => {
   try {
     return typeof window !== 'undefined' ? window.localStorage : null;
@@ -128,7 +133,10 @@ client.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as
-      | (AxiosRequestConfig & { _retry?: boolean })
+      | (AxiosRequestConfig & {
+          _retry?: boolean;
+          suppressUnauthorizedRedirect?: boolean;
+        })
       | undefined;
     const status = error.response?.status ?? error.status;
     const requestUrl = originalRequest?.url ?? '';
@@ -152,10 +160,12 @@ client.interceptors.response.use(
       }
     }
 
-    try {
-      errorHandler(error);
-    } catch (e) {
-      console.error(e);
+    if (!originalRequest?.suppressUnauthorizedRedirect) {
+      try {
+        errorHandler(error);
+      } catch (e) {
+        console.error(e);
+      }
     }
     throw error;
   }
@@ -166,13 +176,17 @@ export const apiRequest = async <T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   data?: any,
   params?: any,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  options?: ApiRequestOptions
 ): Promise<T> => {
-  const config: AxiosRequestConfig = {
+  const config: AxiosRequestConfig & {
+    suppressUnauthorizedRedirect?: boolean;
+  } = {
     method,
     url,
     params,
-    signal,
+    signal: options?.signal ?? signal,
+    suppressUnauthorizedRedirect: options?.suppressUnauthorizedRedirect,
   };
 
   if (data !== undefined) config.data = data;
