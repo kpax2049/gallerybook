@@ -879,11 +879,6 @@ export class GalleryService {
     const AND: Prisma.GalleryWhereInput[] = [];
     const OR: Prisma.GalleryWhereInput[] = [];
 
-    // If we're building the "followed feed", ignore owner/favorite filters for MVP
-    const ignoreOwner = !!dto.followedOnly;
-    const ignoreFavorite = !!dto.followedOnly;
-    const ignoreLiked = !!dto.followedOnly;
-
     // Non-admin users only see published public galleries in browsable lists.
     if (!canManageGalleries) {
       AND.push({ status: GalleryStatus.PUBLISHED });
@@ -893,16 +888,16 @@ export class GalleryService {
     }
 
     // owner
-    if (!ignoreOwner && (dto.owner ?? 'any') === 'me' && userId) {
+    if ((dto.owner ?? 'any') === 'me' && userId) {
       AND.push({ userId });
     }
 
     // favorites filter
-    if (!ignoreFavorite && favoriteIds) {
+    if (favoriteIds) {
       AND.push({ id: { in: favoriteIds } });
     }
 
-    if (!ignoreLiked && likedIds) {
+    if (likedIds) {
       AND.push({ id: { in: likedIds } });
     }
 

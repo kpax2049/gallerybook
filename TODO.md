@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0014 `feature` Finish followed feed filtering
-  - Context: Gallery list filtering currently ignores owner, favorite, and liked
-    filters when `followedOnly` is enabled.
-  - Expected: Decide final behavior and make followed feed compose predictably
-    with filters and sort.
-  - Notes: From codebase review candidate #8.
-
 - [ ] TODO-0015 `bug` Initialize gallery detail reaction state from API
   - Context: Gallery detail initializes like/favorite state to false and does
     not load the current user's existing reactions.
@@ -101,6 +94,14 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0014 `feature` Finish followed feed filtering
+  - Completed: 2026-07-17
+  - Context: Gallery list filtering ignored owner, favorite, and liked filters
+    when `followedOnly` was enabled.
+  - Outcome: Followed feed filtering now composes as an intersection with owner,
+    favorite, liked, URL query state, and hook API parameters, with backend and
+    frontend coverage.
 
 - [x] TODO-0013 `feature` Add public and shareable folder pages
   - Completed: 2026-07-16

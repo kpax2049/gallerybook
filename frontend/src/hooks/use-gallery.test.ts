@@ -142,4 +142,34 @@ describe('useGalleries', () => {
       );
     });
   });
+
+  it('passes followed feed filters alongside owner and reaction filters', async () => {
+    getGalleriesListMock.mockResolvedValueOnce(baseResponse);
+
+    renderHook(() =>
+      useGalleries({
+        sort: defaultSort,
+        filters: {
+          ...defaultFilters,
+          owner: 'me',
+          favoriteBy: 'me',
+          likedBy: 12,
+          followedOnly: true,
+        },
+        page: 1,
+        pageSize: 24,
+      })
+    );
+
+    await waitFor(() => {
+      expect(getGalleriesListMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          owner: 'me',
+          favoriteBy: 'me',
+          likedBy: '12',
+          followedOnly: 'true',
+        })
+      );
+    });
+  });
 });

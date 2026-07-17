@@ -508,6 +508,34 @@ describe('GalleryService', () => {
       );
     });
 
+    it('composes followed feed with owner, favorites, and likes filters', () => {
+      const where = buildWhere(
+        7,
+        {
+          owner: 'me',
+          favoriteBy: 'me',
+          likedBy: 'me',
+          followedOnly: true,
+        },
+        [1, 2],
+        [2, 3],
+        true,
+      );
+
+      expect(where.AND).toEqual(
+        expect.arrayContaining([
+          { userId: 7 },
+          { id: { in: [1, 2] } },
+          { id: { in: [2, 3] } },
+          {
+            createdBy: {
+              followers: { some: { followerId: 7 } },
+            },
+          },
+        ]),
+      );
+    });
+
     it('forces empty sets when followed filters cannot be satisfied', () => {
       const where = buildWhere(null, {
         followedOnly: true,

@@ -58,8 +58,7 @@ export function filtersToQuery(f: FilterState) {
 
   return {
     status: f.status?.size ? Array.from(f.status) : undefined,
-    // When showing followed feed, omit owner/favoriteBy to avoid conflicts (MVP choice)
-    owner: !followedOnly && f.owner !== 'any' ? f.owner : undefined,
+    owner: f.owner !== 'any' ? f.owner : undefined,
     range: f.range !== 'any' ? f.range : undefined,
     // use == null to treat null OR undefined as “omit”
     hasCover: f.hasCover == null ? undefined : String(f.hasCover),
@@ -67,9 +66,8 @@ export function filtersToQuery(f: FilterState) {
     hasComments: f.hasComments == null ? undefined : String(f.hasComments),
     tags: f.tags?.length ? f.tags : undefined,
     search: f.search || undefined,
-    favoriteBy:
-      !followedOnly && f.favoriteBy != null ? String(f.favoriteBy) : undefined,
-    likedBy: !followedOnly && f.likedBy != null ? String(f.likedBy) : undefined,
+    favoriteBy: f.favoriteBy != null ? String(f.favoriteBy) : undefined,
+    likedBy: f.likedBy != null ? String(f.likedBy) : undefined,
     followedOnly: followedOnly ? 'true' : undefined,
     createdById: f.createdById != null ? String(f.createdById) : undefined,
     folderId: f.folderId != null ? String(f.folderId) : undefined,

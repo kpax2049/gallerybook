@@ -31,13 +31,13 @@ export function useGalleries(params: {
 
   const followedOnly = !!filters?.followedOnly;
   const ownerParam =
-    !followedOnly && filters?.owner !== 'any' ? filters?.owner : undefined;
+    filters?.owner !== 'any' ? filters?.owner : undefined;
   const favoriteByParam =
-    !followedOnly && filters?.favoriteBy !== undefined
+    filters?.favoriteBy !== undefined
       ? String(filters?.favoriteBy)
       : undefined;
   const likedByParam =
-    !followedOnly && filters?.likedBy !== undefined
+    filters?.likedBy !== undefined
       ? String(filters?.likedBy)
       : undefined;
 

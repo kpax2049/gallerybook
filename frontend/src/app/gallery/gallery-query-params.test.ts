@@ -32,9 +32,9 @@ describe('gallery query params', () => {
     const query = filtersToQuery(filters);
 
     expect(query.status).toEqual(['DRAFT', 'PUBLISHED']);
-    expect(query.owner).toBeUndefined(); // followedOnly omits owner
-    expect(query.favoriteBy).toBeUndefined(); // followedOnly omits favoriteBy
-    expect(query.likedBy).toBeUndefined(); // followedOnly omits likedBy
+    expect(query.owner).toBe('me');
+    expect(query.favoriteBy).toBe('me');
+    expect(query.likedBy).toBe('me');
     expect(query.range).toBe('7d');
     expect(query.hasCover).toBe('true');
     expect(query.hasTags).toBe('false');
