@@ -445,11 +445,20 @@ export class GalleryService {
       mode === 'view'
         ? ((await this.incrementViewsCount(gallery.id)) ?? gallery.viewsCount)
         : gallery.viewsCount;
+    const myReaction = user?.id
+      ? await this.getMyReactions(user.id, gallery.id)
+      : undefined;
     const rewritten = await this.rewriteGalleryImageSrcs(
       gallery.content,
       mode === 'view' ? 'view' : 'edit',
     );
-    return { ...gallery, viewsCount, content: rewritten, tags: tagList };
+    return {
+      ...gallery,
+      viewsCount,
+      content: rewritten,
+      tags: tagList,
+      myReaction,
+    };
     // if (mode === 'view') {
     //   // const cacheKey = this.getCacheKey(galleryId);
     //   // const cached = await this.cacheManager.get(cacheKey);
@@ -856,9 +865,12 @@ export class GalleryService {
       mode === 'view'
         ? ((await this.incrementViewsCount(gallery.id)) ?? gallery.viewsCount)
         : gallery.viewsCount;
+    const myReaction = user?.id
+      ? await this.getMyReactions(user.id, gallery.id)
+      : undefined;
     const content = await this.rewriteGalleryImageSrcs(gallery.content, mode);
     const tagList = gallery.tags.map((row) => row.tag.slug ?? row.tag.name);
-    return { ...gallery, viewsCount, content, tags: tagList };
+    return { ...gallery, viewsCount, content, tags: tagList, myReaction };
   }
 
   // Helper functions

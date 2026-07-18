@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0015 `bug` Initialize gallery detail reaction state from API
-  - Context: Gallery detail initializes like/favorite state to false and does
-    not load the current user's existing reactions.
-  - Expected: Fetch current user reactions with the gallery detail and render
-    the correct initial button states.
-  - Notes: From codebase review candidate #9.
-
 - [ ] TODO-0016 `bug` Keep reaction counters consistent under concurrency
   - Context: Gallery and comment reaction toggles maintain denormalized counters
     with increment/decrement updates.
@@ -94,6 +87,13 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0015 `bug` Initialize gallery detail reaction state from API
+  - Completed: 2026-07-18
+  - Context: Gallery detail initialized like/favorite state to false and did
+    not load the current user's existing reactions.
+  - Outcome: Gallery detail responses now include the current user's reaction
+    state, and the detail page initializes the like/favorite buttons from it.
 
 - [x] TODO-0014 `feature` Finish followed feed filtering
   - Completed: 2026-07-17

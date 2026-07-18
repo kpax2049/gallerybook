@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GalleryStatus, Role, Visibility } from '@prisma/client';
+import { GalleryStatus, ReactionType, Role, Visibility } from '@prisma/client';
 import { AssetUrlService } from 'src/common/asset-url.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GalleryService } from './gallery.service';
@@ -44,7 +44,7 @@ describe('GalleryService', () => {
         delete: jest.fn(),
       },
       galleryReaction: {
-        findMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
       },
       folder: {
         findUnique: jest.fn(),
@@ -401,6 +401,9 @@ describe('GalleryService', () => {
       };
       prisma.$queryRaw.mockResolvedValue([{ viewsCount: 8 }]);
       prisma.gallery.findUnique.mockResolvedValue(gallery);
+      prisma.galleryReaction.findMany.mockResolvedValue([
+        { type: ReactionType.FAVORITE },
+      ]);
 
       await expect(
         service.getGalleryBySlug('family-trip', 'view', {
@@ -411,6 +414,11 @@ describe('GalleryService', () => {
         ...gallery,
         viewsCount: 8,
         tags: ['family', 'Road Trip'],
+        myReaction: { like: false, favorite: true },
+      });
+      expect(prisma.galleryReaction.findMany).toHaveBeenCalledWith({
+        where: { userId: 2, galleryId: 1 },
+        select: { type: true },
       });
       expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
       expect(prisma.gallery.findUnique).toHaveBeenCalledWith({
@@ -443,8 +451,38 @@ describe('GalleryService', () => {
       ).resolves.toEqual({
         ...gallery,
         tags: [],
+        myReaction: { like: false, favorite: false },
       });
       expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    });
+
+    it('includes the current user reaction state with gallery detail', async () => {
+      const gallery = {
+        id: 1,
+        status: GalleryStatus.PUBLISHED,
+        visibility: Visibility.PUBLIC,
+        content: { type: 'doc', content: [] },
+        viewsCount: 4,
+        tags: [],
+      };
+      prisma.gallery.findUnique.mockResolvedValue(gallery);
+      prisma.galleryReaction.findMany.mockResolvedValue([
+        { type: ReactionType.LIKE },
+        { type: ReactionType.FAVORITE },
+      ]);
+
+      await expect(
+        service.getGalleryById(1, 'view', { id: 2, role: Role.USER }),
+      ).resolves.toEqual({
+        ...gallery,
+        viewsCount: 1,
+        tags: [],
+        myReaction: { like: true, favorite: true },
+      });
+      expect(prisma.galleryReaction.findMany).toHaveBeenCalledWith({
+        where: { userId: 2, galleryId: 1 },
+        select: { type: true },
+      });
     });
   });
 

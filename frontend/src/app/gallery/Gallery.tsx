@@ -167,6 +167,10 @@ export default function GalleryPage() {
         setGallery(null);
         setRawBlocks([]);
         setStoryHtml('');
+        setLiked(false);
+        setFavorited(false);
+        setLikesCount(0);
+        setFavoritesCount(0);
 
         const isNumeric = /^\d+$/.test(param);
         const data = isNumeric
@@ -177,6 +181,8 @@ export default function GalleryPage() {
 
         setGallery(data);
         setNumericId(Number(data?.id) || null);
+        setLiked(!!data.myReaction?.like);
+        setFavorited(!!data.myReaction?.favorite);
         setLikesCount(data.likesCount ?? 0);
         setFavoritesCount(data.favoritesCount ?? 0);
 

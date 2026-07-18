@@ -12,6 +12,8 @@ export interface GalleryFolder {
   color?: string | null;
 }
 
+export type GalleryReactionState = { like: boolean; favorite: boolean };
+
 export interface Gallery {
   id: number;
   createdAt?: Date;
@@ -33,6 +35,7 @@ export interface Gallery {
   folder?: GalleryFolder | null;
   visibility: Visibility;
   author: Author;
+  myReaction?: GalleryReactionState;
 }
 
 export interface Author {
@@ -77,7 +80,7 @@ export interface GalleriesListResponse {
   pageSize: number;
   items: Gallery[];
   commentCounts: Record<number, number>;
-  myReactions?: Record<number, { like: boolean; favorite: boolean }>;
+  myReactions?: Record<number, GalleryReactionState>;
 }
 
 export const createDraftGallery = async (
