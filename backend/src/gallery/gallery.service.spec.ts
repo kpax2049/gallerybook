@@ -20,9 +20,14 @@ describe('GalleryService', () => {
       findMany: jest.Mock;
       count: jest.Mock;
       delete: jest.Mock;
+      update: jest.Mock;
     };
     galleryReaction: {
+      findUnique: jest.Mock;
       findMany: jest.Mock;
+      createMany: jest.Mock;
+      deleteMany: jest.Mock;
+      groupBy: jest.Mock;
     };
     folder: {
       findUnique: jest.Mock;
@@ -34,17 +39,22 @@ describe('GalleryService', () => {
   beforeEach(() => {
     prisma = {
       $queryRaw: jest.fn().mockResolvedValue([{ viewsCount: 1 }]),
-      $transaction: jest.fn((operations: Promise<unknown>[]) =>
-        Promise.all(operations),
+      $transaction: jest.fn((arg: any) =>
+        typeof arg === 'function' ? arg(prisma) : Promise.all(arg),
       ),
       gallery: {
         findUnique: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
         delete: jest.fn(),
+        update: jest.fn(),
       },
       galleryReaction: {
+        findUnique: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
+        createMany: jest.fn(),
+        deleteMany: jest.fn(),
+        groupBy: jest.fn().mockResolvedValue([]),
       },
       folder: {
         findUnique: jest.fn(),
@@ -645,6 +655,52 @@ describe('GalleryService', () => {
       });
       expect(res.total).toBe(0);
       expect(res.items).toEqual([]);
+    });
+  });
+
+  describe('toggle reactions', () => {
+    it('reconciles gallery counters from persisted reactions after adding a reaction', async () => {
+      prisma.gallery.findUnique.mockResolvedValue({ id: 10 });
+      prisma.galleryReaction.findUnique.mockResolvedValue(null);
+      prisma.galleryReaction.createMany.mockResolvedValue({ count: 1 });
+      prisma.galleryReaction.groupBy.mockResolvedValue([
+        { type: ReactionType.LIKE, _count: { _all: 2 } },
+        { type: ReactionType.FAVORITE, _count: { _all: 1 } },
+      ]);
+      prisma.gallery.update.mockResolvedValue({});
+
+      await expect(
+        service.toggleReaction(4, 10, ReactionType.LIKE),
+      ).resolves.toEqual({ active: true });
+
+      expect(prisma.galleryReaction.createMany).toHaveBeenCalledWith({
+        data: [{ userId: 4, galleryId: 10, type: ReactionType.LIKE }],
+        skipDuplicates: true,
+      });
+      expect(prisma.gallery.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: { likesCount: 2, favoritesCount: 1 },
+      });
+    });
+
+    it('uses deleteMany and absolute reconciliation when removing a reaction', async () => {
+      prisma.gallery.findUnique.mockResolvedValue({ id: 10 });
+      prisma.galleryReaction.findUnique.mockResolvedValue({ userId: 4 });
+      prisma.galleryReaction.deleteMany.mockResolvedValue({ count: 1 });
+      prisma.galleryReaction.groupBy.mockResolvedValue([]);
+      prisma.gallery.update.mockResolvedValue({});
+
+      await expect(
+        service.toggleReaction(4, 10, ReactionType.FAVORITE),
+      ).resolves.toEqual({ active: false });
+
+      expect(prisma.galleryReaction.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 4, galleryId: 10, type: ReactionType.FAVORITE },
+      });
+      expect(prisma.gallery.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: { likesCount: 0, favoritesCount: 0 },
+      });
     });
   });
 

@@ -21,9 +21,10 @@ describe('CommentService', () => {
     };
     reaction: {
       findUnique: jest.Mock;
-      delete: jest.Mock;
-      create: jest.Mock;
+      deleteMany: jest.Mock;
+      createMany: jest.Mock;
       findMany: jest.Mock;
+      groupBy: jest.Mock;
     };
     user: {
       findUnique: jest.Mock;
@@ -49,9 +50,10 @@ describe('CommentService', () => {
       },
       reaction: {
         findUnique: jest.fn(),
-        delete: jest.fn(),
-        create: jest.fn(),
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
         findMany: jest.fn(),
+        groupBy: jest.fn().mockResolvedValue([]),
       },
       user: {
         findUnique: jest.fn(),
@@ -193,9 +195,11 @@ describe('CommentService', () => {
     prisma.comment.findUnique.mockResolvedValue({ id: 10 });
     prisma.actionCount.upsert.mockResolvedValue({ commentId: 10 });
     prisma.reaction.findUnique.mockResolvedValue(null);
-    prisma.reaction.create.mockResolvedValue({ id: 1 });
-    prisma.actionCount.update.mockResolvedValue({});
-    prisma.actionCount.findUnique.mockResolvedValue({
+    prisma.reaction.createMany.mockResolvedValue({ count: 1 });
+    prisma.reaction.groupBy.mockResolvedValue([
+      { type: ActionType.UPVOTE, _count: { _all: 1 } },
+    ]);
+    prisma.actionCount.update.mockResolvedValue({
       commentId: 10,
       upvote: 1,
       rocket: 0,
@@ -213,12 +217,23 @@ describe('CommentService', () => {
 
     const result = await service.toggleReaction(4, 10, ActionType.UPVOTE);
 
-    expect(prisma.reaction.create).toHaveBeenCalledWith({
-      data: { commentId: 10, userId: 4, type: ActionType.UPVOTE },
+    expect(prisma.reaction.createMany).toHaveBeenCalledWith({
+      data: [{ commentId: 10, userId: 4, type: ActionType.UPVOTE }],
+      skipDuplicates: true,
     });
     expect(prisma.actionCount.update).toHaveBeenCalledWith({
       where: { commentId: 10 },
-      data: { upvote: { increment: 1 } },
+      data: {
+        thumbUp: 0,
+        thumbDown: 0,
+        laugh: 0,
+        hooray: 0,
+        confused: 0,
+        heart: 0,
+        rocket: 0,
+        eye: 0,
+        upvote: 1,
+      },
     });
     expect(result).toEqual({
       active: true,
@@ -228,8 +243,9 @@ describe('CommentService', () => {
 
     // simulate untoggle
     prisma.reaction.findUnique.mockResolvedValue({ id: 1 });
-    prisma.reaction.delete.mockResolvedValue({});
-    prisma.actionCount.findUnique.mockResolvedValue({
+    prisma.reaction.deleteMany.mockResolvedValue({ count: 1 });
+    prisma.reaction.groupBy.mockResolvedValue([]);
+    prisma.actionCount.update.mockResolvedValue({
       commentId: 10,
       upvote: 0,
       rocket: 0,
@@ -244,18 +260,22 @@ describe('CommentService', () => {
     prisma.reaction.findMany.mockResolvedValue([]);
 
     const result2 = await service.toggleReaction(4, 10, ActionType.UPVOTE);
-    expect(prisma.reaction.delete).toHaveBeenCalledWith({
-      where: {
-        commentId_userId_type: {
-          commentId: 10,
-          userId: 4,
-          type: ActionType.UPVOTE,
-        },
-      },
+    expect(prisma.reaction.deleteMany).toHaveBeenCalledWith({
+      where: { commentId: 10, userId: 4, type: ActionType.UPVOTE },
     });
     expect(prisma.actionCount.update).toHaveBeenCalledWith({
       where: { commentId: 10 },
-      data: { upvote: { decrement: 1 } },
+      data: {
+        thumbUp: 0,
+        thumbDown: 0,
+        laugh: 0,
+        hooray: 0,
+        confused: 0,
+        heart: 0,
+        rocket: 0,
+        eye: 0,
+        upvote: 0,
+      },
     });
     expect(result2).toEqual({
       active: false,

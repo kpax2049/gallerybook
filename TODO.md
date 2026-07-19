@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0016 `bug` Keep reaction counters consistent under concurrency
-  - Context: Gallery and comment reaction toggles maintain denormalized counters
-    with increment/decrement updates.
-  - Expected: Add tests or reconciliation so counters cannot go negative or
-    become stale after duplicate requests or interrupted transactions.
-  - Notes: From codebase review candidate #10.
-
 - [ ] TODO-0017 `bug` Make nested comment loading consistent
   - Context: Comment loading includes users for first-level replies, but deeper
     replies are shaped differently.
@@ -87,6 +80,14 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0016 `bug` Keep reaction counters consistent under concurrency
+  - Completed: 2026-07-19
+  - Context: Gallery and comment reaction toggles maintained denormalized
+    counters with increment/decrement updates.
+  - Outcome: Reaction toggles now use idempotent create/delete operations and
+    reconcile denormalized counters from persisted reaction rows after each
+    toggle, with focused gallery and comment service coverage.
 
 - [x] TODO-0015 `bug` Initialize gallery detail reaction state from API
   - Completed: 2026-07-18

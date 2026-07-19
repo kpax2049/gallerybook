@@ -761,35 +761,23 @@ export class GalleryService {
     await this.ensureGallery(galleryId);
 
     const key = { userId_galleryId_type: { userId, galleryId, type } };
-    const existing = await this.prisma.galleryReaction.findUnique({
-      where: key,
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.galleryReaction.findUnique({ where: key });
+
+      if (existing) {
+        await tx.galleryReaction.deleteMany({
+          where: { userId, galleryId, type },
+        });
+      } else {
+        await tx.galleryReaction.createMany({
+          data: [{ userId, galleryId, type }],
+          skipDuplicates: true,
+        });
+      }
+
+      await this.reconcileGalleryReactionCounts(tx, galleryId);
+      return { active: !existing };
     });
-
-    if (existing) {
-      await this.prisma.$transaction([
-        this.prisma.galleryReaction.delete({ where: key }),
-        this.prisma.gallery.update({
-          where: { id: galleryId },
-          data:
-            type === 'LIKE'
-              ? { likesCount: { decrement: 1 } }
-              : { favoritesCount: { decrement: 1 } },
-        }),
-      ]);
-      return { active: false };
-    }
-
-    await this.prisma.$transaction([
-      this.prisma.galleryReaction.create({ data: { userId, galleryId, type } }),
-      this.prisma.gallery.update({
-        where: { id: galleryId },
-        data:
-          type === 'LIKE'
-            ? { likesCount: { increment: 1 } }
-            : { favoritesCount: { increment: 1 } },
-      }),
-    ]);
-    return { active: true };
   }
 
   async getMyReactions(userId: number, galleryId: number) {
@@ -1072,6 +1060,27 @@ export class GalleryService {
       if (r.type === 'FAVORITE') cur.favorite = true;
     }
     return map;
+  }
+
+  private async reconcileGalleryReactionCounts(
+    client: Pick<PrismaService, 'gallery' | 'galleryReaction'>,
+    galleryId: number,
+  ) {
+    const counts = await client.galleryReaction.groupBy({
+      by: ['type'],
+      where: { galleryId },
+      _count: { _all: true },
+    });
+    const likesCount =
+      counts.find((row) => row.type === ReactionType.LIKE)?._count._all ?? 0;
+    const favoritesCount =
+      counts.find((row) => row.type === ReactionType.FAVORITE)?._count._all ??
+      0;
+
+    await client.gallery.update({
+      where: { id: galleryId },
+      data: { likesCount, favoritesCount },
+    });
   }
 
   private sinceFromRange(range: ListGalleriesDto['range']) {

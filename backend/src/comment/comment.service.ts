@@ -114,8 +114,6 @@ export class CommentService {
   }
 
   async toggleReaction(userId: number, commentId: number, type: ActionType) {
-    const field = ACTION_FIELD[type];
-
     return this.prisma.$transaction(async (tx) => {
       const comment = await tx.comment.findUnique({ where: { id: commentId } });
       if (!comment) throw new NotFoundException('Comment not found');
@@ -133,26 +131,17 @@ export class CommentService {
       });
 
       if (existing) {
-        await tx.reaction.delete({
-          where: { commentId_userId_type: { commentId, userId, type } },
-        });
-        await tx.actionCount.update({
-          where: { commentId },
-          data: { [field]: { decrement: 1 } },
+        await tx.reaction.deleteMany({
+          where: { commentId, userId, type },
         });
       } else {
-        await tx.reaction.create({
-          data: { commentId, userId, type },
-        });
-        await tx.actionCount.update({
-          where: { commentId },
-          data: { [field]: { increment: 1 } },
+        await tx.reaction.createMany({
+          data: [{ commentId, userId, type }],
+          skipDuplicates: true,
         });
       }
 
-      const counts = await tx.actionCount.findUnique({
-        where: { commentId },
-      });
+      const counts = await this.reconcileCommentActionCounts(tx, commentId);
       const selected = await tx.reaction.findMany({
         where: { commentId, userId },
         select: { type: true },
@@ -276,6 +265,31 @@ export class CommentService {
       [ActionType.EYE]: count?.eye ?? 0,
       [ActionType.UPVOTE]: count?.upvote ?? 0,
     };
+  }
+
+  private async reconcileCommentActionCounts(
+    client: Pick<PrismaService, 'reaction' | 'actionCount'>,
+    commentId: number,
+  ) {
+    const grouped = await client.reaction.groupBy({
+      by: ['type'],
+      where: { commentId },
+      _count: { _all: true },
+    });
+    const countByType = new Map(
+      grouped.map((row) => [row.type, row._count._all]),
+    );
+    const data = Object.fromEntries(
+      (Object.values(ActionType) as ActionType[]).map((type) => [
+        ACTION_FIELD[type],
+        countByType.get(type) ?? 0,
+      ]),
+    ) as Prisma.ActionCountUpdateInput;
+
+    return client.actionCount.update({
+      where: { commentId },
+      data,
+    });
   }
 
   private attachReactionData(
