@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0017 `bug` Make nested comment loading consistent
-  - Context: Comment loading includes users for first-level replies, but deeper
-    replies are shaped differently.
-  - Expected: Load users, actions, and selected reactions consistently for every
-    rendered reply depth.
-  - Notes: From codebase review candidate #11.
-
 - [ ] TODO-0018 `feature` Add deterministic comment ordering
   - Context: Comment queries do not specify ordering for top-level comments or
     replies.
@@ -80,6 +73,14 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0017 `bug` Make nested comment loading consistent
+  - Completed: 2026-07-20
+  - Context: Comment loading included users for first-level replies, but deeper
+    replies were shaped differently.
+  - Outcome: Comment thread loading now uses a bounded recursive reply include
+    so loaded nested replies include users, action counts, and selected
+    reactions consistently.
 
 - [x] TODO-0016 `bug` Keep reaction counters consistent under concurrency
   - Completed: 2026-07-19

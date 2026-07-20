@@ -83,7 +83,13 @@ describe('CommentService', () => {
       {
         id: 1,
         user: {},
-        replies: [{ id: 2, user: {}, replies: [] }],
+        replies: [
+          {
+            id: 2,
+            user: {},
+            replies: [{ id: 3, user: {}, replies: [] }],
+          },
+        ],
       },
     ];
     prisma.comment.findMany.mockResolvedValue(rows);
@@ -112,9 +118,22 @@ describe('CommentService', () => {
         confused: 0,
         eye: 0,
       },
+      {
+        commentId: 3,
+        upvote: 0,
+        rocket: 1,
+        heart: 0,
+        thumbUp: 0,
+        thumbDown: 0,
+        laugh: 0,
+        hooray: 0,
+        confused: 0,
+        eye: 0,
+      },
     ]);
     prisma.reaction.findMany.mockResolvedValue([
       { commentId: 1, type: ActionType.UPVOTE },
+      { commentId: 3, type: ActionType.ROCKET },
     ]);
 
     const result = await service.getComments(10, { id: 5, role: Role.USER });
@@ -130,7 +149,15 @@ describe('CommentService', () => {
       include: {
         user: true,
         replies: {
-          include: { user: true, replies: true },
+          include: expect.objectContaining({
+            user: true,
+            replies: expect.objectContaining({
+              include: expect.objectContaining({
+                user: true,
+                replies: expect.any(Object),
+              }),
+            }),
+          }),
         },
       },
     });
@@ -138,6 +165,10 @@ describe('CommentService', () => {
     expect(result[0].actions[ActionType.THUMB_UP]).toBe(1);
     expect(result[0].selectedActions).toEqual([ActionType.UPVOTE]);
     expect(result[0].replies[0].actions[ActionType.UPVOTE]).toBe(0);
+    expect(result[0].replies[0].replies[0].actions[ActionType.ROCKET]).toBe(1);
+    expect(result[0].replies[0].replies[0].selectedActions).toEqual([
+      ActionType.ROCKET,
+    ]);
   });
 
   it('does not constrain comment reads for admins', async () => {
@@ -150,7 +181,10 @@ describe('CommentService', () => {
       include: {
         user: true,
         replies: {
-          include: { user: true, replies: true },
+          include: expect.objectContaining({
+            user: true,
+            replies: expect.any(Object),
+          }),
         },
       },
     });

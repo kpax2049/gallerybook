@@ -25,6 +25,8 @@ const ACTION_FIELD: Record<ActionType, keyof Prisma.ActionCountUpdateInput> = {
   UPVOTE: 'upvote',
 };
 
+const COMMENT_REPLY_INCLUDE_DEPTH = 8;
+
 @Injectable()
 export class CommentService {
   constructor(
@@ -51,10 +53,7 @@ export class CommentService {
       include: {
         user: true,
         replies: {
-          include: {
-            user: true,
-            replies: true,
-          },
+          include: this.buildReplyInclude(COMMENT_REPLY_INCLUDE_DEPTH),
         },
       },
     });
@@ -251,6 +250,19 @@ export class CommentService {
     };
     visit(comments);
     return ids;
+  }
+
+  private buildReplyInclude(depth: number): Prisma.CommentInclude {
+    if (depth <= 0) {
+      return { user: true };
+    }
+
+    return {
+      user: true,
+      replies: {
+        include: this.buildReplyInclude(depth - 1),
+      },
+    };
   }
 
   private toActionMap(count?: ActionCountModel) {
