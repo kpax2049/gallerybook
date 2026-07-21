@@ -26,6 +26,10 @@ const ACTION_FIELD: Record<ActionType, keyof Prisma.ActionCountUpdateInput> = {
 };
 
 const COMMENT_REPLY_INCLUDE_DEPTH = 8;
+const COMMENT_THREAD_ORDER: Prisma.CommentOrderByWithRelationInput[] = [
+  { createdAt: 'asc' },
+  { id: 'asc' },
+];
 
 @Injectable()
 export class CommentService {
@@ -50,11 +54,10 @@ export class CommentService {
               },
             }),
       },
+      orderBy: COMMENT_THREAD_ORDER,
       include: {
         user: true,
-        replies: {
-          include: this.buildReplyInclude(COMMENT_REPLY_INCLUDE_DEPTH),
-        },
+        replies: this.buildRepliesArgs(COMMENT_REPLY_INCLUDE_DEPTH),
       },
     });
 
@@ -197,7 +200,7 @@ export class CommentService {
       this.prisma.comment.count({ where }),
       this.prisma.comment.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip,
         take,
         include: {
@@ -259,9 +262,14 @@ export class CommentService {
 
     return {
       user: true,
-      replies: {
-        include: this.buildReplyInclude(depth - 1),
-      },
+      replies: this.buildRepliesArgs(depth - 1),
+    };
+  }
+
+  private buildRepliesArgs(depth: number): Prisma.Comment$repliesArgs {
+    return {
+      orderBy: COMMENT_THREAD_ORDER,
+      include: this.buildReplyInclude(depth),
     };
   }
 

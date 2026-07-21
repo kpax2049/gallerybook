@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0018 `feature` Add deterministic comment ordering
-  - Context: Comment queries do not specify ordering for top-level comments or
-    replies.
-  - Expected: Define and apply newest/oldest ordering consistently to nested
-    replies.
-  - Notes: From codebase review candidate #12.
-
 - [ ] TODO-0019 `chore` Add production env validation for integrations
   - Context: Backend env validation covers core auth/database settings but not
     required production media, OAuth, and Turnstile settings.
@@ -73,6 +66,14 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0018 `feature` Add deterministic comment ordering
+  - Completed: 2026-07-21
+  - Context: Comment queries did not specify ordering for top-level comments or
+    replies.
+  - Outcome: Gallery comment threads now load chronologically at every nested
+    reply depth with stable ID tie-breakers, optimistic replies preserve that
+    order, and newest-first moderation results have deterministic pagination.
 
 - [x] TODO-0017 `bug` Make nested comment loading consistent
   - Completed: 2026-07-20

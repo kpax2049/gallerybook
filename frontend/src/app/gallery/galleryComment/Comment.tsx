@@ -112,7 +112,7 @@ export default function CommentList({ galleryId }: CommentProps) {
           f.id === val.parentId
             ? {
                 ...f,
-                replies: [normalized, ...(f.replies ?? [])],
+                replies: [...(f.replies ?? []), normalized],
               }
             : f
         )

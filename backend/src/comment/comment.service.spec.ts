@@ -146,15 +146,20 @@ describe('CommentService', () => {
           visibility: { not: Visibility.PRIVATE },
         },
       },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       include: {
         user: true,
         replies: {
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
           include: expect.objectContaining({
             user: true,
             replies: expect.objectContaining({
+              orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
               include: expect.objectContaining({
                 user: true,
-                replies: expect.any(Object),
+                replies: expect.objectContaining({
+                  orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+                }),
               }),
             }),
           }),
@@ -178,9 +183,11 @@ describe('CommentService', () => {
 
     expect(prisma.comment.findMany).toHaveBeenCalledWith({
       where: { galleryId: 10, parentId: null },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       include: {
         user: true,
         replies: {
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
           include: expect.objectContaining({
             user: true,
             replies: expect.any(Object),
@@ -363,7 +370,7 @@ describe('CommentService', () => {
           { text: { contains: 'sun', mode: 'insensitive' } },
         ],
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       skip: 24,
       take: 24,
       include: {
