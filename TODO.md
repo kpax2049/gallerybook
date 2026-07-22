@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0019 `chore` Add production env validation for integrations
-  - Context: Backend env validation covers core auth/database settings but not
-    required production media, OAuth, and Turnstile settings.
-  - Expected: Add stricter production-only validation for required integration
-    variables.
-  - Notes: From codebase review candidate #13.
-
 - [ ] TODO-0020 `feature` Add pending-activation UX after signup and OAuth
   - Context: New email/password and OAuth users are created inactive, but signup
     returns an access token.
@@ -66,6 +59,15 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0019 `chore` Add production env validation for integrations
+  - Completed: 2026-07-22
+  - Context: Backend env validation covered core auth/database settings but not
+    required production media, OAuth, and Turnstile settings.
+  - Outcome: Production startup now validates S3, CloudFront, Cloudinary,
+    Google/GitHub OAuth, and Turnstile configuration, including blank values and
+    optional integration URL formats, while development and test remain
+    permissive.
 
 - [x] TODO-0018 `feature` Add deterministic comment ordering
   - Completed: 2026-07-21
