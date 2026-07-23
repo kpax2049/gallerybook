@@ -6,9 +6,10 @@ import { cn } from '@/lib/utils';
 
 type Props = {
   children?: React.ReactNode;
+  showSignupLink?: boolean;
 };
 
-export default function LoginPage({ children }: Props) {
+export default function LoginPage({ children, showSignupLink = true }: Props) {
   return (
     <div className="relative min-h-svh overflow-hidden bg-[#130d08] text-white">
       <img
@@ -42,16 +43,18 @@ export default function LoginPage({ children }: Props) {
             <span className="gb-wordmark-book">Book</span>
           </span>
         </Link>
-        <div className="flex items-center gap-3 text-sm text-white/78">
-          <span className="hidden sm:inline">New here?</span>
-          <Link
-            to="/signup"
-            viewTransition
-            className="rounded-full border border-white/24 bg-black/18 px-4 py-2 font-medium text-white backdrop-blur transition hover:bg-white/12"
-          >
-            Create account
-          </Link>
-        </div>
+        {showSignupLink && (
+          <div className="flex items-center gap-3 text-sm text-white/78">
+            <span className="hidden sm:inline">New here?</span>
+            <Link
+              to="/signup"
+              viewTransition
+              className="rounded-full border border-white/24 bg-black/18 px-4 py-2 font-medium text-white backdrop-blur transition hover:bg-white/12"
+            >
+              Create account
+            </Link>
+          </div>
+        )}
       </header>
 
       <main className="relative z-10 grid min-h-[calc(100svh-84px)] grid-cols-1 items-end gap-8 px-5 pb-8 sm:px-8 lg:grid-cols-[minmax(0,1fr)_430px_minmax(96px,0.33fr)] lg:items-center lg:pb-12">

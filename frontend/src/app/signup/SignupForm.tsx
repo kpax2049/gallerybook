@@ -106,12 +106,7 @@ export function SignupForm({
       });
 
       localStorage.removeItem('ACCESS_TOKEN');
-      toast({
-        variant: 'default',
-        title: 'Account created',
-        description: 'Your account is pending admin approval.',
-      });
-      navigate('/login', { viewTransition: true });
+      navigate('/account/pending', { viewTransition: true });
     } catch {
       resetTurnstile();
     } finally {

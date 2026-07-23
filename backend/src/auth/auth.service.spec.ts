@@ -6,6 +6,7 @@ import * as argon from 'argon2';
 import { AuthService } from './auth.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserService } from 'src/users/user.service';
+import { UserStatus } from '@prisma/client';
 
 jest.mock('argon2', () => ({
   hash: jest.fn(),
@@ -64,15 +65,13 @@ describe('AuthService', () => {
   });
 
   describe('signup', () => {
-    it('hashes the password, creates the user, and returns an access token', async () => {
+    it('hashes the password, creates an inactive user, and returns pending status', async () => {
       (argon.hash as jest.Mock).mockResolvedValue('hashed');
       prisma.user.create.mockResolvedValue({
         id: 1,
         email: 'user@example.com',
       });
-      jwt.signAsync.mockResolvedValue('signed-token');
-
-      const token = await service.signup({
+      const result = await service.signup({
         email: 'user@example.com',
         password: 'pass',
         fullName: 'User',
@@ -87,13 +86,8 @@ describe('AuthService', () => {
           status: 'inactive',
         }),
       });
-      expect(jwt.signAsync).toHaveBeenCalledWith(
-        { sub: 1, email: 'user@example.com' },
-        expect.objectContaining({
-          secret: 'access-secret',
-        }),
-      );
-      expect(token).toBe('signed-token');
+      expect(jwt.signAsync).not.toHaveBeenCalled();
+      expect(result).toEqual({ status: 'pending' });
     });
 
     it('translates Prisma unique violations into ForbiddenException', async () => {
@@ -145,6 +139,7 @@ describe('AuthService', () => {
         email: 'user@example.com',
         hash: 'stored',
         tokenVersion: 3,
+        status: UserStatus.active,
       });
       (argon.verify as jest.Mock).mockResolvedValue(true);
       jwt.signAsync.mockResolvedValue('access');
@@ -153,6 +148,7 @@ describe('AuthService', () => {
       await expect(
         service.signin({ email: 'user@example.com', password: 'ok' }),
       ).resolves.toEqual({
+        status: 'active',
         accessToken: 'access',
         refreshToken: 'refresh',
       });
@@ -161,6 +157,24 @@ describe('AuthService', () => {
         { sub: 1, tv: 3 },
         { secret: 'refresh-secret', expiresIn: '30d' },
       );
+    });
+
+    it('returns pending status without tokens for valid inactive credentials', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 1,
+        email: 'user@example.com',
+        hash: 'stored',
+        tokenVersion: 3,
+        status: UserStatus.inactive,
+      });
+      (argon.verify as jest.Mock).mockResolvedValue(true);
+
+      await expect(
+        service.signin({ email: 'user@example.com', password: 'ok' }),
+      ).resolves.toEqual({ status: 'pending' });
+
+      expect(jwt.signAsync).not.toHaveBeenCalled();
+      expect(jwt.sign).not.toHaveBeenCalled();
     });
   });
 

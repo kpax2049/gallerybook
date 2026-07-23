@@ -26,7 +26,7 @@ export class AuthService {
     const hash = await argon.hash(dto.password);
     // save the new user in db
     try {
-      const user = await this.prisma.user.create({
+      await this.prisma.user.create({
         data: {
           email: dto.email,
           hash,
@@ -41,9 +41,7 @@ export class AuthService {
         },
       });
 
-      // send back the jwt token
-      const accessToken = await this.signToken(user.id, user.email);
-      return accessToken;
+      return { status: 'pending' as const };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -62,6 +60,7 @@ export class AuthService {
         email: true,
         hash: true, // your password field
         tokenVersion: true, // added field
+        status: true,
       },
     });
     if (!user) throw new ForbiddenException('Credentials incorrect');
@@ -69,13 +68,17 @@ export class AuthService {
     const ok = await argon.verify(user.hash, dto.password);
     if (!ok) throw new ForbiddenException('Credentials incorrect');
 
+    if (user.status !== UserStatus.active) {
+      return { status: 'pending' as const };
+    }
+
     const accessToken = await this.signToken(user.id, user.email);
     const refreshToken = await this.signRefreshToken(
       user.id,
       user.tokenVersion,
     );
 
-    return { accessToken, refreshToken };
+    return { status: 'active' as const, accessToken, refreshToken };
   }
 
   async signToken(userId: number, email: string): Promise<string> {

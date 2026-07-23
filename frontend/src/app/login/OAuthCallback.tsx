@@ -40,9 +40,9 @@ export function OAuthCallback({ handleLogin }: OAuthCallbackProps) {
           // The session may already be unusable.
         }
         toast({
-          variant: 'default',
-          title: 'Approval pending',
-          description: 'Your account is waiting for admin approval.',
+          variant: 'destructive',
+          title: 'Sign-in failed',
+          description: 'Your account could not be loaded. Please try again.',
         });
         navigate('/login', { replace: true });
       });

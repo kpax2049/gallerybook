@@ -12,7 +12,8 @@ interface SignupRequest {
 
 // Define the response structure from the server when a user is created
 interface SignupResponse {
-  accessToken: string;
+  success: true;
+  status: 'pending';
 }
 
 // Function to create a new user

@@ -8,6 +8,7 @@ import UserList from './app/user/UserList';
 import { LoginForm } from './app/login/LoginForm';
 import { OAuthCallback } from './app/login/OAuthCallback';
 import { SignupForm } from './app/signup/SignupForm';
+import { PendingActivation } from './app/signup/PendingActivation';
 import { GalleryEditor } from './app/gallery/GalleryEditor';
 // import GalleryList from './app/gallery/GalleryList';
 import GalleryPage from './app/gallery/Gallery';
@@ -293,8 +294,12 @@ const App = () => {
           path="/auth/oauth/callback"
           element={<OAuthCallback handleLogin={handleLogin} />}
         />
-        <Route path="/folders/:username/:folderSlug" element={<PublicFolderPage />} />
+        <Route
+          path="/folders/:username/:folderSlug"
+          element={<PublicFolderPage />}
+        />
         <Route path="/signup" element={<SignupForm />} />
+        <Route path="/account/pending" element={<PendingActivation />} />
 
         <Route path="*" element={<p>There's nothing here: 404!</p>} />
       </Routes>

@@ -21,7 +21,10 @@ import LoginPage from './Login';
 import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
-  email: z.string().min(2, 'Email must be at least 2 characters.').email('This is not a valid email.'),
+  email: z
+    .string()
+    .min(2, 'Email must be at least 2 characters.')
+    .email('This is not a valid email.'),
   password: z.string().min(2, 'Password must be at least 8 characters.'),
 });
 
@@ -50,6 +53,13 @@ export function LoginForm({
     setLoading(true);
     authUser({ email: values.email, password: values.password })
       .then(async (response) => {
+        if (response.status === 'pending') {
+          localStorage.removeItem('ACCESS_TOKEN');
+          setLoading(false);
+          navigate('/account/pending', { viewTransition: true });
+          return;
+        }
+
         localStorage.setItem('ACCESS_TOKEN', response.accessToken);
         try {
           const user: User = await getUser();
@@ -160,7 +170,9 @@ export function LoginForm({
             </Button>
 
             <div className="relative py-1 text-center text-[11px] uppercase tracking-[.16em] text-[#9a8469] after:absolute after:inset-x-0 after:top-1/2 after:border-t after:border-[#d8c9b7]">
-              <span className="relative z-10 bg-[var(--gb-paper)] px-3">or</span>
+              <span className="relative z-10 bg-[var(--gb-paper)] px-3">
+                or
+              </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -190,11 +202,17 @@ export function LoginForm({
 
         <p className="text-center text-xs leading-5 text-[#7c6a54]">
           By continuing, you agree to our{' '}
-          <Link to="/terms" className="font-medium underline underline-offset-4">
+          <Link
+            to="/terms"
+            className="font-medium underline underline-offset-4"
+          >
             Terms
           </Link>{' '}
           and{' '}
-          <Link to="/privacy" className="font-medium underline underline-offset-4">
+          <Link
+            to="/privacy"
+            className="font-medium underline underline-offset-4"
+          >
             Privacy Policy
           </Link>
           .

@@ -15,13 +15,12 @@ import { AuthService } from './auth.service';
 import { AuthDto, SignupDto } from 'src/dto';
 import { ChangePasswordDto } from 'src/dto/change-password.dto';
 import { GetUser } from './decorator';
-import { User } from '@prisma/client';
+import { OAuthProvider, User, UserStatus } from '@prisma/client';
 import { Response } from 'express';
 import { JwtRefreshGuard } from './guard/jwt-refresh.guard';
 import { Throttle, seconds } from '@nestjs/throttler';
 import { VerifyPasswordDto } from 'src/dto/verify-password.dto';
 import { JwtGuard } from './guard';
-import { OAuthProvider } from '@prisma/client';
 import { OAuthService } from './oauth.service';
 import { randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
@@ -42,8 +41,8 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: seconds(60) } })
   async signup(@Req() req: Request, @Body() dto: SignupDto) {
     await this.turnstileService.verify(dto.turnstileToken, req.ip);
-    const accessToken = await this.authService.signup(dto);
-    return { success: true, accessToken };
+    const result = await this.authService.signup(dto);
+    return { success: true, ...result };
   }
 
   @HttpCode(HttpStatus.OK)
@@ -53,13 +52,19 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @Body() dto: AuthDto,
   ) {
-    const { accessToken, refreshToken } = await this.authService.signin(dto);
+    const result = await this.authService.signin(dto);
+    if (result.status === 'pending') {
+      res.clearCookie('refreshToken', this.clearRefreshCookieOptions());
+      return result;
+    }
+
+    const { accessToken, refreshToken } = result;
     // Send refresh as HTTP-only cookie
     if (refreshToken) {
       res.cookie('refreshToken', refreshToken, this.refreshCookieOptions());
     }
     // Let Nest serialize the body you return
-    return { accessToken };
+    return { status: 'active' as const, accessToken };
   }
 
   @Post('signout')
@@ -191,6 +196,11 @@ export class AuthController {
 
     try {
       const user = await this.oauthService.authenticate(provider, code);
+      if (user.status !== UserStatus.active) {
+        res.clearCookie('refreshToken', this.clearRefreshCookieOptions());
+        return res.redirect(this.pendingActivationRedirect());
+      }
+
       const accessToken = await this.authService.signToken(user.id, user.email);
       const refreshToken = await this.authService.signRefreshToken(
         user.id,
@@ -235,5 +245,11 @@ export class AuthController {
     const frontendUrl =
       this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
     return `${frontendUrl}/login?oauthError=${encodeURIComponent(error)}`;
+  }
+
+  private pendingActivationRedirect() {
+    const frontendUrl =
+      this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
+    return `${frontendUrl}/account/pending`;
   }
 }

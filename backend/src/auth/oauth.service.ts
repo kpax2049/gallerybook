@@ -28,6 +28,7 @@ type AuthenticatedOAuthUser = {
   id: number;
   email: string;
   tokenVersion: number;
+  status: UserStatus;
 };
 
 @Injectable()
@@ -97,7 +98,7 @@ export class OAuthService {
       },
       select: {
         user: {
-          select: { id: true, email: true, tokenVersion: true },
+          select: { id: true, email: true, tokenVersion: true, status: true },
         },
       },
     });
@@ -108,7 +109,7 @@ export class OAuthService {
 
     const existingUser = await this.prisma.user.findFirst({
       where: { email: { equals: email, mode: 'insensitive' } },
-      select: { id: true, email: true, tokenVersion: true },
+      select: { id: true, email: true, tokenVersion: true, status: true },
     });
 
     if (existingUser) {
@@ -152,7 +153,7 @@ export class OAuthService {
           },
         },
       },
-      select: { id: true, email: true, tokenVersion: true },
+      select: { id: true, email: true, tokenVersion: true, status: true },
     });
 
     return user;

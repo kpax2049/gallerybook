@@ -24,9 +24,9 @@ export interface VerifyPasswordResponse {
 }
 
 // Define the response structure from the server when a user is created
-interface AuthUserResponse {
-  accessToken: string;
-}
+type AuthUserResponse =
+  | { status: 'active'; accessToken: string }
+  | { status: 'pending' };
 
 export type OAuthProvider = 'google' | 'github';
 

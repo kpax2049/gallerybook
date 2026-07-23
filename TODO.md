@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0020 `feature` Add pending-activation UX after signup and OAuth
-  - Context: New email/password and OAuth users are created inactive, but signup
-    returns an access token.
-  - Expected: Show an awaiting-admin-approval state instead of letting inactive
-    users hit protected-route failures.
-  - Notes: From codebase review candidate #14.
-
 - [ ] TODO-0021 `chore` Split large frontend bundles
   - Context: Production build emits large editor-heavy chunks.
   - Expected: Lazy-load editor-heavy routes/components to reduce initial bundle
@@ -59,6 +52,14 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0020 `feature` Add pending-activation UX after signup and OAuth
+  - Completed: 2026-07-23
+  - Context: New email/password and OAuth users were created inactive, but auth
+    flows still issued tokens and relied on protected-route failures.
+  - Outcome: Signup, password sign-in, and OAuth now return or redirect inactive
+    accounts to a dedicated approval-pending screen without issuing access or
+    refresh tokens, while active sign-in behavior remains unchanged.
 
 - [x] TODO-0019 `chore` Add production env validation for integrations
   - Completed: 2026-07-22

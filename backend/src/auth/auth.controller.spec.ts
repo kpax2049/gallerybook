@@ -6,7 +6,7 @@ import { JwtRefreshGuard } from './guard/jwt-refresh.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { OAuthService } from './oauth.service';
 import { ConfigService } from '@nestjs/config';
-import { OAuthProvider } from '@prisma/client';
+import { OAuthProvider, UserStatus } from '@prisma/client';
 import { TurnstileService } from './turnstile.service';
 
 describe('AuthController', () => {
@@ -57,17 +57,20 @@ describe('AuthController', () => {
   });
 
   describe('signup', () => {
-    it('returns success + access token', async () => {
+    it('returns pending status without an access token', async () => {
       turnstileService.verify.mockResolvedValue(undefined);
-      authService.signup.mockResolvedValue('token');
+      authService.signup.mockResolvedValue({ status: 'pending' });
 
       await expect(
-        controller.signup({ ip: '127.0.0.1' } as any, {
-          turnstileToken: 'turnstile-token',
-        } as any),
+        controller.signup(
+          { ip: '127.0.0.1' } as any,
+          {
+            turnstileToken: 'turnstile-token',
+          } as any,
+        ),
       ).resolves.toEqual({
         success: true,
-        accessToken: 'token',
+        status: 'pending',
       });
       expect(turnstileService.verify).toHaveBeenCalledWith(
         'turnstile-token',
@@ -80,6 +83,7 @@ describe('AuthController', () => {
   describe('signin', () => {
     it('sets refresh cookie and returns access token', async () => {
       authService.signin.mockResolvedValue({
+        status: 'active',
         accessToken: 'access',
         refreshToken: 'refresh',
       });
@@ -87,7 +91,7 @@ describe('AuthController', () => {
 
       await expect(
         controller.signin(res, { email: 'e', password: 'p' } as any),
-      ).resolves.toEqual({ accessToken: 'access' });
+      ).resolves.toEqual({ status: 'active', accessToken: 'access' });
 
       expect(authService.signin).toHaveBeenCalledWith({
         email: 'e',
@@ -97,6 +101,21 @@ describe('AuthController', () => {
         'refreshToken',
         'refresh',
         expect.objectContaining({ httpOnly: true, path: '/auth/refresh' }),
+      );
+    });
+
+    it('clears any refresh cookie and returns pending status', async () => {
+      authService.signin.mockResolvedValue({ status: 'pending' });
+      const res = { cookie: jest.fn(), clearCookie: jest.fn() } as any;
+
+      await expect(
+        controller.signin(res, { email: 'e', password: 'p' } as any),
+      ).resolves.toEqual({ status: 'pending' });
+
+      expect(res.cookie).not.toHaveBeenCalled();
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        'refreshToken',
+        expect.objectContaining({ path: '/auth/refresh' }),
       );
     });
   });
@@ -141,6 +160,7 @@ describe('AuthController', () => {
         id: 1,
         email: 'user@example.com',
         tokenVersion: 4,
+        status: UserStatus.active,
       });
       authService.signToken.mockResolvedValue('access');
       authService.signRefreshToken.mockResolvedValue('refresh');
@@ -166,6 +186,35 @@ describe('AuthController', () => {
       );
       expect(res.redirect).toHaveBeenCalledWith(
         'http://frontend.test/auth/oauth/callback#accessToken=access',
+      );
+    });
+
+    it('redirects inactive OAuth users without issuing tokens', async () => {
+      oauthService.authenticate.mockResolvedValue({
+        id: 1,
+        email: 'user@example.com',
+        tokenVersion: 4,
+        status: UserStatus.inactive,
+      });
+      configService.get.mockReturnValue('http://frontend.test');
+      const req = { cookies: { oauthState_google: 'state' } } as any;
+      const res = {
+        clearCookie: jest.fn(),
+        cookie: jest.fn(),
+        redirect: jest.fn(),
+      } as any;
+
+      await controller.googleCallback(req, res, 'code', 'state');
+
+      expect(authService.signToken).not.toHaveBeenCalled();
+      expect(authService.signRefreshToken).not.toHaveBeenCalled();
+      expect(res.cookie).not.toHaveBeenCalled();
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        'refreshToken',
+        expect.objectContaining({ path: '/auth/refresh' }),
+      );
+      expect(res.redirect).toHaveBeenCalledWith(
+        'http://frontend.test/account/pending',
       );
     });
   });
