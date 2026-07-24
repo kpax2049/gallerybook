@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run check:initial-bundle",
+    "check:initial-bundle": "node scripts/check-initial-bundle.mjs",
     "lint": "eslint .",
     "test": "vitest run",
     "preview": "vite preview"

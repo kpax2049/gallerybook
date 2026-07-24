@@ -1,6 +1,5 @@
 import { createRoot } from 'react-dom/client';
 import './index.css';
-import '@mdxeditor/editor/style.css';
 // import 'shadcn-comments/dist/style.css';
 import App from './App';
 import { ThemeProvider } from './components/theme-provider';

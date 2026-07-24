@@ -1,6 +1,6 @@
 import { Navigate, Outlet, Route, Routes, useNavigate } from 'react-router';
 import './App.css';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { getUser, User } from './api/user';
 import { UserRole } from './common/enums';
 import Dashboard from './app/dashboard/Dashboard';
@@ -9,10 +9,7 @@ import { LoginForm } from './app/login/LoginForm';
 import { OAuthCallback } from './app/login/OAuthCallback';
 import { SignupForm } from './app/signup/SignupForm';
 import { PendingActivation } from './app/signup/PendingActivation';
-import { GalleryEditor } from './app/gallery/GalleryEditor';
 // import GalleryList from './app/gallery/GalleryList';
-import GalleryPage from './app/gallery/Gallery';
-import { GalleryExistingEditor } from './app/gallery/GalleryExistingEditor';
 import { useUserStore } from '@/stores/userStore';
 import GalleriesPage from './app/gallery/GalleriesPage';
 import CommentsPage from './app/comment/CommentsPage';
@@ -23,6 +20,32 @@ import { signout } from './api/auth';
 import { LegalPage } from './app/legal/LegalPage';
 import { UNAUTHORIZED_SESSION_EVENT } from './lib/apiClient';
 import { PublicFolderPage } from './app/folder/PublicFolderPage';
+import { Loader2 } from 'lucide-react';
+
+const GalleryPage = lazy(() => import('./app/gallery/Gallery'));
+const GalleryEditor = lazy(() =>
+  import('./app/gallery/GalleryEditor').then((module) => ({
+    default: module.GalleryEditor,
+  }))
+);
+
+function DeferredRoute({ children }: { children: ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <div
+          className="flex min-h-[40vh] items-center justify-center"
+          role="status"
+          aria-label="Loading page"
+        >
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
 
 const Home = () => {
   return <h2>Home (Protected: authenticated user required)</h2>;
@@ -205,7 +228,14 @@ const App = () => {
             />
             <Route path="galleries" element={<GalleriesLayout />}>
               <Route index element={<GalleriesPage />} /> {/* /galleries */}
-              <Route path=":slug" element={<GalleryPage />} />
+              <Route
+                path=":slug"
+                element={
+                  <DeferredRoute>
+                    <GalleryPage />
+                  </DeferredRoute>
+                }
+              />
               <Route
                 path="new"
                 element={
@@ -214,7 +244,9 @@ const App = () => {
                     isLoading={!authReady}
                     redirectPath="/galleries"
                   >
-                    <GalleryEditor />
+                    <DeferredRoute>
+                      <GalleryEditor />
+                    </DeferredRoute>
                   </ProtectedRoute>
                 }
               />
@@ -226,7 +258,9 @@ const App = () => {
                     isLoading={!authReady}
                     redirectPath="/galleries"
                   >
-                    <GalleryExistingEditor />
+                    <DeferredRoute>
+                      <GalleryEditor mode="edit" />
+                    </DeferredRoute>
                   </ProtectedRoute>
                 }
               />
@@ -239,10 +273,6 @@ const App = () => {
             {/* <Route
               path="gallery/minimal-tiptap"
               element={<GalleryMinimalTiptapEditor />}
-            /> */}
-            {/* <Route
-              path="galleries/edit/:galleryId"
-              element={<GalleryExistingEditor />}
             /> */}
           </Route>
           <Route

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MDXEditor } from '@mdxeditor/editor';
+import '@mdxeditor/editor/style.css';
 
 import { Avatar, AvatarImage, AvatarFallback, Button } from 'shadcn-comments';
 import { User, getUserInitials } from '@/api/user';
@@ -17,7 +18,7 @@ export const CommentEditor = ({
   onChange = () => {},
   placeholder = 'Add your comment here...',
   theme,
-   
+
   currentUser,
 }: CommentEditorProps) => {
   const [tempValue, setTempValue] = useState('');

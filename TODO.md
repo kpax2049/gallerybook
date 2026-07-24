@@ -27,12 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0021 `chore` Split large frontend bundles
-  - Context: Production build emits large editor-heavy chunks.
-  - Expected: Lazy-load editor-heavy routes/components to reduce initial bundle
-    cost.
-  - Notes: From codebase review candidate #15.
-
 - [ ] TODO-0022 `chore` Make backend lint non-mutating
   - Context: Backend `npm run lint` currently runs ESLint with `--fix`.
   - Expected: Split check-only `lint` from a separate `lint:fix` script.
@@ -52,6 +46,15 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0021 `chore` Split large frontend bundles
+  - Completed: 2026-07-24
+  - Context: Production builds eagerly preloaded large TipTap and MDX editor
+    chunks on every page.
+  - Outcome: Gallery detail and create/edit routes now load on demand with a
+    stable loading state, editor styles are route-scoped, and the build rejects
+    regressions that add editor assets back to the initial HTML. Initial raw
+    JavaScript delivery dropped from roughly 3.55 MB to 883 KB.
 
 - [x] TODO-0020 `feature` Add pending-activation UX after signup and OAuth
   - Completed: 2026-07-23
