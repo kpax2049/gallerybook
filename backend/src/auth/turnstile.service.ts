@@ -19,8 +19,7 @@ export class TurnstileService {
 
   async verify(token?: string, remoteIp?: string) {
     const secret = this.config.get<string>('TURNSTILE_SECRET_KEY');
-    const isProduction =
-      this.config.get<string>('NODE_ENV') === 'production';
+    const isProduction = this.config.get<string>('NODE_ENV') === 'production';
 
     if (!secret) {
       if (isProduction) {

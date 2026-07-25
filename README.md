@@ -146,6 +146,7 @@ npx prisma generate
 npx prisma db seed
 npm run build
 npm run lint
+npm run lint:fix
 npm run test
 npm run test:e2e
 ```

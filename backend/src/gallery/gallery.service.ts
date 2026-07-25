@@ -213,7 +213,10 @@ export class GalleryService {
       updatedNode.content = await Promise.all(
         node.content.map(
           (child) =>
-            this.rewriteImageSrcsInNode(child, mode) as Promise<ProseMirrorNode>,
+            this.rewriteImageSrcsInNode(
+              child,
+              mode,
+            ) as Promise<ProseMirrorNode>,
         ),
       );
     }
@@ -235,10 +238,7 @@ export class GalleryService {
     );
   }
 
-  async rewriteGalleryImageSrcs(
-    content: any,
-    mode: Mode,
-  ): Promise<any> {
+  async rewriteGalleryImageSrcs(content: any, mode: Mode): Promise<any> {
     return await this.rewriteImageSrcsInNode(content, mode);
   }
 
@@ -999,10 +999,7 @@ export class GalleryService {
     }
   }
 
-  private getPagination(
-    page = 1,
-    pageSize = DEFAULT_GALLERY_PAGE_SIZE,
-  ) {
+  private getPagination(page = 1, pageSize = DEFAULT_GALLERY_PAGE_SIZE) {
     const p = Math.max(1, page);
     const ps = Math.min(MAX_GALLERY_PAGE_SIZE, Math.max(1, pageSize));
     return { page: p, pageSize: ps, skip: (p - 1) * ps, take: ps };

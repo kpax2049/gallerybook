@@ -104,7 +104,10 @@ export class FolderService {
         this.mapPublicGallery(gallery),
       ),
       commentCounts: Object.fromEntries(
-        folder.galleries.map((gallery) => [gallery.id, gallery._count.comments]),
+        folder.galleries.map((gallery) => [
+          gallery.id,
+          gallery._count.comments,
+        ]),
       ),
     };
   }

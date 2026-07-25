@@ -231,7 +231,8 @@ export class AuthController {
   }
 
   private clearRefreshCookieOptions(): CookieOptions {
-    const { maxAge: _maxAge, ...options } = this.refreshCookieOptions();
+    const options = this.refreshCookieOptions();
+    delete options.maxAge;
     return options;
   }
 

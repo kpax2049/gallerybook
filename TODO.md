@@ -27,11 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0022 `chore` Make backend lint non-mutating
-  - Context: Backend `npm run lint` currently runs ESLint with `--fix`.
-  - Expected: Split check-only `lint` from a separate `lint:fix` script.
-  - Notes: From codebase review candidate #16.
-
 - [ ] TODO-0023 `bug` Make backend e2e test script CI-friendly
   - Context: Backend `test:e2e` uses Jest watch mode.
   - Expected: Make the default e2e script run once and add a separate watch
@@ -46,6 +41,14 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0022 `chore` Make backend lint non-mutating
+  - Completed: 2026-07-25
+  - Context: Backend `npm run lint` ran ESLint with `--fix`, allowing routine
+    checks and CI runs to modify source files.
+  - Outcome: Backend linting now defaults to a check-only command, explicit
+    fixes live under `npm run lint:fix`, and the existing lint findings were
+    resolved so the non-mutating command passes cleanly.
 
 - [x] TODO-0021 `chore` Split large frontend bundles
   - Completed: 2026-07-24
