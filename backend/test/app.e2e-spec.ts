@@ -3,9 +3,10 @@ import { AppModule } from '../src/app.module';
 import * as pactum from 'pactum';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { AuthDto } from 'src/dto';
+import { AuthDto, SignupDto } from 'src/dto';
 import { EditUserDto } from 'src/users/dto';
 import { CreateGalleryDto } from 'src/gallery/dto';
+import { Role, UserStatus } from '@prisma/client';
 
 describe('App e2e', () => {
   let app: INestApplication;
@@ -27,30 +28,28 @@ describe('App e2e', () => {
     await prisma.cleanDb();
     pactum.request.setBaseUrl('http://localhost:3333');
   });
-  afterAll(() => {
-    app.close();
+  afterAll(async () => {
+    await app.close();
   });
 
   it.todo('should pass');
 
   describe('Auth', () => {
-    const dto: AuthDto = {
+    const authDto: AuthDto = {
       email: 'kpaxde3@getMaxListeners.com',
-      password: '123',
+      password: 'password123',
+    };
+    const signupDto: SignupDto = {
+      ...authDto,
+      fullName: 'E2E User',
+      username: 'e2e-user',
     };
     describe('Signup', () => {
       it('Should Throw an Exception if Email is Empty', () => {
         return pactum
           .spec()
           .post('/auth/signup')
-          .withBody({ password: dto.password })
-          .expectStatus(400);
-      });
-      it('Should Throw an Exception if Password is Empty', () => {
-        return pactum
-          .spec()
-          .post('/auth/signup')
-          .withBody({ email: dto.email })
+          .withBody({ password: authDto.password })
           .expectStatus(400);
       });
       it('Should Throw an Exception if No Body Provided', () => {
@@ -60,12 +59,17 @@ describe('App e2e', () => {
           .withBody({})
           .expectStatus(400);
       });
-      it('Should Signup', () => {
-        return pactum
+      it('Should Signup', async () => {
+        await pactum
           .spec()
           .post('/auth/signup')
-          .withBody(dto)
+          .withBody(signupDto)
           .expectStatus(201);
+
+        await prisma.user.update({
+          where: { email: authDto.email },
+          data: { role: Role.ADMIN, status: UserStatus.active },
+        });
       });
     });
     describe('Signin', () => {
@@ -73,14 +77,14 @@ describe('App e2e', () => {
         return pactum
           .spec()
           .post('/auth/signin')
-          .withBody({ password: dto.password })
+          .withBody({ password: authDto.password })
           .expectStatus(400);
       });
       it('Should Throw an Exception if Password is Empty', () => {
         return pactum
           .spec()
           .post('/auth/signin')
-          .withBody({ email: dto.email })
+          .withBody({ email: authDto.email })
           .expectStatus(400);
       });
       it('Should Throw an Exception if No Body Provided', () => {
@@ -94,9 +98,9 @@ describe('App e2e', () => {
         return pactum
           .spec()
           .post('/auth/signin')
-          .withBody(dto)
+          .withBody(authDto)
           .expectStatus(200)
-          .stores('userAccessToken', 'access_token');
+          .stores('userAccessToken', 'accessToken');
       });
     });
   });
@@ -135,7 +139,8 @@ describe('App e2e', () => {
           .get('/galleries')
           .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
           .expectStatus(200)
-          .expectBody([]);
+          .expectJson('total', 0)
+          .expectJsonLength('items', 0);
       });
     });
     describe('Create Gallery', () => {
@@ -143,6 +148,7 @@ describe('App e2e', () => {
         const dto: CreateGalleryDto = {
           title: 'My first gallery',
           description: '123',
+          content: JSON.stringify({ type: 'doc', content: [] }),
         };
         return pactum
           .spec()
@@ -160,7 +166,8 @@ describe('App e2e', () => {
           .get('/galleries')
           .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
           .expectStatus(200)
-          .expectJsonLength(1);
+          .expectJson('total', 1)
+          .expectJsonLength('items', 1);
       });
     });
     describe('Get Gallery By Id', () => {
@@ -206,7 +213,8 @@ describe('App e2e', () => {
           .get('/galleries')
           .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
           .expectStatus(200)
-          .expectJsonLength(0);
+          .expectJson('total', 0)
+          .expectJsonLength('items', 0);
       });
     });
   });

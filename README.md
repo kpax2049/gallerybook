@@ -149,6 +149,7 @@ npm run lint
 npm run lint:fix
 npm run test
 npm run test:e2e
+npm run test:e2e:watch
 ```
 
 ### Frontend

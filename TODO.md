@@ -27,12 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0023 `bug` Make backend e2e test script CI-friendly
-  - Context: Backend `test:e2e` uses Jest watch mode.
-  - Expected: Make the default e2e script run once and add a separate watch
-    script if needed.
-  - Notes: From codebase review candidate #17.
-
 - [ ] TODO-0024 `chore` Decide whether vendored shadcn-comments dist should stay
   - Context: The repo includes local module source and generated dist files for
     `shadcn-comments`.
@@ -41,6 +35,14 @@ No active items.
   - Notes: From codebase review candidate #18.
 
 ## Done
+
+- [x] TODO-0023 `bug` Make backend e2e test script CI-friendly
+  - Completed: 2026-07-26
+  - Context: Backend `test:e2e` used Jest watch mode and depended on an
+    undeclared environment-loading CLI.
+  - Outcome: E2E tests now run once and serially by default, watch mode has an
+    explicit command, Node loads the test environment without an undeclared
+    dependency, and the suite matches current auth and gallery API contracts.
 
 - [x] TODO-0022 `chore` Make backend lint non-mutating
   - Completed: 2026-07-25

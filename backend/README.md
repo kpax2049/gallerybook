@@ -58,6 +58,9 @@ $ npm run test
 # e2e tests
 $ npm run test:e2e
 
+# e2e tests in watch mode
+$ npm run test:e2e:watch
+
 # test coverage
 $ npm run test:cov
 ```
