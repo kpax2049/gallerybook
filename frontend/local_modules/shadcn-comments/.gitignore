@@ -90,6 +90,8 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
+# GalleryBook consumes this directory through the package entry points, so the
+# generated package is intentionally vendored with its source.
 dist
 
 # Gatsby files

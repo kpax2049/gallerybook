@@ -27,14 +27,18 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0024 `chore` Decide whether vendored shadcn-comments dist should stay
-  - Context: The repo includes local module source and generated dist files for
-    `shadcn-comments`.
-  - Expected: Document why the dist files are vendored or trim generated
-    artifacts if unnecessary.
-  - Notes: From codebase review candidate #18.
+No active items.
 
 ## Done
+
+- [x] TODO-0024 `chore` Decide whether vendored shadcn-comments dist should stay
+  - Completed: 2026-07-27
+  - Context: The repo included local module source and generated dist files for
+    `shadcn-comments` without explaining whether both were intentional.
+  - Outcome: The generated package remains vendored because the local
+    dependency's entry points require it and clean installs do not build it.
+    The frontend documentation and module ignore rules now record that policy
+    and require source and dist updates to be committed together.
 
 - [x] TODO-0023 `bug` Make backend e2e test script CI-friendly
   - Completed: 2026-07-26
