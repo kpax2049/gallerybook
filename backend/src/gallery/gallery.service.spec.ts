@@ -812,6 +812,93 @@ describe('GalleryService', () => {
       expect(prisma.gallery.delete).toHaveBeenCalledWith({ where: { id: 1 } });
     });
 
+    it('deletes the database row before cleaning up gallery-scoped media', async () => {
+      const order: string[] = [];
+      const s3Send = jest.fn().mockImplementation(async (command) => {
+        order.push('s3');
+        expect(command.input.Delete.Objects).toEqual([
+          { Key: 'uploads/users/7/galleries/1/photo.jpg' },
+          { Key: 'uploads/users/7/galleries/1/cover.jpg' },
+        ]);
+      });
+      (service as any).s3 = { send: s3Send };
+      prisma.gallery.findUnique.mockResolvedValue({
+        id: 1,
+        userId: 7,
+        content: {
+          type: 'doc',
+          content: [
+            {
+              type: 'image',
+              attrs: { src: 'uploads/users/7/galleries/1/photo.jpg' },
+            },
+            {
+              type: 'image',
+              attrs: { src: 'uploads/users/8/galleries/2/private.jpg' },
+            },
+          ],
+        },
+        thumbnail: 'uploads/users/7/galleries/1/cover.jpg',
+      });
+      prisma.gallery.delete.mockImplementation(async () => {
+        order.push('database');
+        return { id: 1 };
+      });
+
+      await service.deleteGalleryById({ id: 7, role: Role.USER }, 1);
+
+      expect(order).toEqual(['database', 's3']);
+    });
+
+    it('does not delete media when the database deletion fails', async () => {
+      const s3Send = jest.fn();
+      (service as any).s3 = { send: s3Send };
+      prisma.gallery.findUnique.mockResolvedValue({
+        id: 1,
+        userId: 7,
+        content: {
+          type: 'image',
+          attrs: { src: 'uploads/users/7/galleries/1/photo.jpg' },
+        },
+        thumbnail: null,
+      });
+      prisma.gallery.delete.mockRejectedValue(new Error('database failure'));
+
+      await expect(
+        service.deleteGalleryById({ id: 7, role: Role.USER }, 1),
+      ).rejects.toThrow('database failure');
+      expect(s3Send).not.toHaveBeenCalled();
+    });
+
+    it('keeps a successful database deletion successful when media cleanup fails', async () => {
+      const cleanupError = new Error('storage failure');
+      jest.spyOn(console, 'log').mockImplementation();
+      const loggerError = jest
+        .spyOn((service as any).logger, 'error')
+        .mockImplementation();
+      (service as any).s3 = {
+        send: jest.fn().mockRejectedValue(cleanupError),
+      };
+      prisma.gallery.findUnique.mockResolvedValue({
+        id: 1,
+        userId: 7,
+        content: {
+          type: 'image',
+          attrs: { src: 'uploads/users/7/galleries/1/photo.jpg' },
+        },
+        thumbnail: null,
+      });
+      prisma.gallery.delete.mockResolvedValue({ id: 1 });
+
+      await expect(
+        service.deleteGalleryById({ id: 7, role: Role.USER }, 1),
+      ).resolves.toBeUndefined();
+      expect(loggerError).toHaveBeenCalledWith(
+        expect.stringContaining('Gallery 1 was deleted'),
+        expect.stringContaining('Failed to delete images'),
+      );
+    });
+
     it('skips S3 deletes when the key list is empty', async () => {
       const s3Send = jest.fn();
       (service as any).s3 = { send: s3Send };

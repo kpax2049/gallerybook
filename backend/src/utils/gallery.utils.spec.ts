@@ -48,4 +48,15 @@ describe('extractS3KeysFromContent', () => {
 
     expect(extractS3KeysFromContent(content)).toEqual([]);
   });
+
+  it('keeps malformed encoded keys available for safe filtering', () => {
+    const content = {
+      type: 'image',
+      attrs: { src: 'uploads/users/1/galleries/2/bad%name.jpg' },
+    };
+
+    expect(extractS3KeysFromContent(content)).toEqual([
+      'uploads/users/1/galleries/2/bad%name.jpg',
+    ]);
+  });
 });

@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateGalleryDto } from './dto';
@@ -86,6 +87,8 @@ type ListRow = Prisma.GalleryGetPayload<{ include: typeof SELECT_LIST }>;
 
 @Injectable()
 export class GalleryService {
+  private readonly logger = new Logger(GalleryService.name);
+
   private s3: S3Client;
   private readonly bucket: string;
 
@@ -602,16 +605,23 @@ export class GalleryService {
       throw new ForbiddenException('Access to Resource Denied');
     }
 
-    const content = gallery.content as any;
-    const keys = extractS3KeysFromContent(content); // Returns relative S3 paths
-
-    await this.deleteImagesFromS3(keys);
+    const keys = this.getGalleryStorageKeys(gallery);
 
     await this.prisma.gallery.delete({
       where: {
         id: galleryId,
       },
     });
+
+    try {
+      await this.deleteImagesFromS3(keys);
+    } catch (error) {
+      const stack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(
+        `Gallery ${galleryId} was deleted, but its stored media could not be cleaned up`,
+        stack,
+      );
+    }
   }
 
   async findById(galleryId: number) {
@@ -642,6 +652,30 @@ export class GalleryService {
     } catch (err) {
       console.log('Failed to delete images from S3', err);
       throw new InternalServerErrorException('Failed to delete images');
+    }
+  }
+
+  private getGalleryStorageKeys(gallery: {
+    id: number;
+    userId: number;
+    content: Prisma.JsonValue | null;
+    thumbnail: string | null;
+  }) {
+    const prefix = `uploads/users/${gallery.userId}/galleries/${gallery.id}/`;
+    const candidates = extractS3KeysFromContent(gallery.content);
+
+    if (gallery.thumbnail) {
+      candidates.push(this.decodeStorageKey(gallery.thumbnail));
+    }
+
+    return [...new Set(candidates)].filter((key) => key.startsWith(prefix));
+  }
+
+  private decodeStorageKey(value: string) {
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
     }
   }
 

@@ -227,7 +227,7 @@ model Comment {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   galleryId Int
-  gallery   Gallery @relation(fields: [galleryId], references: [id])
+  gallery   Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
 
   parentId Int?
   parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])

@@ -27,9 +27,118 @@ No active items.
 
 ## Backlog
 
-No active items.
+- [ ] TODO-0026 `bug` Enforce gallery visibility on comments and reactions
+  - Context: Comment creation and reaction toggles do not apply gallery read
+    authorization consistently.
+  - Expected: Reject inaccessible galleries and cross-gallery reply parents,
+    and derive comment ownership from the authenticated user.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0027 `bug` Make shared gallery links accessible anonymously
+  - Context: Public folder cards link to gallery routes whose frontend and
+    backend handlers require authentication.
+  - Expected: Add an anonymous read-only gallery path while keeping drafts and
+    private galleries unavailable.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0028 `bug` Handle empty and malformed gallery content safely
+  - Context: Gallery content is optional, but content traversal expects a
+    ProseMirror object and can fail on null or malformed values.
+  - Expected: Initialize a valid document, validate writes, and safely read
+    legacy empty content.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0029 `security` Revoke access tokens after password changes
+  - Context: Password changes update revocation metadata, but access-token
+    validation does not check it.
+  - Expected: Reject access tokens issued before the latest password change and
+    preserve the replacement-token flow.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0030 `bug` Synchronize auth-dependent stores on login and logout
+  - Context: Login does not load follow state and logout does not reset it.
+  - Expected: Centralize auth transitions so user and follow state cannot be
+    stale or leak between accounts.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0031 `bug` Align profile-edit validation with signup
+  - Context: Profile edits accept empty or unbounded names and usernames and do
+    not map uniqueness conflicts clearly.
+  - Expected: Share normalization and length rules and return useful conflict
+    errors for duplicate account fields.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0032 `chore` Add continuous integration workflows
+  - Context: The repository has no project-level CI workflow.
+  - Expected: Run backend and frontend lint, tests, builds, and backend e2e
+    coverage for pull requests.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0033 `chore` Make test database resets deterministic
+  - Context: Test startup uses a fixed sleep and does not remove the named
+    PostgreSQL test volume.
+  - Expected: Wait for database readiness, reset state reliably, and keep
+    destructive cleanup out of production services.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0034 `chore` Align development and production PostgreSQL versions
+  - Context: Development and test use PostgreSQL 13 while production uses 16.
+  - Expected: Use one supported major version across environments and verify
+    existing migrations against it.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0035 `feature` Add application health checks and deploy verification
+  - Context: Only PostgreSQL has a container health check and deployments do
+    not wait for application readiness.
+  - Expected: Add backend and frontend health checks and make deployment fail
+    clearly when updated services do not become healthy.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0036 `performance` Use the optimized login hero asset
+  - Context: Login loads a multi-megabyte PNG despite an equivalent, much
+    smaller WebP already being present.
+  - Expected: Serve the optimized asset and remove unused starter and duplicate
+    frontend assets.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0037 `feature` Paginate public folders and gallery comments
+  - Context: Public folders and gallery comment threads can return unbounded
+    collections.
+  - Expected: Add bounded pagination or incremental loading without breaking
+    deterministic ordering.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0038 `security` Harden avatar upload lifecycle
+  - Context: Avatar validation trusts the MIME header and replaced Cloudinary
+    assets are not deleted.
+  - Expected: Validate image content, retain the provider asset ID, and clean up
+    replaced uploads.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0039 `chore` Migrate Prisma seed configuration
+  - Context: Prisma reports that `package.json#prisma` configuration is
+    deprecated.
+  - Expected: Move seed configuration to `prisma.config.ts` before the next
+    major Prisma upgrade.
+  - Notes: From the 2026-07-28 codebase review.
+
+- [ ] TODO-0040 `chore` Consolidate stale project notes and test placeholders
+  - Context: A legacy frontend TODO file, starter artifacts, dead commented
+    routes, and an e2e placeholder remain in the repository.
+  - Expected: Preserve useful historical notes in appropriate documentation and
+    remove obsolete source and test placeholders.
+  - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0025 `bug` Make gallery deletion atomic and comment-safe
+  - Completed: 2026-07-28
+  - Context: Gallery media was deleted before the database row, while comments
+    prevented gallery deletion through a restrictive foreign key.
+  - Outcome: Gallery deletion now cascades comment threads in PostgreSQL before
+    cleaning up storage, limits media deletion to the gallery's own upload
+    prefix including its thumbnail, and logs post-delete storage failures
+    without reporting a failed database deletion.
 
 - [x] TODO-0024 `chore` Decide whether vendored shadcn-comments dist should stay
   - Completed: 2026-07-27

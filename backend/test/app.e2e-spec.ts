@@ -111,7 +111,8 @@ describe('App e2e', () => {
           .spec()
           .get('/users/me')
           .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
-          .expectStatus(200);
+          .expectStatus(200)
+          .stores('userId', 'id');
       });
     });
     describe('Edit User', () => {
@@ -196,6 +197,34 @@ describe('App e2e', () => {
           .expectStatus(200)
           .expectBodyContains(dto.title)
           .expectBodyContains(dto.description);
+      });
+    });
+    describe('Create Gallery Comment', () => {
+      it('Should Create a Comment Before Gallery Deletion', () => {
+        return pactum
+          .spec()
+          .post('/comments')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .withBody({
+            text: 'This comment should be deleted with its gallery',
+            userId: '$S{userId}',
+            galleryId: '$S{galleryId}',
+          })
+          .expectStatus(201)
+          .stores('commentId', 'id');
+      });
+      it('Should Create a Nested Reply Before Gallery Deletion', () => {
+        return pactum
+          .spec()
+          .post('/comments')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .withBody({
+            text: 'This reply should also be deleted with its gallery',
+            userId: '$S{userId}',
+            galleryId: '$S{galleryId}',
+            parentId: '$S{commentId}',
+          })
+          .expectStatus(201);
       });
     });
     describe('Delete Gallery By Id', () => {

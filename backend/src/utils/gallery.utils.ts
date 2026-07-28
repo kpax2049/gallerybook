@@ -7,7 +7,11 @@ export function extractS3KeysFromContent(content: any): string[] {
     if (node.type === 'image' && typeof node.attrs?.src === 'string') {
       const src = node.attrs.src;
       if (src.startsWith('uploads/')) {
-        keys.add(decodeURIComponent(src));
+        try {
+          keys.add(decodeURIComponent(src));
+        } catch {
+          keys.add(src);
+        }
       }
     }
 
