@@ -8,10 +8,6 @@ export class CreateCommentDto {
 
   @IsNumber()
   @Type(() => Number)
-  userId: number;
-
-  @IsNumber()
-  @Type(() => Number)
   galleryId: number;
 
   @IsNumber()

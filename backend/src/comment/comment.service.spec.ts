@@ -2,6 +2,7 @@ import { CommentService } from './comment.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AssetUrlService } from 'src/common/asset-url.service';
 import { ActionType, GalleryStatus, Role, Visibility } from '@prisma/client';
+import { NotFoundException } from '@nestjs/common';
 
 describe('CommentService', () => {
   let service: CommentService;
@@ -27,6 +28,9 @@ describe('CommentService', () => {
       groupBy: jest.Mock;
     };
     user: {
+      findUnique: jest.Mock;
+    };
+    gallery: {
       findUnique: jest.Mock;
     };
     $transaction: jest.Mock;
@@ -58,6 +62,9 @@ describe('CommentService', () => {
       user: {
         findUnique: jest.fn(),
       },
+      gallery: {
+        findUnique: jest.fn(),
+      },
       $transaction: jest.fn(),
     };
 
@@ -79,6 +86,10 @@ describe('CommentService', () => {
   });
 
   it('fetches comments with action counts and selected actions merged', async () => {
+    prisma.gallery.findUnique.mockResolvedValue({
+      status: GalleryStatus.PUBLISHED,
+      visibility: Visibility.PUBLIC,
+    });
     const rows = [
       {
         id: 1,
@@ -141,10 +152,6 @@ describe('CommentService', () => {
       where: {
         galleryId: 10,
         parentId: null,
-        gallery: {
-          status: GalleryStatus.PUBLISHED,
-          visibility: { not: Visibility.PRIVATE },
-        },
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       include: {
@@ -177,6 +184,10 @@ describe('CommentService', () => {
   });
 
   it('does not constrain comment reads for admins', async () => {
+    prisma.gallery.findUnique.mockResolvedValue({
+      status: GalleryStatus.DRAFT,
+      visibility: Visibility.PRIVATE,
+    });
     prisma.comment.findMany.mockResolvedValue([]);
 
     await service.getComments(10, { id: 1, role: Role.ADMIN });
@@ -197,11 +208,17 @@ describe('CommentService', () => {
     });
   });
 
-  it('creates comments with the provided payload', async () => {
-    const dto = { text: 'hi', userId: 1, galleryId: 2 };
+  it('creates comments for readable galleries with server-owned user ids', async () => {
+    const user = { id: 1, role: Role.USER };
+    const dto = { text: 'hi', galleryId: 2 };
+    prisma.gallery.findUnique.mockResolvedValue({
+      status: GalleryStatus.PUBLISHED,
+      visibility: Visibility.PUBLIC,
+    });
     prisma.comment.create.mockResolvedValue({
       id: 1,
       ...dto,
+      userId: user.id,
       user: { id: 1, username: 'artist', profile: { avatarUrl: 'avatar.png' } },
     });
     prisma.actionCount.create.mockResolvedValue({
@@ -217,14 +234,15 @@ describe('CommentService', () => {
       eye: 0,
     });
 
-    await expect(service.createComment(dto as any)).resolves.toMatchObject({
+    await expect(service.createComment(user, dto)).resolves.toMatchObject({
       ...dto,
+      userId: user.id,
       user: { id: 1, username: 'artist', profile: { avatarUrl: 'avatar.png' } },
       selectedActions: [],
       replies: [],
     });
     expect(prisma.comment.create).toHaveBeenCalledWith({
-      data: dto,
+      data: { ...dto, userId: user.id },
       include: { user: { include: { profile: true } } },
     });
     expect(prisma.actionCount.create).toHaveBeenCalledWith({
@@ -232,8 +250,57 @@ describe('CommentService', () => {
     });
   });
 
+  it('rejects comment creation for inaccessible galleries', async () => {
+    prisma.gallery.findUnique.mockResolvedValue({
+      status: GalleryStatus.PUBLISHED,
+      visibility: Visibility.PRIVATE,
+    });
+
+    await expect(
+      service.createComment(
+        { id: 1, role: Role.USER },
+        { text: 'hidden', galleryId: 2 },
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.comment.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects reply parents from another gallery', async () => {
+    prisma.gallery.findUnique.mockResolvedValue({
+      status: GalleryStatus.PUBLISHED,
+      visibility: Visibility.PUBLIC,
+    });
+    prisma.comment.findUnique.mockResolvedValue({ galleryId: 99 });
+
+    await expect(
+      service.createComment(
+        { id: 1, role: Role.USER },
+        { text: 'wrong thread', galleryId: 2, parentId: 10 },
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.comment.create).not.toHaveBeenCalled();
+  });
+
+  it('hides inaccessible comment threads', async () => {
+    prisma.gallery.findUnique.mockResolvedValue({
+      status: GalleryStatus.DRAFT,
+      visibility: Visibility.PUBLIC,
+    });
+
+    await expect(
+      service.getComments(2, { id: 1, role: Role.USER }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.comment.findMany).not.toHaveBeenCalled();
+  });
+
   it('toggles reactions and returns latest counts and selection', async () => {
-    prisma.comment.findUnique.mockResolvedValue({ id: 10 });
+    prisma.comment.findUnique.mockResolvedValue({
+      id: 10,
+      gallery: {
+        status: GalleryStatus.PUBLISHED,
+        visibility: Visibility.PUBLIC,
+      },
+    });
     prisma.actionCount.upsert.mockResolvedValue({ commentId: 10 });
     prisma.reaction.findUnique.mockResolvedValue(null);
     prisma.reaction.createMany.mockResolvedValue({ count: 1 });
@@ -256,7 +323,8 @@ describe('CommentService', () => {
       { type: ActionType.UPVOTE, commentId: 10 },
     ]);
 
-    const result = await service.toggleReaction(4, 10, ActionType.UPVOTE);
+    const user = { id: 4, role: Role.USER };
+    const result = await service.toggleReaction(user, 10, ActionType.UPVOTE);
 
     expect(prisma.reaction.createMany).toHaveBeenCalledWith({
       data: [{ commentId: 10, userId: 4, type: ActionType.UPVOTE }],
@@ -300,7 +368,7 @@ describe('CommentService', () => {
     });
     prisma.reaction.findMany.mockResolvedValue([]);
 
-    const result2 = await service.toggleReaction(4, 10, ActionType.UPVOTE);
+    const result2 = await service.toggleReaction(user, 10, ActionType.UPVOTE);
     expect(prisma.reaction.deleteMany).toHaveBeenCalledWith({
       where: { commentId: 10, userId: 4, type: ActionType.UPVOTE },
     });
@@ -323,6 +391,21 @@ describe('CommentService', () => {
       actions: expect.objectContaining({ [ActionType.UPVOTE]: 0 }),
       selectedActions: [],
     });
+  });
+
+  it('rejects reactions on comments from inaccessible galleries', async () => {
+    prisma.comment.findUnique.mockResolvedValue({
+      id: 10,
+      gallery: {
+        status: GalleryStatus.PUBLISHED,
+        visibility: Visibility.PRIVATE,
+      },
+    });
+
+    await expect(
+      service.toggleReaction({ id: 4, role: Role.USER }, 10, ActionType.UPVOTE),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.reaction.findUnique).not.toHaveBeenCalled();
   });
 
   it('lists comments scoped to my galleries with pagination and search', async () => {

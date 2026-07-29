@@ -171,17 +171,26 @@ describe('GalleryController', () => {
   });
 
   it('delegates reaction endpoints to the service', async () => {
+    const toggleUser = { id: 1, role: 'USER' } as any;
+    const reactionsUser = { id: 3, role: 'USER' } as any;
     galleryService.toggleReaction.mockResolvedValue({ ok: true });
     galleryService.getMyReactions.mockResolvedValue({ like: true });
     galleryService.replaceTags.mockResolvedValue({ tags: [] });
 
-    await controller.toggleReaction({ id: 1 } as any, 2, {
+    await controller.toggleReaction(toggleUser, 2, {
       type: 'LIKE',
     } as any);
-    expect(galleryService.toggleReaction).toHaveBeenCalledWith(1, 2, 'LIKE');
+    expect(galleryService.toggleReaction).toHaveBeenCalledWith(
+      toggleUser,
+      2,
+      'LIKE',
+    );
 
-    await controller.myReactions({ id: 3 } as any, 4);
-    expect(galleryService.getMyReactions).toHaveBeenCalledWith(3, 4);
+    await controller.myReactions(reactionsUser, 4);
+    expect(galleryService.getMyReactions).toHaveBeenCalledWith(
+      reactionsUser,
+      4,
+    );
 
     await controller.replaceTags({ id: 5, role: 'ADMIN' } as any, 6, {
       tags: ['a'],

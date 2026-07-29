@@ -111,8 +111,7 @@ describe('App e2e', () => {
           .spec()
           .get('/users/me')
           .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
-          .expectStatus(200)
-          .stores('userId', 'id');
+          .expectStatus(200);
       });
     });
     describe('Edit User', () => {
@@ -207,7 +206,6 @@ describe('App e2e', () => {
           .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
           .withBody({
             text: 'This comment should be deleted with its gallery',
-            userId: '$S{userId}',
             galleryId: '$S{galleryId}',
           })
           .expectStatus(201)
@@ -220,7 +218,6 @@ describe('App e2e', () => {
           .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
           .withBody({
             text: 'This reply should also be deleted with its gallery',
-            userId: '$S{userId}',
             galleryId: '$S{galleryId}',
             parentId: '$S{commentId}',
           })

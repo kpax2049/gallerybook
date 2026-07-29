@@ -37,21 +37,21 @@ describe('CommentController', () => {
   });
 
   it('injects the authenticated user id when creating comments', async () => {
+    const user = { id: 3, role: 'USER' } as any;
+    const dto = { text: 'Hi', galleryId: 5 } as any;
     commentService.createComment.mockResolvedValue({ id: 1 });
-    await controller.createComment(
-      { id: 3 } as any,
-      { text: 'Hi', galleryId: 5 } as any,
-    );
-    expect(commentService.createComment).toHaveBeenCalledWith({
-      text: 'Hi',
-      galleryId: 5,
-      userId: 3,
-    });
+    await controller.createComment(user, dto);
+    expect(commentService.createComment).toHaveBeenCalledWith(user, dto);
   });
 
   it('toggles reactions with the provided payload', async () => {
+    const user = { id: 4, role: 'USER' } as any;
     commentService.toggleReaction.mockResolvedValue({ active: true });
-    await controller.toggleReaction(4, 15, { type: 'UPVOTE' } as any);
-    expect(commentService.toggleReaction).toHaveBeenCalledWith(4, 15, 'UPVOTE');
+    await controller.toggleReaction(user, 15, { type: 'UPVOTE' } as any);
+    expect(commentService.toggleReaction).toHaveBeenCalledWith(
+      user,
+      15,
+      'UPVOTE',
+    );
   });
 });

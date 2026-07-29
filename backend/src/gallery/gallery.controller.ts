@@ -153,7 +153,7 @@ export class GalleryController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: ToggleReactionDto,
   ) {
-    return this.galleryService.toggleReaction(user.id, id, body.type as any);
+    return this.galleryService.toggleReaction(user, id, body.type as any);
   }
 
   @UseGuards(JwtGuard)
@@ -162,7 +162,7 @@ export class GalleryController {
     @GetUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.galleryService.getMyReactions(user.id, id);
+    return this.galleryService.getMyReactions(user, id);
   }
 
   @UseGuards(JwtGuard)

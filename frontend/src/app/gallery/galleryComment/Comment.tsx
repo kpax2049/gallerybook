@@ -170,7 +170,6 @@ export default function CommentList({ galleryId }: CommentProps) {
             onChange({
               text: val,
               galleryId: Number(galleryId),
-              userId: currentUser?.id,
             });
           }}
         />

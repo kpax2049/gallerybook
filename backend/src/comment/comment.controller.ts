@@ -30,15 +30,15 @@ export class CommentController {
 
   @Post()
   createComment(@GetUser() user: User, @Body() dto: CreateCommentDto) {
-    return this.commentService.createComment({ ...dto, userId: user.id });
+    return this.commentService.createComment(user, dto);
   }
 
   @Post(':id/reactions/toggle')
   toggleReaction(
-    @GetUser('id') userId: number,
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) commentId: number,
     @Body() dto: ToggleReactionDto,
   ) {
-    return this.commentService.toggleReaction(userId, commentId, dto.type);
+    return this.commentService.toggleReaction(user, commentId, dto.type);
   }
 }

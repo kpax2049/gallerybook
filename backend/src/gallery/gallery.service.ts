@@ -34,6 +34,7 @@ import { UpdateGalleryDto } from './dto/update-gallery-dto';
 import { ListGalleriesDto, SortDir, SortKey } from './dto/list-galleries.dto';
 import { AssetUrlService } from 'src/common/asset-url.service';
 import { slugify } from 'src/utils/slug.util';
+import { canReadGallery } from './gallery-access';
 
 type Mode = 'edit' | 'view';
 
@@ -449,7 +450,7 @@ export class GalleryService {
         ? ((await this.incrementViewsCount(gallery.id)) ?? gallery.viewsCount)
         : gallery.viewsCount;
     const myReaction = user?.id
-      ? await this.getMyReactions(user.id, gallery.id)
+      ? await this.fetchMyReactions(user.id, gallery.id)
       : undefined;
     const rewritten = await this.rewriteGalleryImageSrcs(
       gallery.content,
@@ -791,20 +792,26 @@ export class GalleryService {
     return { total, page, pageSize, items, commentCounts, myReactions };
   }
 
-  async toggleReaction(userId: number, galleryId: number, type: ReactionType) {
-    await this.ensureGallery(galleryId);
+  async toggleReaction(
+    user: Pick<User, 'id' | 'role'>,
+    galleryId: number,
+    type: ReactionType,
+  ) {
+    await this.ensureGalleryReadable(galleryId, user);
 
-    const key = { userId_galleryId_type: { userId, galleryId, type } };
+    const key = {
+      userId_galleryId_type: { userId: user.id, galleryId, type },
+    };
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.galleryReaction.findUnique({ where: key });
 
       if (existing) {
         await tx.galleryReaction.deleteMany({
-          where: { userId, galleryId, type },
+          where: { userId: user.id, galleryId, type },
         });
       } else {
         await tx.galleryReaction.createMany({
-          data: [{ userId, galleryId, type }],
+          data: [{ userId: user.id, galleryId, type }],
           skipDuplicates: true,
         });
       }
@@ -814,7 +821,12 @@ export class GalleryService {
     });
   }
 
-  async getMyReactions(userId: number, galleryId: number) {
+  async getMyReactions(user: Pick<User, 'id' | 'role'>, galleryId: number) {
+    await this.ensureGalleryReadable(galleryId, user);
+    return this.fetchMyReactions(user.id, galleryId);
+  }
+
+  private async fetchMyReactions(userId: number, galleryId: number) {
     const reacts = await this.prisma.galleryReaction.findMany({
       where: { userId, galleryId },
       select: { type: true },
@@ -888,7 +900,7 @@ export class GalleryService {
         ? ((await this.incrementViewsCount(gallery.id)) ?? gallery.viewsCount)
         : gallery.viewsCount;
     const myReaction = user?.id
-      ? await this.getMyReactions(user.id, gallery.id)
+      ? await this.fetchMyReactions(user.id, gallery.id)
       : undefined;
     const content = await this.rewriteGalleryImageSrcs(gallery.content, mode);
     const tagList = gallery.tags.map((row) => row.tag.slug ?? row.tag.name);
@@ -1127,9 +1139,17 @@ export class GalleryService {
     }
   }
 
-  private async ensureGallery(id: number) {
-    const exists = await this.prisma.gallery.findUnique({ where: { id } });
-    if (!exists) throw new NotFoundException('Gallery not found');
+  private async ensureGalleryReadable(
+    id: number,
+    user: Pick<User, 'id' | 'role'>,
+  ) {
+    const gallery = await this.prisma.gallery.findUnique({
+      where: { id },
+      select: { status: true, visibility: true },
+    });
+    if (!gallery || !canReadGallery(gallery, user)) {
+      throw new NotFoundException('Gallery not found');
+    }
   }
 
   private async resolveFolderIdForOwner(
@@ -1157,12 +1177,7 @@ export class GalleryService {
   ) {
     if (user?.role === Role.ADMIN) return;
 
-    const viewableByRegisteredUser =
-      mode === 'view' &&
-      gallery.status === GalleryStatus.PUBLISHED &&
-      gallery.visibility !== Visibility.PRIVATE;
-
-    if (!viewableByRegisteredUser) {
+    if (mode !== 'view' || !canReadGallery(gallery, user)) {
       throw new NotFoundException('Gallery not found');
     }
   }

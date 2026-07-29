@@ -92,7 +92,6 @@ export interface Comment {
 
 export interface CreateCommentRequest {
   text: string;
-  userId?: number;
   galleryId: number;
   parentId?: number;
 }
@@ -100,10 +99,11 @@ export interface CreateCommentRequest {
 export const createComment = async (
   commentData: CreateCommentRequest
 ): Promise<Comment> => {
+  const { text, galleryId, parentId } = commentData;
   return await apiRequest<Comment>(
     '/comments',
     'POST',
-    qs.stringify(commentData)
+    qs.stringify({ text, galleryId, parentId })
   );
 };
 

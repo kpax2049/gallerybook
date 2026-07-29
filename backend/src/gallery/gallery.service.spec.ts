@@ -660,7 +660,10 @@ describe('GalleryService', () => {
 
   describe('toggle reactions', () => {
     it('reconciles gallery counters from persisted reactions after adding a reaction', async () => {
-      prisma.gallery.findUnique.mockResolvedValue({ id: 10 });
+      prisma.gallery.findUnique.mockResolvedValue({
+        status: GalleryStatus.PUBLISHED,
+        visibility: Visibility.PUBLIC,
+      });
       prisma.galleryReaction.findUnique.mockResolvedValue(null);
       prisma.galleryReaction.createMany.mockResolvedValue({ count: 1 });
       prisma.galleryReaction.groupBy.mockResolvedValue([
@@ -670,7 +673,11 @@ describe('GalleryService', () => {
       prisma.gallery.update.mockResolvedValue({});
 
       await expect(
-        service.toggleReaction(4, 10, ReactionType.LIKE),
+        service.toggleReaction(
+          { id: 4, role: Role.USER },
+          10,
+          ReactionType.LIKE,
+        ),
       ).resolves.toEqual({ active: true });
 
       expect(prisma.galleryReaction.createMany).toHaveBeenCalledWith({
@@ -684,14 +691,21 @@ describe('GalleryService', () => {
     });
 
     it('uses deleteMany and absolute reconciliation when removing a reaction', async () => {
-      prisma.gallery.findUnique.mockResolvedValue({ id: 10 });
+      prisma.gallery.findUnique.mockResolvedValue({
+        status: GalleryStatus.PUBLISHED,
+        visibility: Visibility.PUBLIC,
+      });
       prisma.galleryReaction.findUnique.mockResolvedValue({ userId: 4 });
       prisma.galleryReaction.deleteMany.mockResolvedValue({ count: 1 });
       prisma.galleryReaction.groupBy.mockResolvedValue([]);
       prisma.gallery.update.mockResolvedValue({});
 
       await expect(
-        service.toggleReaction(4, 10, ReactionType.FAVORITE),
+        service.toggleReaction(
+          { id: 4, role: Role.USER },
+          10,
+          ReactionType.FAVORITE,
+        ),
       ).resolves.toEqual({ active: false });
 
       expect(prisma.galleryReaction.deleteMany).toHaveBeenCalledWith({
@@ -701,6 +715,53 @@ describe('GalleryService', () => {
         where: { id: 10 },
         data: { likesCount: 0, favoritesCount: 0 },
       });
+    });
+
+    it('hides inaccessible galleries before changing reactions', async () => {
+      prisma.gallery.findUnique.mockResolvedValue({
+        status: GalleryStatus.PUBLISHED,
+        visibility: Visibility.PRIVATE,
+      });
+
+      await expect(
+        service.toggleReaction(
+          { id: 4, role: Role.USER },
+          10,
+          ReactionType.LIKE,
+        ),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(prisma.galleryReaction.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('allows admins to react to private galleries', async () => {
+      prisma.gallery.findUnique.mockResolvedValue({
+        status: GalleryStatus.DRAFT,
+        visibility: Visibility.PRIVATE,
+      });
+      prisma.galleryReaction.findUnique.mockResolvedValue(null);
+      prisma.galleryReaction.createMany.mockResolvedValue({ count: 1 });
+      prisma.galleryReaction.groupBy.mockResolvedValue([]);
+      prisma.gallery.update.mockResolvedValue({});
+
+      await expect(
+        service.toggleReaction(
+          { id: 4, role: Role.ADMIN },
+          10,
+          ReactionType.LIKE,
+        ),
+      ).resolves.toEqual({ active: true });
+    });
+
+    it('hides reaction state for inaccessible galleries', async () => {
+      prisma.gallery.findUnique.mockResolvedValue({
+        status: GalleryStatus.PUBLISHED,
+        visibility: Visibility.PRIVATE,
+      });
+
+      await expect(
+        service.getMyReactions({ id: 4, role: Role.USER }, 10),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(prisma.galleryReaction.findMany).not.toHaveBeenCalled();
     });
   });
 

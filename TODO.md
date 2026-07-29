@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0026 `bug` Enforce gallery visibility on comments and reactions
-  - Context: Comment creation and reaction toggles do not apply gallery read
-    authorization consistently.
-  - Expected: Reject inaccessible galleries and cross-gallery reply parents,
-    and derive comment ownership from the authenticated user.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0027 `bug` Make shared gallery links accessible anonymously
   - Context: Public folder cards link to gallery routes whose frontend and
     backend handlers require authentication.
@@ -130,6 +123,15 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0026 `bug` Enforce gallery visibility on comments and reactions
+  - Completed: 2026-07-29
+  - Context: Comment and reaction endpoints did not apply gallery visibility
+    rules consistently and comment payloads still accepted a client user ID.
+  - Outcome: Gallery detail, comment reads and writes, and reaction endpoints
+    now share one visibility predicate; inaccessible resources and
+    cross-gallery reply parents return not found; comment ownership comes from
+    authentication; and comment creation is transactional.
 
 - [x] TODO-0025 `bug` Make gallery deletion atomic and comment-safe
   - Completed: 2026-07-28

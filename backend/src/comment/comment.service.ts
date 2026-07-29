@@ -6,12 +6,12 @@ import {
   ActionType,
   GalleryStatus,
   Prisma,
-  Role,
   ActionCount as ActionCountModel,
   User,
   Visibility,
 } from '@prisma/client';
 import { AssetUrlService } from 'src/common/asset-url.service';
+import { canReadGallery } from 'src/gallery/gallery-access';
 
 const ACTION_FIELD: Record<ActionType, keyof Prisma.ActionCountUpdateInput> = {
   THUMB_UP: 'thumbUp',
@@ -39,20 +39,17 @@ export class CommentService {
   ) {}
 
   async getComments(galleryId: number, user?: Pick<User, 'id' | 'role'>) {
+    const gallery = await this.prisma.gallery.findUnique({
+      where: { id: galleryId },
+      select: { status: true, visibility: true },
+    });
+    this.assertGalleryReadable(gallery, user);
+
     const userId = user?.id;
-    const canViewPrivate = user?.role === Role.ADMIN;
     const comments = await this.prisma.comment.findMany({
       where: {
         galleryId,
         parentId: null,
-        ...(canViewPrivate
-          ? {}
-          : {
-              gallery: {
-                status: GalleryStatus.PUBLISHED,
-                visibility: { not: Visibility.PRIVATE },
-              },
-            }),
       },
       orderBy: COMMENT_THREAD_ORDER,
       include: {
@@ -89,36 +86,68 @@ export class CommentService {
     return this.attachReactionData(comments, countMap, selectedMap);
   }
 
-  async createComment(dto: CreateCommentDto) {
-    const comment = await this.prisma.comment.create({
-      data: {
-        ...dto,
-      },
-      include: {
-        user: {
-          include: {
-            profile: true,
+  async createComment(user: Pick<User, 'id' | 'role'>, dto: CreateCommentDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const gallery = await tx.gallery.findUnique({
+        where: { id: dto.galleryId },
+        select: { status: true, visibility: true },
+      });
+      this.assertGalleryReadable(gallery, user);
+
+      if (dto.parentId !== undefined) {
+        const parent = await tx.comment.findUnique({
+          where: { id: dto.parentId },
+          select: { galleryId: true },
+        });
+        if (!parent || parent.galleryId !== dto.galleryId) {
+          throw new NotFoundException('Parent comment not found');
+        }
+      }
+
+      const comment = await tx.comment.create({
+        data: {
+          ...dto,
+          userId: user.id,
+        },
+        include: {
+          user: {
+            include: {
+              profile: true,
+            },
           },
         },
-      },
-    });
-    // ensure an ActionCount row exists for this comment so counts can be updated cheaply
-    const count = await this.prisma.actionCount
-      .create({ data: { commentId: comment.id } })
-      .catch(() => undefined);
+      });
+      const count = await tx.actionCount.create({
+        data: { commentId: comment.id },
+      });
 
-    return {
-      ...comment,
-      actions: this.toActionMap(count),
-      selectedActions: [],
-      replies: [],
-    };
+      return {
+        ...comment,
+        actions: this.toActionMap(count),
+        selectedActions: [],
+        replies: [],
+      };
+    });
   }
 
-  async toggleReaction(userId: number, commentId: number, type: ActionType) {
+  async toggleReaction(
+    user: Pick<User, 'id' | 'role'>,
+    commentId: number,
+    type: ActionType,
+  ) {
     return this.prisma.$transaction(async (tx) => {
-      const comment = await tx.comment.findUnique({ where: { id: commentId } });
-      if (!comment) throw new NotFoundException('Comment not found');
+      const comment = await tx.comment.findUnique({
+        where: { id: commentId },
+        select: {
+          id: true,
+          gallery: {
+            select: { status: true, visibility: true },
+          },
+        },
+      });
+      if (!comment || !canReadGallery(comment.gallery, user)) {
+        throw new NotFoundException('Comment not found');
+      }
 
       await tx.actionCount.upsert({
         where: { commentId },
@@ -128,24 +157,24 @@ export class CommentService {
 
       const existing = await tx.reaction.findUnique({
         where: {
-          commentId_userId_type: { commentId, userId, type },
+          commentId_userId_type: { commentId, userId: user.id, type },
         },
       });
 
       if (existing) {
         await tx.reaction.deleteMany({
-          where: { commentId, userId, type },
+          where: { commentId, userId: user.id, type },
         });
       } else {
         await tx.reaction.createMany({
-          data: [{ commentId, userId, type }],
+          data: [{ commentId, userId: user.id, type }],
           skipDuplicates: true,
         });
       }
 
       const counts = await this.reconcileCommentActionCounts(tx, commentId);
       const selected = await tx.reaction.findMany({
-        where: { commentId, userId },
+        where: { commentId, userId: user.id },
         select: { type: true },
       });
 
@@ -241,6 +270,15 @@ export class CommentService {
     }));
 
     return { items, total, page, pageSize };
+  }
+
+  private assertGalleryReadable(
+    gallery: { status: GalleryStatus; visibility: Visibility } | null,
+    user?: Pick<User, 'role'>,
+  ) {
+    if (!gallery || !canReadGallery(gallery, user)) {
+      throw new NotFoundException('Gallery not found');
+    }
   }
 
   private collectCommentIds(comments: any[]): number[] {
