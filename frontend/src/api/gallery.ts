@@ -182,6 +182,16 @@ export async function getGalleryBySlug(
   );
 }
 
+export const getPublicGallery = async (
+  identifier: string
+): Promise<Gallery> => {
+  const isNumeric = /^\d+$/.test(identifier);
+  const path = isNumeric
+    ? `/public/galleries/${identifier}`
+    : `/public/galleries/slug/${encodeURIComponent(identifier)}`;
+  return apiRequest<Gallery>(path, 'GET');
+};
+
 export const deleteGalleryImages = async (
   deletedKeys: string[],
   galleryId: number

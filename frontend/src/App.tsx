@@ -328,6 +328,14 @@ const App = () => {
           path="/folders/:username/:folderSlug"
           element={<PublicFolderPage />}
         />
+        <Route
+          path="/shared/galleries/:galleryId"
+          element={
+            <DeferredRoute>
+              <GalleryPage publicView />
+            </DeferredRoute>
+          }
+        />
         <Route path="/signup" element={<SignupForm />} />
         <Route path="/account/pending" element={<PendingActivation />} />
 

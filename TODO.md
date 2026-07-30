@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0027 `bug` Make shared gallery links accessible anonymously
-  - Context: Public folder cards link to gallery routes whose frontend and
-    backend handlers require authentication.
-  - Expected: Add an anonymous read-only gallery path while keeping drafts and
-    private galleries unavailable.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0028 `bug` Handle empty and malformed gallery content safely
   - Context: Gallery content is optional, but content traversal expects a
     ProseMirror object and can fail on null or malformed values.
@@ -123,6 +116,15 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0027 `bug` Make shared gallery links accessible anonymously
+  - Completed: 2026-07-30
+  - Context: Public folder cards linked to gallery routes whose frontend and
+    backend handlers required authentication.
+  - Outcome: Public folder cards now open a dedicated anonymous gallery route
+    backed by read-only public endpoints; shared views omit authenticated
+    interactions and management controls, while service-level visibility rules
+    continue to hide drafts and private galleries.
 
 - [x] TODO-0026 `bug` Enforce gallery visibility on comments and reactions
   - Completed: 2026-07-29

@@ -1002,7 +1002,7 @@ export function DeskHeader({ onCreate }: { onCreate: () => void }) {
               New album
             </Button>
           )}
-          <AccountMenu onLogout={handleLogout} />
+          {currentUser && <AccountMenu onLogout={handleLogout} />}
         </div>
       </div>
     </header>

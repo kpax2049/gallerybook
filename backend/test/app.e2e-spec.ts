@@ -156,7 +156,34 @@ describe('App e2e', () => {
           .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
           .withBody(dto)
           .expectStatus(201)
-          .stores('galleryId', 'id');
+          .stores('galleryId', 'id')
+          .stores('gallerySlug', 'slug');
+      });
+    });
+    describe('Open Shared Gallery', () => {
+      it('Should Hide a Draft Gallery From Anonymous Visitors', () => {
+        return pactum
+          .spec()
+          .get('/public/galleries/slug/{slug}')
+          .withPathParams('slug', '$S{gallerySlug}')
+          .expectStatus(404);
+      });
+      it('Should Publish the Gallery', () => {
+        return pactum
+          .spec()
+          .put('/galleries/{id}/content')
+          .withPathParams('id', '$S{galleryId}')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .withBody({ content: { type: 'doc', content: [] } })
+          .expectStatus(200);
+      });
+      it('Should Open a Published Gallery Without Authentication', () => {
+        return pactum
+          .spec()
+          .get('/public/galleries/slug/{slug}')
+          .withPathParams('slug', '$S{gallerySlug}')
+          .expectStatus(200)
+          .expectJson('id', '$S{galleryId}');
       });
     });
     describe('Get Galleries', () => {

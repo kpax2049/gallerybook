@@ -1,12 +1,16 @@
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { GalleryController } from './gallery.controller';
+import {
+  GalleryController,
+  PublicGalleryController,
+} from './gallery.controller';
 import { GalleryService } from './gallery.service';
 import { JwtGuard } from 'src/auth/guard';
 import { ListGalleriesDto } from './dto/list-galleries.dto';
 
 describe('GalleryController', () => {
   let controller: GalleryController;
+  let publicController: PublicGalleryController;
   const galleryService = {
     checkGalleryOwnershipOrAdmin: jest.fn(),
     verifyManageAccess: jest.fn(),
@@ -29,7 +33,7 @@ describe('GalleryController', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      controllers: [GalleryController],
+      controllers: [GalleryController, PublicGalleryController],
       providers: [
         {
           provide: GalleryService,
@@ -42,6 +46,7 @@ describe('GalleryController', () => {
       .compile();
 
     controller = module.get(GalleryController);
+    publicController = module.get(PublicGalleryController);
     Object.values(galleryService).forEach((mock) => mock.mockReset());
   });
 
@@ -206,6 +211,22 @@ describe('GalleryController', () => {
       'test',
       'edit',
       admin,
+    );
+  });
+
+  it('serves public gallery reads without an authenticated user', async () => {
+    galleryService.getGalleryById.mockResolvedValue({ id: 12 });
+    galleryService.getGalleryBySlug.mockResolvedValue({ id: 13 });
+
+    await expect(publicController.getById(12)).resolves.toEqual({ id: 12 });
+    await expect(publicController.getBySlug('shared-story')).resolves.toEqual({
+      id: 13,
+    });
+
+    expect(galleryService.getGalleryById).toHaveBeenCalledWith(12, 'view');
+    expect(galleryService.getGalleryBySlug).toHaveBeenCalledWith(
+      'shared-story',
+      'view',
     );
   });
 });

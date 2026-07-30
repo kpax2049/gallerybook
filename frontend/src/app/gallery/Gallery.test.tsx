@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 import GalleryPage from './Gallery';
@@ -8,11 +8,13 @@ import { UserRole } from '@/common/enums';
 
 const getGalleryMock = vi.fn();
 const getGalleryBySlugMock = vi.fn();
+const getPublicGalleryMock = vi.fn();
 const toggleReactionMock = vi.fn();
 
 vi.mock('@/api/gallery', () => ({
   getGallery: (...args: unknown[]) => getGalleryMock(...args),
   getGalleryBySlug: (...args: unknown[]) => getGalleryBySlugMock(...args),
+  getPublicGallery: (...args: unknown[]) => getPublicGalleryMock(...args),
   toggleReaction: (...args: unknown[]) => toggleReactionMock(...args),
 }));
 
@@ -56,8 +58,10 @@ const gallery = {
 };
 
 beforeEach(() => {
+  cleanup();
   getGalleryMock.mockReset();
   getGalleryBySlugMock.mockReset();
+  getPublicGalleryMock.mockReset();
   toggleReactionMock.mockReset();
   useUserStore.getState().setUser({
     id: 1,
@@ -89,5 +93,34 @@ describe('GalleryPage', () => {
     expect(
       screen.getByRole('button', { name: 'Remove favorite' })
     ).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('uses the anonymous endpoint and hides interactive controls in public mode', async () => {
+    getPublicGalleryMock.mockResolvedValueOnce(gallery);
+
+    render(
+      <MemoryRouter initialEntries={['/shared/galleries/loaded-gallery']}>
+        <Routes>
+          <Route
+            path="/shared/galleries/:galleryId"
+            element={<GalleryPage publicView />}
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Loaded Gallery' })
+    ).toBeInTheDocument();
+    expect(getPublicGalleryMock).toHaveBeenCalledWith('loaded-gallery');
+    expect(getGalleryMock).not.toHaveBeenCalled();
+    expect(getGalleryBySlugMock).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('comments')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Like' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Favorite' })
+    ).not.toBeInTheDocument();
   });
 });

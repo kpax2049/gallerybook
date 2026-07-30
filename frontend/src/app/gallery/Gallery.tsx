@@ -48,6 +48,7 @@ import {
   Gallery,
   getGallery,
   getGalleryBySlug,
+  getPublicGallery,
   toggleReaction,
 } from '@/api/gallery';
 import Comment from './galleryComment/Comment';
@@ -132,10 +133,17 @@ const galleryRenderExtensions = [
   GalleryEmoji,
 ];
 
-export default function GalleryPage() {
+export default function GalleryPage({
+  publicView = false,
+}: {
+  publicView?: boolean;
+}) {
   const navigate = useNavigate();
   const currentUser = useUserStore((state) => state.user);
-  const { slug, galleryId } = useParams<{ slug?: string; galleryId?: string }>();
+  const { slug, galleryId } = useParams<{
+    slug?: string;
+    galleryId?: string;
+  }>();
   const storyRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -173,9 +181,11 @@ export default function GalleryPage() {
         setFavoritesCount(0);
 
         const isNumeric = /^\d+$/.test(param);
-        const data = isNumeric
-          ? await getGallery(Number(param))
-          : await getGalleryBySlug(param);
+        const data = publicView
+          ? await getPublicGallery(param)
+          : isNumeric
+            ? await getGallery(Number(param))
+            : await getGalleryBySlug(param);
 
         if (cancelled) return;
 
@@ -191,11 +201,17 @@ export default function GalleryPage() {
           : [];
         setRawBlocks(blocks);
         setStoryHtml(
-          generateHTML({ type: 'doc', content: blocks }, galleryRenderExtensions)
+          generateHTML(
+            { type: 'doc', content: blocks },
+            galleryRenderExtensions
+          )
         );
       } catch (e) {
-        const message =
-          e instanceof Error ? e.message : 'Failed to load gallery';
+        const message = publicView
+          ? 'Gallery not found'
+          : e instanceof Error
+            ? e.message
+            : 'Failed to load gallery';
         setError(message);
       } finally {
         if (!cancelled) setLoading(false);
@@ -206,7 +222,7 @@ export default function GalleryPage() {
     return () => {
       cancelled = true;
     };
-  }, [slug, galleryId]);
+  }, [slug, galleryId, publicView]);
 
   const photos = useMemo(() => extractPhotos(rawBlocks), [rawBlocks]);
   const storyHasProse = useMemo(() => hasStoryProse(rawBlocks), [rawBlocks]);
@@ -217,7 +233,7 @@ export default function GalleryPage() {
   const title = gallery?.title ?? 'Gallery';
   const photoCount = photos.length;
   const viewsCount = gallery?.viewsCount ?? 0;
-  const canManage = isAdmin(currentUser) && numericId != null;
+  const canManage = !publicView && isAdmin(currentUser) && numericId != null;
   const renderMasonry = !storyHasProse && photos.length > 0;
 
   useEffect(() => {
@@ -228,7 +244,9 @@ export default function GalleryPage() {
       const target = event.target as HTMLElement | null;
       const image = target?.closest?.('img') as HTMLImageElement | null;
       if (!image || !root.contains(image)) return;
-      const index = photos.findIndex((photo) => photo.src === image.currentSrc || photo.src === image.src);
+      const index = photos.findIndex(
+        (photo) => photo.src === image.currentSrc || photo.src === image.src
+      );
       if (index >= 0) {
         setLbIndex(index);
         setOpen(true);
@@ -293,12 +311,18 @@ export default function GalleryPage() {
       <DeskHeader onCreate={() => navigate('/galleries/new')} />
       <main className="gb-story-shell pb-[70px] pt-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            to="/galleries"
-            className="gb-chip inline-flex h-10 items-center rounded-[11px] px-3 text-sm"
-          >
-            My Galleries
-          </Link>
+          {publicView ? (
+            <span className="text-sm text-[var(--gb-ink-mute)]">
+              Shared gallery
+            </span>
+          ) : (
+            <Link
+              to="/galleries"
+              className="gb-chip inline-flex h-10 items-center rounded-[11px] px-3 text-sm"
+            >
+              My Galleries
+            </Link>
+          )}
           {canManage && (
             <Button
               type="button"
@@ -314,9 +338,13 @@ export default function GalleryPage() {
         </div>
 
         <div className="mt-5 flex items-center gap-2 text-sm text-[var(--gb-ink-mute)]">
-          <Link to="/galleries" className="hover:text-[var(--gb-ink)]">
-            My Galleries
-          </Link>
+          {publicView ? (
+            <span>Shared gallery</span>
+          ) : (
+            <Link to="/galleries" className="hover:text-[var(--gb-ink)]">
+              My Galleries
+            </Link>
+          )}
           <span>/</span>
           <span className="truncate text-[var(--gb-ink-soft)]">{title}</span>
         </div>
@@ -329,10 +357,13 @@ export default function GalleryPage() {
               <p className="gb-hand text-[24px] font-semibold text-[var(--gb-hand)]">
                 a short story
                 {gallery?.updatedAt
-                  ? ` · ${new Date(gallery.updatedAt).toLocaleDateString(undefined, {
-                      month: 'long',
-                      year: 'numeric',
-                    })}`
+                  ? ` · ${new Date(gallery.updatedAt).toLocaleDateString(
+                      undefined,
+                      {
+                        month: 'long',
+                        year: 'numeric',
+                      }
+                    )}`
                   : ''}
               </p>
               <h1 className="gb-serif mt-2 text-[clamp(42px,8vw,78px)] font-medium leading-[.95] tracking-normal text-[var(--gb-ink)]">
@@ -347,9 +378,18 @@ export default function GalleryPage() {
                   icon={<Eye className="h-3.5 w-3.5" />}
                   value={`${viewsCount.toLocaleString()} views`}
                 />
-                <Stat icon={<Heart className="h-3.5 w-3.5" />} value={likesCount} />
-                <Stat icon={<Star className="h-3.5 w-3.5" />} value={favoritesCount} />
-                <Stat icon={<MessageSquare className="h-3.5 w-3.5" />} value="Comments" />
+                <Stat
+                  icon={<Heart className="h-3.5 w-3.5" />}
+                  value={likesCount}
+                />
+                <Stat
+                  icon={<Star className="h-3.5 w-3.5" />}
+                  value={favoritesCount}
+                />
+                <Stat
+                  icon={<MessageSquare className="h-3.5 w-3.5" />}
+                  value="Comments"
+                />
               </div>
               {(gallery?.tags?.length ?? 0) > 0 && (
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -372,44 +412,46 @@ export default function GalleryPage() {
           )}
         </header>
 
-        <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
-          <IconAction
-            label={favorited ? 'Remove favorite' : 'Favorite'}
-            active={favorited}
-            activeClass="text-[var(--gb-favorite)]"
-            busy={busyReaction === 'FAVORITE'}
-            onClick={() => void toggleGalleryReaction('FAVORITE')}
-          >
-            <Star className={cn('h-4 w-4', favorited && 'fill-current')} />
-          </IconAction>
-          <IconAction
-            label={liked ? 'Unlike' : 'Like'}
-            active={liked}
-            activeClass="text-[var(--gb-like)]"
-            busy={busyReaction === 'LIKE'}
-            onClick={() => void toggleGalleryReaction('LIKE')}
-          >
-            <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
-          </IconAction>
-          <IconAction label="Share">
-            <Share2 className="h-4 w-4" />
-          </IconAction>
-          {canManage && (
-            <Button
-              type="button"
-              onClick={() => setDeleteOpen(true)}
-              disabled={deleting}
-              className="h-10 rounded-[11px] border border-red-500/30 bg-red-500/12 px-3 text-red-500 shadow-none hover:bg-red-500/18"
+        {!publicView && (
+          <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
+            <IconAction
+              label={favorited ? 'Remove favorite' : 'Favorite'}
+              active={favorited}
+              activeClass="text-[var(--gb-favorite)]"
+              busy={busyReaction === 'FAVORITE'}
+              onClick={() => void toggleGalleryReaction('FAVORITE')}
             >
-              {deleting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="mr-2 h-4 w-4" />
-              )}
-              Delete
-            </Button>
-          )}
-        </div>
+              <Star className={cn('h-4 w-4', favorited && 'fill-current')} />
+            </IconAction>
+            <IconAction
+              label={liked ? 'Unlike' : 'Like'}
+              active={liked}
+              activeClass="text-[var(--gb-like)]"
+              busy={busyReaction === 'LIKE'}
+              onClick={() => void toggleGalleryReaction('LIKE')}
+            >
+              <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
+            </IconAction>
+            <IconAction label="Share">
+              <Share2 className="h-4 w-4" />
+            </IconAction>
+            {canManage && (
+              <Button
+                type="button"
+                onClick={() => setDeleteOpen(true)}
+                disabled={deleting}
+                className="h-10 rounded-[11px] border border-red-500/30 bg-red-500/12 px-3 text-red-500 shadow-none hover:bg-red-500/18"
+              >
+                {deleting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                Delete
+              </Button>
+            )}
+          </div>
+        )}
 
         <section ref={storyRef}>
           {loading && !gallery ? (
@@ -451,7 +493,7 @@ export default function GalleryPage() {
           controller={{ closeOnBackdropClick: true }}
         />
 
-        {numericId != null && (
+        {!publicView && numericId != null && (
           <section className="mx-auto mt-12 max-w-[820px] rounded-[15px] border border-[var(--gb-border)] bg-[var(--gb-surface-2)] p-4">
             <Comment galleryId={numericId} />
           </section>
@@ -545,7 +587,13 @@ function IconAction({
   );
 }
 
-function Stat({ icon, value }: { icon?: React.ReactNode; value: React.ReactNode }) {
+function Stat({
+  icon,
+  value,
+}: {
+  icon?: React.ReactNode;
+  value: React.ReactNode;
+}) {
   return (
     <span className="inline-flex items-center gap-1 text-[12.5px] text-[var(--gb-ink-mute)]">
       {icon}

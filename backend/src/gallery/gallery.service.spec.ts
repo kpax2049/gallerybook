@@ -383,6 +383,44 @@ describe('GalleryService', () => {
   });
 
   describe('read access', () => {
+    it('allows anonymous reads of published unlisted galleries', async () => {
+      const gallery = {
+        id: 1,
+        status: GalleryStatus.PUBLISHED,
+        visibility: Visibility.UNLISTED,
+        content: { type: 'doc', content: [] },
+        viewsCount: 2,
+        tags: [],
+      };
+      prisma.$queryRaw.mockResolvedValue([{ viewsCount: 3 }]);
+      prisma.gallery.findUnique.mockResolvedValue(gallery);
+
+      await expect(
+        service.getGalleryBySlug('shared-story', 'view'),
+      ).resolves.toEqual({
+        ...gallery,
+        viewsCount: 3,
+        tags: [],
+        myReaction: undefined,
+      });
+      expect(prisma.galleryReaction.findMany).not.toHaveBeenCalled();
+    });
+
+    it('hides private galleries from anonymous readers', async () => {
+      prisma.gallery.findUnique.mockResolvedValue({
+        id: 1,
+        status: GalleryStatus.PUBLISHED,
+        visibility: Visibility.PRIVATE,
+        content: { type: 'doc', content: [] },
+        tags: [],
+      });
+
+      await expect(service.getGalleryById(1, 'view')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    });
+
     it('hides draft galleries from non-admin registered users', async () => {
       prisma.gallery.findUnique.mockResolvedValue({
         id: 1,

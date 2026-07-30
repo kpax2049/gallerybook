@@ -199,3 +199,20 @@ export class GalleryController {
     }
   }
 }
+
+@Controller('public/galleries')
+export class PublicGalleryController {
+  constructor(private readonly galleryService: GalleryService) {}
+
+  @Get('slug/:slug')
+  getBySlug(@Param('slug') slug: string): Promise<{ content: any }> {
+    return this.galleryService.getGalleryBySlug(slug, 'view');
+  }
+
+  @Get(':id')
+  getById(
+    @Param('id', ParseIntPipe) galleryId: number,
+  ): Promise<{ content: any }> {
+    return this.galleryService.getGalleryById(galleryId, 'view');
+  }
+}

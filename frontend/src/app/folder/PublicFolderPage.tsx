@@ -66,7 +66,9 @@ export function PublicFolderPage() {
           </div>
         ) : error || !folder ? (
           <div className="gb-panel rounded-[14px] p-8">
-            <h1 className="gb-serif text-[34px] font-medium">Folder not found</h1>
+            <h1 className="gb-serif text-[34px] font-medium">
+              Folder not found
+            </h1>
             <p className="mt-2 text-sm text-[var(--gb-ink-mute)]">
               This folder is unavailable or no longer shared.
             </p>
@@ -155,7 +157,7 @@ function PublicGalleryCard({
   gallery: Gallery;
   comments: number;
 }) {
-  const target = `/galleries/${gallery.slug ?? gallery.id}`;
+  const target = `/shared/galleries/${gallery.slug ?? gallery.id}`;
 
   return (
     <Link
