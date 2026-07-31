@@ -194,7 +194,7 @@ model Gallery {
 
   title       String?
   description String?
-  content     Json?
+  content     Json          @default("{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}")
   thumbnail   String?
   status      GalleryStatus @default(DRAFT)
 

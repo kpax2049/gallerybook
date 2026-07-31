@@ -62,6 +62,7 @@ import {
   StoryLink,
   StoryParagraph,
 } from './galleryStoryExtensions';
+import { normalizeGalleryDocument } from '@/lib/galleryContent';
 
 export interface GalleryBlock {
   type: string;
@@ -196,16 +197,15 @@ export default function GalleryPage({
         setLikesCount(data.likesCount ?? 0);
         setFavoritesCount(data.favoritesCount ?? 0);
 
-        const blocks: GalleryBlock[] = Array.isArray(data?.content?.content)
-          ? data.content.content
-          : [];
+        const document = normalizeGalleryDocument(data.content);
+        const blocks = document.content as GalleryBlock[];
         setRawBlocks(blocks);
-        setStoryHtml(
-          generateHTML(
-            { type: 'doc', content: blocks },
-            galleryRenderExtensions
-          )
-        );
+        try {
+          setStoryHtml(generateHTML(document, galleryRenderExtensions));
+        } catch {
+          setRawBlocks([]);
+          setStoryHtml('');
+        }
       } catch (e) {
         const message = publicView
           ? 'Gallery not found'

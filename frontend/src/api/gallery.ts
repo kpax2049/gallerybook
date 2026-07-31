@@ -3,6 +3,7 @@ import { User } from './user';
 import qs from 'qs';
 import axios from 'axios';
 import { Visibility } from '@/common/enums';
+import { GalleryDocument } from '@/lib/galleryContent';
 
 export type GalleryStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 export interface GalleryFolder {
@@ -23,7 +24,7 @@ export interface Gallery {
   title?: string;
   description?: string;
   status: GalleryStatus;
-  content?: Record<string, string>;
+  content: GalleryDocument;
   thumbnail?: string;
   // new
   slug?: string | null;
@@ -55,11 +56,6 @@ interface CreateDraftGalleryRequest {
   folderId?: number | null;
 }
 
-interface CreateGalleryRequest {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content?: any;
-}
-
 export interface EditGalleryRequest {
   id?: number;
   createdAt?: Date;
@@ -68,7 +64,7 @@ export interface EditGalleryRequest {
   createdBy?: User;
   title?: string;
   description?: string;
-  content?: Record<string, string>;
+  content?: GalleryDocument;
   thumbnail?: string;
   tags?: string[];
   folderId?: number | null;
@@ -94,7 +90,7 @@ export const createDraftGallery = async (
 };
 
 export const createGallery = async (
-  galleryData: CreateGalleryRequest,
+  galleryData: GalleryDocument,
   galleryId: number
 ): Promise<Gallery> => {
   return await apiRequest<Gallery>(`/galleries/${galleryId}/content`, 'PUT', {

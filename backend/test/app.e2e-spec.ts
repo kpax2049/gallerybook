@@ -148,7 +148,10 @@ describe('App e2e', () => {
         const dto: CreateGalleryDto = {
           title: 'My first gallery',
           description: '123',
-          content: JSON.stringify({ type: 'doc', content: [] }),
+          content: {
+            type: 'doc',
+            content: [{ type: 'paragraph' }],
+          },
         };
         return pactum
           .spec()
@@ -168,13 +171,24 @@ describe('App e2e', () => {
           .withPathParams('slug', '$S{gallerySlug}')
           .expectStatus(404);
       });
-      it('Should Publish the Gallery', () => {
+      it('Should Reject Malformed Gallery Content', () => {
         return pactum
           .spec()
           .put('/galleries/{id}/content')
           .withPathParams('id', '$S{galleryId}')
           .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
           .withBody({ content: { type: 'doc', content: [] } })
+          .expectStatus(400);
+      });
+      it('Should Publish the Gallery', () => {
+        return pactum
+          .spec()
+          .put('/galleries/{id}/content')
+          .withPathParams('id', '$S{galleryId}')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .withBody({
+            content: { type: 'doc', content: [{ type: 'paragraph' }] },
+          })
           .expectStatus(200);
       });
       it('Should Open a Published Gallery Without Authentication', () => {

@@ -16,6 +16,8 @@ describe('GalleryService', () => {
     $queryRaw: jest.Mock;
     $transaction: jest.Mock;
     gallery: {
+      create: jest.Mock;
+      findFirst: jest.Mock;
       findUnique: jest.Mock;
       findMany: jest.Mock;
       count: jest.Mock;
@@ -43,6 +45,8 @@ describe('GalleryService', () => {
         typeof arg === 'function' ? arg(prisma) : Promise.all(arg),
       ),
       gallery: {
+        create: jest.fn(),
+        findFirst: jest.fn(),
         findUnique: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
@@ -147,6 +151,27 @@ describe('GalleryService', () => {
       await expect(
         service.verifyManageAccess(1, { id: 1, role: Role.USER }),
       ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+  });
+
+  describe('gallery content initialization', () => {
+    it('creates drafts with a valid empty document', async () => {
+      prisma.gallery.create.mockResolvedValue({ id: 12 });
+
+      await expect(
+        service.createDraft({ title: 'New story', tags: [] }, 7),
+      ).resolves.toEqual({ id: 12 });
+
+      expect(prisma.gallery.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          title: 'New story',
+          userId: 7,
+          content: {
+            type: 'doc',
+            content: [{ type: 'paragraph' }],
+          },
+        }),
+      });
     });
   });
 
@@ -358,27 +383,44 @@ describe('GalleryService', () => {
         'view',
       );
 
-      expect(result).toEqual([
-        {
-          type: 'image',
-          attrs: {
-            src: 'https://cdn.example.com/uploads/users/7/galleries/1/one.avif?w=100',
-            alt: 'One',
-          },
-        },
-        {
-          type: 'paragraph',
-          content: [
-            {
-              type: 'image',
-              attrs: {
-                src: 'https://cdn.example.com/uploads/users/7/galleries/1/two.png?w=100',
-                alt: 'Two',
-              },
+      expect(result).toEqual({
+        type: 'doc',
+        content: [
+          {
+            type: 'image',
+            attrs: {
+              src: 'https://cdn.example.com/uploads/users/7/galleries/1/one.avif?w=100',
+              alt: 'One',
             },
-          ],
-        },
-      ]);
+          },
+          {
+            type: 'paragraph',
+            content: [
+              {
+                type: 'image',
+                attrs: {
+                  src: 'https://cdn.example.com/uploads/users/7/galleries/1/two.png?w=100',
+                  alt: 'Two',
+                },
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    it('normalizes null and malformed legacy content before traversal', async () => {
+      const emptyDocument = {
+        type: 'doc',
+        content: [{ type: 'paragraph' }],
+      };
+
+      await expect(
+        service.rewriteGalleryImageSrcs(null, 'view'),
+      ).resolves.toEqual(emptyDocument);
+      await expect(
+        service.rewriteGalleryImageSrcs({ unexpected: true }, 'edit'),
+      ).resolves.toEqual(emptyDocument);
     });
   });
 
@@ -388,7 +430,7 @@ describe('GalleryService', () => {
         id: 1,
         status: GalleryStatus.PUBLISHED,
         visibility: Visibility.UNLISTED,
-        content: { type: 'doc', content: [] },
+        content: { type: 'doc', content: [{ type: 'paragraph' }] },
         viewsCount: 2,
         tags: [],
       };
@@ -411,7 +453,7 @@ describe('GalleryService', () => {
         id: 1,
         status: GalleryStatus.PUBLISHED,
         visibility: Visibility.PRIVATE,
-        content: { type: 'doc', content: [] },
+        content: { type: 'doc', content: [{ type: 'paragraph' }] },
         tags: [],
       });
 
@@ -426,7 +468,7 @@ describe('GalleryService', () => {
         id: 1,
         status: GalleryStatus.DRAFT,
         visibility: Visibility.PUBLIC,
-        content: { type: 'doc', content: [] },
+        content: { type: 'doc', content: [{ type: 'paragraph' }] },
         tags: [],
       });
 
@@ -440,7 +482,7 @@ describe('GalleryService', () => {
         id: 1,
         status: GalleryStatus.PUBLISHED,
         visibility: Visibility.UNLISTED,
-        content: { type: 'doc', content: [] },
+        content: { type: 'doc', content: [{ type: 'paragraph' }] },
         viewsCount: 7,
         tags: [
           { tag: { slug: 'family', name: 'Family' } },
@@ -488,7 +530,7 @@ describe('GalleryService', () => {
         id: 1,
         status: GalleryStatus.DRAFT,
         visibility: Visibility.PUBLIC,
-        content: { type: 'doc', content: [] },
+        content: { type: 'doc', content: [{ type: 'paragraph' }] },
         viewsCount: 4,
         tags: [],
       };
@@ -509,7 +551,7 @@ describe('GalleryService', () => {
         id: 1,
         status: GalleryStatus.PUBLISHED,
         visibility: Visibility.PUBLIC,
-        content: { type: 'doc', content: [] },
+        content: { type: 'doc', content: [{ type: 'paragraph' }] },
         viewsCount: 4,
         tags: [],
       };

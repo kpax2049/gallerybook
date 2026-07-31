@@ -16,7 +16,6 @@ import {
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-// import { ProseMirrorDocSchema } from './zod/prosemirror.schema';
 import { ConfigService } from '@nestjs/config';
 import {
   GalleryStatus,
@@ -35,6 +34,12 @@ import { ListGalleriesDto, SortDir, SortKey } from './dto/list-galleries.dto';
 import { AssetUrlService } from 'src/common/asset-url.service';
 import { slugify } from 'src/utils/slug.util';
 import { canReadGallery } from './gallery-access';
+import {
+  createEmptyGalleryDocument,
+  normalizeGalleryDocument,
+  ProseMirrorDocument,
+  ProseMirrorNode,
+} from './zod/prosemirror.schema';
 
 type Mode = 'edit' | 'view';
 
@@ -48,12 +53,6 @@ const allowedMimeTypes = [
 const DEFAULT_GALLERY_PAGE_SIZE = 24;
 const MAX_GALLERY_PAGE_SIZE = 100;
 const URL_SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
-
-interface ProseMirrorNode {
-  type: string;
-  attrs?: Record<string, any>;
-  content?: ProseMirrorNode[];
-}
 
 interface PresignScope {
   userId: number;
@@ -242,8 +241,15 @@ export class GalleryService {
     );
   }
 
-  async rewriteGalleryImageSrcs(content: any, mode: Mode): Promise<any> {
-    return await this.rewriteImageSrcsInNode(content, mode);
+  async rewriteGalleryImageSrcs(
+    content: unknown,
+    mode: Mode,
+  ): Promise<ProseMirrorDocument> {
+    const document = normalizeGalleryDocument(content);
+    return (await this.rewriteImageSrcsInNode(
+      document,
+      mode,
+    )) as ProseMirrorDocument;
   }
 
   private thumbKeyToCdnUrl(key: string | null) {
@@ -350,6 +356,7 @@ export class GalleryService {
           thumbnail: dto.thumbnail,
           slug,
           userId,
+          content: this.toPrismaJson(createEmptyGalleryDocument()),
           ...(folderId !== undefined ? { folderId } : {}),
         },
       });
@@ -366,11 +373,11 @@ export class GalleryService {
     });
   }
 
-  async updateContent(galleryId: number, content: any) {
+  async updateContent(galleryId: number, content: ProseMirrorDocument) {
     return this.prisma.gallery.update({
       where: { id: galleryId },
       data: {
-        content,
+        content: this.toPrismaJson(content),
         status: GalleryStatus.PUBLISHED,
         updatedAt: new Date(),
       },
@@ -386,11 +393,13 @@ export class GalleryService {
     );
 
     const slug = await this.generateUniqueSlug(dto.title);
+    const content = fields.content ?? createEmptyGalleryDocument();
     const created = await this.prisma.gallery.create({
       data: {
         userId,
         slug,
         ...fields,
+        content: this.toPrismaJson(content),
         ...(folderId !== undefined ? { folderId } : {}),
         ...(normalized.length > 0 && {
           // "tags" is your explicit join relation (GalleryTag[])
@@ -510,6 +519,7 @@ export class GalleryService {
       tags: incomingTags,
       title: incomingTitle,
       folderId: incomingFolderId,
+      content: incomingContent,
       ...rest
     } = dto;
     const folderIdToSet = await this.resolveFolderIdForOwner(
@@ -533,6 +543,9 @@ export class GalleryService {
         where: { id: galleryId },
         data: {
           ...rest,
+          ...(incomingContent !== undefined
+            ? { content: this.toPrismaJson(incomingContent) }
+            : {}),
           ...(titleToSet ? { title: titleToSet } : {}),
           ...(slugToSet ? { slug: slugToSet } : {}),
           ...(incomingFolderId !== undefined
@@ -1180,6 +1193,10 @@ export class GalleryService {
     if (mode !== 'view' || !canReadGallery(gallery, user)) {
       throw new NotFoundException('Gallery not found');
     }
+  }
+
+  private toPrismaJson(document: ProseMirrorDocument): Prisma.InputJsonValue {
+    return document as unknown as Prisma.InputJsonValue;
   }
 
   private slugify(s: string) {

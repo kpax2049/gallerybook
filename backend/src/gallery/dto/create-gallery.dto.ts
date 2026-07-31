@@ -3,12 +3,16 @@ import {
   ArrayUnique,
   IsArray,
   IsInt,
-  IsJSON,
   IsNotEmpty,
   IsOptional,
   IsString,
   Min,
 } from 'class-validator';
+import { IsGalleryDocument } from './is-gallery-document.decorator';
+import {
+  parseGalleryDocumentInput,
+  ProseMirrorDocument,
+} from '../zod/prosemirror.schema';
 
 const transformFolderId = ({ value }: { value: unknown }) => {
   if (value === undefined) return undefined;
@@ -32,9 +36,10 @@ export class CreateGalleryDto {
   @IsOptional()
   description?: string;
 
-  @IsJSON()
   @IsOptional()
-  content?: string;
+  @Transform(({ value }) => parseGalleryDocumentInput(value))
+  @IsGalleryDocument()
+  content?: ProseMirrorDocument;
 
   @IsOptional()
   thumbnail?: any;

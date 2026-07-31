@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0028 `bug` Handle empty and malformed gallery content safely
-  - Context: Gallery content is optional, but content traversal expects a
-    ProseMirror object and can fail on null or malformed values.
-  - Expected: Initialize a valid document, validate writes, and safely read
-    legacy empty content.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0029 `security` Revoke access tokens after password changes
   - Context: Password changes update revocation metadata, but access-token
     validation does not check it.
@@ -116,6 +109,15 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0028 `bug` Handle empty and malformed gallery content safely
+  - Completed: 2026-07-31
+  - Context: Gallery content was optional even though backend traversal and
+    frontend rendering expected a valid ProseMirror document.
+  - Outcome: Gallery content now has a non-null empty-document database
+    default, all content writes receive recursive structural validation, and
+    backend and frontend readers normalize legacy null, stringified, array,
+    empty-root, or malformed content without failing the gallery page.
 
 - [x] TODO-0027 `bug` Make shared gallery links accessible anonymously
   - Completed: 2026-07-30

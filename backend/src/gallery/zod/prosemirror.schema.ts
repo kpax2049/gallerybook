@@ -1,29 +1,97 @@
 import { z } from 'zod';
 
-// Only allow known node types
-const ImageNode = z.object({
-  type: z.literal('image'),
-  attrs: z.object({
-    src: z.string().url(), // Only allow URLs now
-    alt: z.string().optional(),
-    title: z.string().optional(),
-  }),
-});
+const JsonValueSchema = z.json();
+type JsonValue = z.infer<typeof JsonValueSchema>;
+const NodeTypeSchema = z
+  .string()
+  .min(1)
+  .refine((value) => value.trim() === value, {
+    message: 'Node types cannot contain surrounding whitespace',
+  });
 
-const TextNode = z.object({
-  type: z.literal('text'),
-  text: z.string(),
-  marks: z.array(z.any()).optional(),
-});
+export interface ProseMirrorMark {
+  type: string;
+  attrs?: Record<string, JsonValue>;
+}
 
-const ParagraphNode = z.object({
-  type: z.literal('paragraph'),
-  content: z.array(z.union([TextNode])).optional(),
-});
+export interface ProseMirrorNode {
+  type: string;
+  attrs?: Record<string, JsonValue>;
+  content?: ProseMirrorNode[];
+  marks?: ProseMirrorMark[];
+  text?: string;
+}
 
-const Node = z.union([ImageNode, ParagraphNode, TextNode]);
+export interface ProseMirrorDocument {
+  type: 'doc';
+  content: ProseMirrorNode[];
+}
 
-export const ProseMirrorDocSchema = z.object({
-  type: z.literal('content'),
-  content: z.array(Node),
-});
+const ProseMirrorMarkSchema: z.ZodType<ProseMirrorMark> = z
+  .object({
+    type: NodeTypeSchema,
+    attrs: z.record(z.string(), JsonValueSchema).optional(),
+  })
+  .strict();
+
+export const ProseMirrorNodeSchema: z.ZodType<ProseMirrorNode> = z.lazy(() =>
+  z
+    .object({
+      type: NodeTypeSchema,
+      attrs: z.record(z.string(), JsonValueSchema).optional(),
+      content: z.array(ProseMirrorNodeSchema).optional(),
+      marks: z.array(ProseMirrorMarkSchema).optional(),
+      text: z.string().optional(),
+    })
+    .strict()
+    .superRefine((node, context) => {
+      if (node.type === 'text' && node.text === undefined) {
+        context.addIssue({
+          code: 'custom',
+          path: ['text'],
+          message: 'Text nodes require text',
+        });
+      }
+      if (node.type !== 'text' && node.text !== undefined) {
+        context.addIssue({
+          code: 'custom',
+          path: ['text'],
+          message: 'Only text nodes may contain text',
+        });
+      }
+    }),
+);
+
+export const ProseMirrorDocSchema: z.ZodType<ProseMirrorDocument> = z
+  .object({
+    type: z.literal('doc'),
+    content: z.array(ProseMirrorNodeSchema).min(1),
+  })
+  .strict();
+
+export function createEmptyGalleryDocument(): ProseMirrorDocument {
+  return { type: 'doc', content: [{ type: 'paragraph' }] };
+}
+
+export function parseGalleryDocumentInput(value: unknown): unknown {
+  if (typeof value !== 'string') return value;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+export function normalizeGalleryDocument(value: unknown): ProseMirrorDocument {
+  const parsed = parseGalleryDocumentInput(value);
+  const document = ProseMirrorDocSchema.safeParse(parsed);
+  if (document.success) return document.data;
+
+  const legacyContent = z.array(ProseMirrorNodeSchema).min(1).safeParse(parsed);
+  if (legacyContent.success) {
+    return { type: 'doc', content: legacyContent.data };
+  }
+
+  return createEmptyGalleryDocument();
+}

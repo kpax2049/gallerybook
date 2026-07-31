@@ -96,6 +96,10 @@ import {
   StoryParagraph,
 } from './galleryStoryExtensions';
 import { GalleryBreadcrumb } from './GalleryBreadcrumb';
+import {
+  createEmptyGalleryDocument,
+  normalizeGalleryDocument,
+} from '@/lib/galleryContent';
 
 export type DialogData = {
   html: string;
@@ -132,8 +136,10 @@ export function GalleryEditor({
   const isEdit = mode === 'edit' || resolvedGalleryId !== undefined;
 
   const [gallery, setGallery] = useState<Gallery>();
-  const [value, setValue] = useState<any>('');
-  const [originalValue, setOriginalValue] = useState<any>('');
+  const [value, setValue] = useState<any>(() => createEmptyGalleryDocument());
+  const [originalValue, setOriginalValue] = useState<any>(() =>
+    createEmptyGalleryDocument()
+  );
   const [loading, setLoading] = useState<boolean>(false);
   const currentUser = useUserStore((state) => state.user);
   const [open, setOpen] = useState(false);
@@ -329,11 +335,9 @@ export function GalleryEditor({
         setGallery(data);
         setTitleDraft(data.title ?? '');
         setDescriptionDraft(data.description ?? '');
-        if (data?.content) {
-          setOriginalValue(data.content);
-          const normalizedContent = normalizeAttrs(data.content);
-          setValue(normalizedContent);
-        }
+        const content = normalizeGalleryDocument(data.content);
+        setOriginalValue(content);
+        setValue(normalizeAttrs(content));
         setLoading(false);
       })
       .catch(() => {
