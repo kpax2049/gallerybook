@@ -72,7 +72,11 @@ export class AuthService {
       return { status: 'pending' as const };
     }
 
-    const accessToken = await this.signToken(user.id, user.email);
+    const accessToken = await this.signToken(
+      user.id,
+      user.email,
+      user.tokenVersion,
+    );
     const refreshToken = await this.signRefreshToken(
       user.id,
       user.tokenVersion,
@@ -81,10 +85,16 @@ export class AuthService {
     return { status: 'active' as const, accessToken, refreshToken };
   }
 
-  async signToken(userId: number, email: string): Promise<string> {
+  async signToken(
+    userId: number,
+    email: string,
+    tokenVersion?: number,
+  ): Promise<string> {
+    const tv = await this.resolveTokenVersion(userId, tokenVersion);
     const payload = {
       sub: userId,
       email,
+      tv,
     };
     const token = await this.jwt.signAsync(payload, {
       expiresIn: '24h',
@@ -95,15 +105,9 @@ export class AuthService {
   }
 
   async signRefreshToken(userId: number, tokenVersion?: number) {
-    // If tokenVersion wasn't selected above for some reason, fetch it
-    const tv =
-      tokenVersion ??
-      (await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { tokenVersion: true },
-      }))!.tokenVersion;
+    const tv = await this.resolveTokenVersion(userId, tokenVersion);
 
-    // include "tv" so you can invalidate by bumping tokenVersion on password change
+    // The same version claim invalidates both access and refresh tokens.
     return this.jwt.sign(
       { sub: userId, tv },
       {
@@ -125,6 +129,20 @@ export class AuthService {
     return value;
   }
 
+  private async resolveTokenVersion(
+    userId: number,
+    tokenVersion?: number,
+  ): Promise<number> {
+    if (tokenVersion !== undefined) return tokenVersion;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { tokenVersion: true },
+    });
+    if (!user) throw new ForbiddenException('User not found');
+    return user.tokenVersion;
+  }
+
   async changePassword(userId: number, current: string, next: string) {
     if (current === next) {
       throw new BadRequestException('New password must differ from current.');
@@ -140,10 +158,13 @@ export class AuthService {
 
     const newHash = await argon.hash(next);
 
-    await this.users.updatePasswordAfterChange(user.id, newHash);
+    const updated = await this.users.updatePasswordAfterChange(
+      user.id,
+      newHash,
+    );
 
-    // TODO (nice-to-have): emit audit event, revoke sessions, log IP/device
-    return { success: true };
+    // TODO (nice-to-have): emit an audit event and log IP/device metadata.
+    return { success: true, tokenVersion: updated.tokenVersion };
   }
 
   async verifyCurrentPassword(

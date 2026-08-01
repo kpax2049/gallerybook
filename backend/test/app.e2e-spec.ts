@@ -100,6 +100,7 @@ describe('App e2e', () => {
           .post('/auth/signin')
           .withBody(authDto)
           .expectStatus(200)
+          .stores('oldUserAccessToken', 'accessToken')
           .stores('userAccessToken', 'accessToken');
       });
     });
@@ -128,6 +129,41 @@ describe('App e2e', () => {
           .expectStatus(200)
           .expectBodyContains(dto.fullName)
           .expectBodyContains(dto.email);
+      });
+    });
+    describe('Change Password', () => {
+      it('Should Rotate Tokens After Changing Password', () => {
+        return pactum
+          .spec()
+          .patch('/auth/password')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .withBody({
+            currentPassword: 'password123',
+            newPassword: 'newPassword456',
+          })
+          .expectStatus(200)
+          .expect(({ res }) => {
+            expect(res.headers['set-cookie']).toEqual(
+              expect.arrayContaining([
+                expect.stringContaining('refreshToken='),
+              ]),
+            );
+          })
+          .stores('userAccessToken', 'accessToken');
+      });
+      it('Should Reject the Access Token Issued Before the Password Change', () => {
+        return pactum
+          .spec()
+          .get('/users/me')
+          .withHeaders({ Authorization: 'Bearer $S{oldUserAccessToken}' })
+          .expectStatus(401);
+      });
+      it('Should Accept the Replacement Access Token', () => {
+        return pactum
+          .spec()
+          .get('/users/me')
+          .withHeaders({ Authorization: 'Bearer $S{userAccessToken}' })
+          .expectStatus(200);
       });
     });
   });

@@ -157,6 +157,10 @@ describe('AuthService', () => {
         { sub: 1, tv: 3 },
         { secret: 'refresh-secret', expiresIn: '30d' },
       );
+      expect(jwt.signAsync).toHaveBeenCalledWith(
+        { sub: 1, email: 'user@example.com', tv: 3 },
+        { secret: 'access-secret', expiresIn: '24h' },
+      );
     });
 
     it('returns pending status without tokens for valid inactive credentials', async () => {
@@ -175,6 +179,39 @@ describe('AuthService', () => {
 
       expect(jwt.signAsync).not.toHaveBeenCalled();
       expect(jwt.sign).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('signToken', () => {
+    it('includes the provided token version without a database lookup', async () => {
+      jwt.signAsync.mockResolvedValue('access');
+
+      await expect(service.signToken(5, 'user@example.com', 6)).resolves.toBe(
+        'access',
+      );
+
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+      expect(jwt.signAsync).toHaveBeenCalledWith(
+        { sub: 5, email: 'user@example.com', tv: 6 },
+        { secret: 'access-secret', expiresIn: '24h' },
+      );
+    });
+
+    it('fetches the current token version when missing', async () => {
+      prisma.user.findUnique.mockResolvedValue({ tokenVersion: 9 });
+      jwt.signAsync.mockResolvedValue('access');
+
+      await expect(service.signToken(1, 'user@example.com')).resolves.toBe(
+        'access',
+      );
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+        select: { tokenVersion: true },
+      });
+      expect(jwt.signAsync).toHaveBeenCalledWith(
+        { sub: 1, email: 'user@example.com', tv: 9 },
+        { secret: 'access-secret', expiresIn: '24h' },
+      );
     });
   });
 
@@ -235,9 +272,14 @@ describe('AuthService', () => {
       prisma.user.findUnique.mockResolvedValue({ id: 1, hash: 'stored' });
       (argon.verify as jest.Mock).mockResolvedValue(true);
       (argon.hash as jest.Mock).mockResolvedValue('new-hash');
+      users.updatePasswordAfterChange.mockResolvedValue({
+        id: 1,
+        tokenVersion: 4,
+      });
 
       await expect(service.changePassword(1, 'old', 'new')).resolves.toEqual({
         success: true,
+        tokenVersion: 4,
       });
       expect(users.updatePasswordAfterChange).toHaveBeenCalledWith(
         1,

@@ -87,9 +87,11 @@ describe('UserService', () => {
   });
 
   it('updates password metadata and increments tokenVersion', async () => {
-    prisma.user.update.mockResolvedValue({ id: 1 });
+    prisma.user.update.mockResolvedValue({ id: 1, tokenVersion: 4 });
 
-    await service.updatePasswordAfterChange(1, 'newHash');
+    await expect(
+      service.updatePasswordAfterChange(1, 'newHash'),
+    ).resolves.toEqual({ id: 1, tokenVersion: 4 });
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: 1 },
@@ -98,7 +100,7 @@ describe('UserService', () => {
         passwordUpdatedAt: expect.any(Date),
         tokenVersion: { increment: 1 },
       },
-      select: { id: true },
+      select: { id: true, tokenVersion: true },
     });
   });
 

@@ -20,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       secretOrKey: config.getOrThrow<string>('JWT_SECRET'),
     });
   }
-  async validate(payload: { sub: number; email: string }) {
+  async validate(payload: { sub: number; email: string; tv?: number }) {
     const user = await this.prisma.user.findUnique({
       where: {
         id: payload.sub,
@@ -31,6 +31,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
     if (user.status !== UserStatus.active) {
       throw new ForbiddenException('User is pending approval.');
+    }
+    if (!Number.isInteger(payload.tv) || payload.tv !== user.tokenVersion) {
+      throw new UnauthorizedException('Access token invalid.');
     }
     delete user.hash;
     return user;

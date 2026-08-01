@@ -58,14 +58,14 @@ export class UserService {
   }
 
   async updatePasswordAfterChange(id: number, hash: string) {
-    await this.prisma.user.update({
+    return this.prisma.user.update({
       where: { id },
       data: {
         hash,
         passwordUpdatedAt: new Date(),
-        tokenVersion: { increment: 1 }, // <- kills refresh tokens
+        tokenVersion: { increment: 1 },
       },
-      select: { id: true },
+      select: { id: true, tokenVersion: true },
     });
   }
 

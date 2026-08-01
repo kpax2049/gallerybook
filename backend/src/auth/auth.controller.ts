@@ -123,13 +123,26 @@ export class AuthController {
 
   @Patch('password')
   @UseGuards(JwtGuard)
-  async changePassword(@GetUser() user: User, @Body() dto: ChangePasswordDto) {
-    await this.authService.changePassword(
+  async changePassword(
+    @GetUser() user: User,
+    @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.changePassword(
       user.id,
       dto.currentPassword,
       dto.newPassword,
     );
-    const accessToken = await this.authService.signToken(user.id, user.email);
+    const accessToken = await this.authService.signToken(
+      user.id,
+      user.email,
+      result.tokenVersion,
+    );
+    const refreshToken = await this.authService.signRefreshToken(
+      user.id,
+      result.tokenVersion,
+    );
+    res.cookie('refreshToken', refreshToken, this.refreshCookieOptions());
     return { success: true, accessToken };
   }
 
@@ -151,9 +164,16 @@ export class AuthController {
     @GetUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const access = await this.authService.signToken(user.id, user.email);
+    const access = await this.authService.signToken(
+      user.id,
+      user.email,
+      user.tokenVersion,
+    );
     // (optional) rotate refresh token each time:
-    const refresh = await this.authService.signRefreshToken(user.id);
+    const refresh = await this.authService.signRefreshToken(
+      user.id,
+      user.tokenVersion,
+    );
     res.cookie('refreshToken', refresh, this.refreshCookieOptions());
     return { accessToken: access };
   }
@@ -201,7 +221,11 @@ export class AuthController {
         return res.redirect(this.pendingActivationRedirect());
       }
 
-      const accessToken = await this.authService.signToken(user.id, user.email);
+      const accessToken = await this.authService.signToken(
+        user.id,
+        user.email,
+        user.tokenVersion,
+      );
       const refreshToken = await this.authService.signRefreshToken(
         user.id,
         user.tokenVersion,

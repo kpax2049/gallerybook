@@ -178,6 +178,11 @@ describe('AuthController', () => {
         OAuthProvider.GOOGLE,
         'code',
       );
+      expect(authService.signToken).toHaveBeenCalledWith(
+        1,
+        'user@example.com',
+        4,
+      );
       expect(authService.signRefreshToken).toHaveBeenCalledWith(1, 4);
       expect(res.cookie).toHaveBeenCalledWith(
         'refreshToken',
@@ -220,20 +225,35 @@ describe('AuthController', () => {
   });
 
   describe('changePassword', () => {
-    it('delegates to service then returns new access token', async () => {
-      authService.changePassword.mockResolvedValue({ success: true });
+    it('returns a new access token and rotates the refresh cookie', async () => {
+      authService.changePassword.mockResolvedValue({
+        success: true,
+        tokenVersion: 5,
+      });
       authService.signToken.mockResolvedValue('newAccess');
+      authService.signRefreshToken.mockResolvedValue('newRefresh');
       const user = { id: 1, email: 'u@example.com' } as any;
+      const res = { cookie: jest.fn() } as any;
 
       await expect(
-        controller.changePassword(user, {
-          currentPassword: 'a',
-          newPassword: 'b',
-        } as any),
+        controller.changePassword(
+          user,
+          {
+            currentPassword: 'a',
+            newPassword: 'b',
+          } as any,
+          res,
+        ),
       ).resolves.toEqual({ success: true, accessToken: 'newAccess' });
 
       expect(authService.changePassword).toHaveBeenCalledWith(1, 'a', 'b');
-      expect(authService.signToken).toHaveBeenCalledWith(1, 'u@example.com');
+      expect(authService.signToken).toHaveBeenCalledWith(1, 'u@example.com', 5);
+      expect(authService.signRefreshToken).toHaveBeenCalledWith(1, 5);
+      expect(res.cookie).toHaveBeenCalledWith(
+        'refreshToken',
+        'newRefresh',
+        expect.objectContaining({ httpOnly: true, path: '/auth/refresh' }),
+      );
     });
   });
 
@@ -254,14 +274,18 @@ describe('AuthController', () => {
       authService.signToken.mockReturnValue('newAccess');
       authService.signRefreshToken.mockResolvedValue('newRefresh');
       const res = { cookie: jest.fn() } as any;
-      const user = { id: 3, email: 'x@example.com' } as any;
+      const user = {
+        id: 3,
+        email: 'x@example.com',
+        tokenVersion: 7,
+      } as any;
 
       await expect(controller.refresh(user, res)).resolves.toEqual({
         accessToken: 'newAccess',
       });
 
-      expect(authService.signToken).toHaveBeenCalledWith(3, 'x@example.com');
-      expect(authService.signRefreshToken).toHaveBeenCalledWith(3);
+      expect(authService.signToken).toHaveBeenCalledWith(3, 'x@example.com', 7);
+      expect(authService.signRefreshToken).toHaveBeenCalledWith(3, 7);
       expect(res.cookie).toHaveBeenCalledWith(
         'refreshToken',
         'newRefresh',

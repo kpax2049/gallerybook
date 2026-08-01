@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0029 `security` Revoke access tokens after password changes
-  - Context: Password changes update revocation metadata, but access-token
-    validation does not check it.
-  - Expected: Reject access tokens issued before the latest password change and
-    preserve the replacement-token flow.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0030 `bug` Synchronize auth-dependent stores on login and logout
   - Context: Login does not load follow state and logout does not reset it.
   - Expected: Centralize auth transitions so user and follow state cannot be
@@ -109,6 +102,15 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0029 `security` Revoke access tokens after password changes
+  - Completed: 2026-08-01
+  - Context: Password changes incremented a session version used by refresh
+    tokens, but access-token validation ignored it.
+  - Outcome: Access and refresh tokens now carry the same session version,
+    protected requests reject missing or stale versions, and password changes
+    rotate both tokens so the current session continues while older sessions
+    are revoked.
 
 - [x] TODO-0028 `bug` Handle empty and malformed gallery content safely
   - Completed: 2026-07-31
