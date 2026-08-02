@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AvatarUpload } from './AvatarUpload';
 import { useUserStore } from '@/stores/userStore';
+import { setAccessToken } from '@/lib/authSession';
 import { updateUser } from '@/api/user';
 import {
   changePassword,
@@ -173,7 +174,7 @@ export function UserProfileEditor() {
       });
 
       if (data?.accessToken) {
-        localStorage.setItem('ACCESS_TOKEN', data.accessToken);
+        setAccessToken(data.accessToken);
       }
 
       resetPassword({ current: '', next: '', confirmNext: '' });

@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getUser, User } from '@/api/user';
+import { getUser } from '@/api/user';
 import LoginPage from './Login';
-import { signout } from '@/api/auth';
 import { toast } from '@/hooks/use-toast';
+import {
+  endAuthSession,
+  setAccessToken,
+  startAuthSession,
+} from '@/lib/authSession';
 
-type OAuthCallbackProps = {
-  handleLogin: (u: User) => void;
-};
-
-export function OAuthCallback({ handleLogin }: OAuthCallbackProps) {
+export function OAuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,20 +24,19 @@ export function OAuthCallback({ handleLogin }: OAuthCallbackProps) {
       return;
     }
 
-    localStorage.setItem('ACCESS_TOKEN', accessToken);
+    setAccessToken(accessToken);
     window.history.replaceState(null, '', '/auth/oauth/callback');
 
     getUser()
-      .then((user: User) => {
-        handleLogin(user);
+      .then(async (user) => {
+        await startAuthSession(user);
         navigate('/', { replace: true, viewTransition: true });
       })
       .catch(async () => {
-        localStorage.removeItem('ACCESS_TOKEN');
         try {
-          await signout();
+          await endAuthSession();
         } catch {
-          // The session may already be unusable.
+          // Local session state is still cleared.
         }
         toast({
           variant: 'destructive',
@@ -46,7 +45,7 @@ export function OAuthCallback({ handleLogin }: OAuthCallbackProps) {
         });
         navigate('/login', { replace: true });
       });
-  }, [handleLogin, navigate]);
+  }, [navigate]);
 
   return (
     <LoginPage>

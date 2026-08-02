@@ -25,6 +25,8 @@ type FolderState = {
   reset: () => void;
 };
 
+let storeGeneration = 0;
+
 export const useFolderStore = create<FolderState>((set, get) => ({
   folders: [],
   loaded: false,
@@ -33,11 +35,14 @@ export const useFolderStore = create<FolderState>((set, get) => ({
   load: async (options) => {
     if (get().loading || (get().loaded && !options?.force)) return;
 
+    const generation = storeGeneration;
     set({ loading: true, error: null });
     try {
       const folders = await getFolders();
+      if (generation !== storeGeneration) return;
       set({ folders, loaded: true, loading: false, error: null });
     } catch (error) {
+      if (generation !== storeGeneration) return;
       set({
         folders: [],
         loaded: true,
@@ -47,25 +52,37 @@ export const useFolderStore = create<FolderState>((set, get) => ({
     }
   },
   createFolder: async (data) => {
+    const generation = storeGeneration;
     const folder = await createFolder(data);
-    set((state) => ({ folders: [folder, ...state.folders], loaded: true }));
+    if (generation === storeGeneration) {
+      set((state) => ({ folders: [folder, ...state.folders], loaded: true }));
+    }
     return folder;
   },
   updateFolder: async (folderId, data) => {
+    const generation = storeGeneration;
     const folder = await updateFolder(folderId, data);
-    set((state) => ({
-      folders: state.folders.map((item) =>
-        item.id === folderId ? folder : item
-      ),
-    }));
+    if (generation === storeGeneration) {
+      set((state) => ({
+        folders: state.folders.map((item) =>
+          item.id === folderId ? folder : item
+        ),
+      }));
+    }
     return folder;
   },
   deleteFolder: async (folderId) => {
+    const generation = storeGeneration;
     await deleteFolder(folderId);
-    set((state) => ({
-      folders: state.folders.filter((folder) => folder.id !== folderId),
-    }));
+    if (generation === storeGeneration) {
+      set((state) => ({
+        folders: state.folders.filter((folder) => folder.id !== folderId),
+      }));
+    }
   },
   setFolders: (folders) => set({ folders, loaded: true, error: null }),
-  reset: () => set({ folders: [], loaded: false, loading: false, error: null }),
+  reset: () => {
+    storeGeneration += 1;
+    set({ folders: [], loaded: false, loading: false, error: null });
+  },
 }));

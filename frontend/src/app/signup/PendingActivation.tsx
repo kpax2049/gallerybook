@@ -3,10 +3,11 @@ import { Clock3, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import LoginPage from '../login/Login';
+import { clearAuthSession } from '@/lib/authSession';
 
 export function PendingActivation() {
   useEffect(() => {
-    localStorage.removeItem('ACCESS_TOKEN');
+    clearAuthSession();
   }, []);
 
   return (

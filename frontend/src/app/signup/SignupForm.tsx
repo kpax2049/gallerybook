@@ -21,6 +21,7 @@ import {
   CardTitle,
 } from '../../components/ui/card';
 import { cn } from '@/lib/utils';
+import { clearAuthSession } from '@/lib/authSession';
 import LoginPage from '../login/Login';
 import { PasswordInput } from '../../components/ui/password-input';
 import { useCallback, useState } from 'react';
@@ -105,7 +106,7 @@ export function SignupForm({
         turnstileToken: turnstileToken || undefined,
       });
 
-      localStorage.removeItem('ACCESS_TOKEN');
+      clearAuthSession();
       navigate('/account/pending', { viewTransition: true });
     } catch {
       resetTurnstile();

@@ -14,11 +14,17 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { PasswordInput } from '@/components/ui/password-input';
-import { authUser, getOAuthLoginUrl, signout } from '@/api/auth';
-import { getUser, User } from '@/api/user';
+import { authUser, getOAuthLoginUrl } from '@/api/auth';
+import { getUser } from '@/api/user';
 import { toast } from '@/hooks/use-toast';
 import LoginPage from './Login';
 import { cn } from '@/lib/utils';
+import {
+  clearAuthSession,
+  endAuthSession,
+  setAccessToken,
+  startAuthSession,
+} from '@/lib/authSession';
 
 const formSchema = z.object({
   email: z
@@ -30,15 +36,10 @@ const formSchema = z.object({
 
 type LoginFormProps = {
   className?: string;
-  handleLogin: (u: User) => void;
   props?: React.ComponentPropsWithoutRef<'div'>;
 };
 
-export function LoginForm({
-  className,
-  handleLogin,
-  ...props
-}: LoginFormProps) {
+export function LoginForm({ className, ...props }: LoginFormProps) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
@@ -54,24 +55,23 @@ export function LoginForm({
     authUser({ email: values.email, password: values.password })
       .then(async (response) => {
         if (response.status === 'pending') {
-          localStorage.removeItem('ACCESS_TOKEN');
+          clearAuthSession();
           setLoading(false);
           navigate('/account/pending', { viewTransition: true });
           return;
         }
 
-        localStorage.setItem('ACCESS_TOKEN', response.accessToken);
+        setAccessToken(response.accessToken);
         try {
-          const user: User = await getUser();
-          handleLogin(user);
+          const user = await getUser();
+          await startAuthSession(user);
           setLoading(false);
           navigate('/', { viewTransition: true });
         } catch {
-          localStorage.removeItem('ACCESS_TOKEN');
           try {
-            await signout();
+            await endAuthSession();
           } catch {
-            // The session may already be unusable.
+            // Local session state is still cleared.
           }
           toast({
             variant: 'default',

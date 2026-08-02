@@ -1,7 +1,7 @@
 import { Navigate, Outlet, Route, Routes, useNavigate } from 'react-router';
 import './App.css';
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
-import { getUser, User } from './api/user';
+import { getUser } from './api/user';
 import { UserRole } from './common/enums';
 import Dashboard from './app/dashboard/Dashboard';
 import UserList from './app/user/UserList';
@@ -15,12 +15,17 @@ import GalleriesPage from './app/gallery/GalleriesPage';
 import CommentsPage from './app/comment/CommentsPage';
 import GalleriesLayout from './app/gallery/GalleriesLayout';
 import FollowingPage from './app/following/FollowingPage';
-import { useFollowStore } from './stores/followStore';
-import { signout } from './api/auth';
 import { LegalPage } from './app/legal/LegalPage';
 import { UNAUTHORIZED_SESSION_EVENT } from './lib/apiClient';
 import { PublicFolderPage } from './app/folder/PublicFolderPage';
 import { Loader2 } from 'lucide-react';
+import {
+  clearAuthSession,
+  endAuthSession,
+  getAuthSessionRevision,
+  isAuthSessionRevisionCurrent,
+  startAuthSession,
+} from '@/lib/authSession';
 
 const GalleryPage = lazy(() => import('./app/gallery/Gallery'));
 const GalleryEditor = lazy(() =>
@@ -101,32 +106,27 @@ const App = () => {
 
   //   return localStorageToken ? <Dashboard /> : <Navigate to="/login" replace />;
   // };
-  const setGlobalUser = useUserStore((state) => state.setUser);
   const user = useUserStore((state) => state.user);
   const navigate = useNavigate();
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    const sessionRevision = getAuthSessionRevision();
 
     (async () => {
       try {
-        const user: User = await getUser({
+        const user = await getUser({
           suppressUnauthorizedRedirect: true,
         });
-        if (cancelled) return;
-        setGlobalUser(user);
-
-        if (user?.id) {
-          // then load follow
-          await useFollowStore.getState().load();
-        } else {
-          useFollowStore.getState().reset();
+        if (cancelled || !isAuthSessionRevisionCurrent(sessionRevision)) {
+          return;
         }
+        await startAuthSession(user);
       } catch {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (!cancelled) setGlobalUser(null as any);
-        useFollowStore.getState().reset();
+        if (!cancelled && isAuthSessionRevisionCurrent(sessionRevision)) {
+          clearAuthSession();
+        }
       } finally {
         if (!cancelled) setAuthReady(true);
       }
@@ -135,13 +135,11 @@ const App = () => {
     return () => {
       cancelled = true;
     };
-  }, [setGlobalUser]);
+  }, []);
 
   useEffect(() => {
     const handleUnauthorizedSession = () => {
-      useUserStore.getState().clearUser();
-      useFollowStore.getState().reset();
-      localStorage.removeItem('ACCESS_TOKEN');
+      clearAuthSession();
       navigate('/login', { replace: true });
     };
 
@@ -167,19 +165,12 @@ const App = () => {
   //   loadFollow();
   // }, [loadFollow]);
 
-  const handleLogin = (user: User) => {
-    setGlobalUser(user);
-  };
-
   const handleLogout = async () => {
     try {
-      await signout();
+      await endAuthSession();
     } catch {
-      // Continue local logout even if the server session is already gone.
+      // Local session state is cleared even if server sign-out fails.
     }
-    // Clear user in Zustand store and reset local storage
-    useUserStore.getState().clearUser();
-    localStorage.removeItem('ACCESS_TOKEN');
     navigate('/login');
   };
 
@@ -298,15 +289,12 @@ const App = () => {
             }
           ></Route>
         </Route>
-        <Route
-          path="/login"
-          element={<LoginForm handleLogin={handleLogin} />}
-        />
+        <Route path="/login" element={<LoginForm />} />
         <Route
           path="/terms"
           element={
             <>
-              <LoginForm handleLogin={handleLogin} />
+              <LoginForm />
               <LegalPage type="terms" />
             </>
           }
@@ -315,15 +303,12 @@ const App = () => {
           path="/privacy"
           element={
             <>
-              <LoginForm handleLogin={handleLogin} />
+              <LoginForm />
               <LegalPage type="privacy" />
             </>
           }
         />
-        <Route
-          path="/auth/oauth/callback"
-          element={<OAuthCallback handleLogin={handleLogin} />}
-        />
+        <Route path="/auth/oauth/callback" element={<OAuthCallback />} />
         <Route
           path="/folders/:username/:folderSlug"
           element={<PublicFolderPage />}

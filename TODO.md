@@ -27,12 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0030 `bug` Synchronize auth-dependent stores on login and logout
-  - Context: Login does not load follow state and logout does not reset it.
-  - Expected: Centralize auth transitions so user and follow state cannot be
-    stale or leak between accounts.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0031 `bug` Align profile-edit validation with signup
   - Context: Profile edits accept empty or unbounded names and usernames and do
     not map uniqueness conflicts clearly.
@@ -102,6 +96,13 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0030 `bug` Synchronize auth-dependent stores on login and logout
+  - Completed: 2026-08-02
+  - Context: Login did not load follow state and logout did not reset it.
+  - Outcome: Authentication transitions now centrally load or reset user,
+    follow, folder, gallery, and thumbnail state, while revision guards prevent
+    stale asynchronous responses from repopulating data across sessions.
 
 - [x] TODO-0029 `security` Revoke access tokens after password changes
   - Completed: 2026-08-01

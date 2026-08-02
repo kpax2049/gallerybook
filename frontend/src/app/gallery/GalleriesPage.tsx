@@ -58,7 +58,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { createDraftGallery, editGallery, Gallery } from '@/api/gallery';
 import { Folder, FolderCoverGallery } from '@/api/folder';
 import { getUserInitials } from '@/api/user';
-import { signout } from '@/api/auth';
 import { useGalleries } from '@/hooks/use-gallery';
 import { useFolders } from '@/hooks/use-folders';
 import { cn } from '@/lib/utils';
@@ -68,6 +67,7 @@ import { useGalleryListState } from '@/stores/galleryStore';
 import { useFolderStore } from '@/stores/folderStore';
 import { useUserStore } from '@/stores/userStore';
 import { UserProfileDialog } from '@/app/userProfile/UserProfileDialog';
+import { endAuthSession } from '@/lib/authSession';
 import { AccountLegalFooter, ShelfColophon } from '@/components/LegalColophon';
 import {
   FilterState,
@@ -953,12 +953,11 @@ export function DeskHeader({ onCreate }: { onCreate: () => void }) {
 
   const handleLogout = async () => {
     try {
-      await signout();
-    } finally {
-      useUserStore.getState().clearUser();
-      localStorage.removeItem('ACCESS_TOKEN');
-      navigate('/login');
+      await endAuthSession();
+    } catch {
+      // Local session state is cleared even when server-side sign-out fails.
     }
+    navigate('/login');
   };
 
   return (

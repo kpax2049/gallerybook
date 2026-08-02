@@ -42,15 +42,10 @@ describe('LoginForm', () => {
   it('routes pending accounts to the approval screen without loading a user', async () => {
     authUserMock.mockResolvedValue({ status: 'pending' });
     window.localStorage.setItem('ACCESS_TOKEN', 'stale-token');
-    const handleLogin = vi.fn();
-
     render(
       <MemoryRouter initialEntries={['/login']}>
         <Routes>
-          <Route
-            path="/login"
-            element={<LoginForm handleLogin={handleLogin} />}
-          />
+          <Route path="/login" element={<LoginForm />} />
           <Route path="/account/pending" element={<p>Pending destination</p>} />
         </Routes>
       </MemoryRouter>
@@ -72,7 +67,6 @@ describe('LoginForm', () => {
       });
     });
     expect(getUserMock).not.toHaveBeenCalled();
-    expect(handleLogin).not.toHaveBeenCalled();
     expect(window.localStorage.getItem('ACCESS_TOKEN')).toBeNull();
   });
 });

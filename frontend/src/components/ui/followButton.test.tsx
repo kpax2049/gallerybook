@@ -14,7 +14,15 @@ vi.mock('@/api/follow', async (importOriginal) => {
 describe('FollowButton', () => {
   beforeEach(() => {
     followMock.mockReset();
-    useFollowStore.setState({ loaded: true, ids: new Set(), load: async () => {}, isFollowing: () => false, mark: useFollowStore.getState().mark, reset: () => {} });
+    useFollowStore.setState({
+      ownerId: 99,
+      loaded: true,
+      ids: new Set(),
+      load: async () => {},
+      isFollowing: () => false,
+      mark: useFollowStore.getState().mark,
+      reset: () => {},
+    });
   });
 
   it('optimistically follows and calls API', async () => {
