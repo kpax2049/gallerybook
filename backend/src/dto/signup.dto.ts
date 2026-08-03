@@ -6,11 +6,20 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import {
+  ACCOUNT_EMAIL_MAX_LENGTH,
+  ACCOUNT_FULL_NAME_MAX_LENGTH,
+  ACCOUNT_USERNAME_MAX_LENGTH,
+  ACCOUNT_USERNAME_MIN_LENGTH,
+  NormalizeEmail,
+  TrimAccountText,
+} from 'src/common/account-validation';
 
 export class SignupDto {
+  @NormalizeEmail()
   @IsEmail()
   @IsNotEmpty()
-  @MaxLength(320)
+  @MaxLength(ACCOUNT_EMAIL_MAX_LENGTH)
   email: string;
 
   @IsString()
@@ -19,14 +28,17 @@ export class SignupDto {
   @MaxLength(128)
   password: string;
 
-  @IsString()
-  @MaxLength(100)
-  fullName: string;
-
+  @TrimAccountText()
   @IsString()
   @IsNotEmpty()
-  @MinLength(3)
-  @MaxLength(30)
+  @MaxLength(ACCOUNT_FULL_NAME_MAX_LENGTH)
+  fullName: string;
+
+  @TrimAccountText()
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(ACCOUNT_USERNAME_MIN_LENGTH)
+  @MaxLength(ACCOUNT_USERNAME_MAX_LENGTH)
   username: string;
 
   @IsOptional()

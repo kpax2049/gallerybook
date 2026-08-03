@@ -1,9 +1,14 @@
 import { IsEmail, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import {
+  ACCOUNT_EMAIL_MAX_LENGTH,
+  NormalizeEmail,
+} from 'src/common/account-validation';
 
 export class AuthDto {
+  @NormalizeEmail()
   @IsEmail()
   @IsNotEmpty()
-  @MaxLength(320)
+  @MaxLength(ACCOUNT_EMAIL_MAX_LENGTH)
   email: string;
 
   @IsString()

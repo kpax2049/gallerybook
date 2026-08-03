@@ -62,3 +62,34 @@ export const updateUser = async (
 ): Promise<User> => {
   return await apiRequest<User>('/users', 'PATCH', data);
 };
+
+export type AccountConflict = {
+  field: 'email' | 'username';
+  message: string;
+};
+
+export function getAccountConflict(
+  error: unknown
+): AccountConflict | undefined {
+  const response = (
+    error as {
+      response?: { status?: number; data?: unknown };
+    }
+  )?.response;
+
+  if (response?.status !== 409 || !isRecord(response.data)) return undefined;
+
+  const { field, message } = response.data;
+  if (
+    (field !== 'email' && field !== 'username') ||
+    typeof message !== 'string'
+  ) {
+    return undefined;
+  }
+
+  return { field, message };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}

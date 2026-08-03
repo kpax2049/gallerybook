@@ -29,19 +29,14 @@ import { signupUser } from '@/api/signup';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { TurnstileWidget } from './TurnstileWidget';
+import {
+  accountEmailSchema,
+  accountProfileSchema,
+} from '@/lib/accountValidation';
 
-const formSchema = z
-  .object({
-    fullName: z.string(),
-    username: z.string().min(3, {
-      message: 'Username must be at least 3 characters.',
-    }),
-    email: z
-      .string()
-      .min(2, {
-        message: 'Email must be at least 2 characters.',
-      })
-      .email('This is not a valid email.'),
+const formSchema = accountProfileSchema
+  .extend({
+    email: accountEmailSchema,
     password: z.string().min(8, {
       message: 'Password must be at least 8 characters.',
     }),

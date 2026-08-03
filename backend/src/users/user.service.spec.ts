@@ -1,3 +1,5 @@
+import { ConflictException } from '@nestjs/common';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { UserService } from './user.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -64,6 +66,26 @@ describe('UserService', () => {
       select: safeUserSelect,
     });
     expect(result).toEqual({ id: 1, email: 'new@example.com' });
+  });
+
+  it('identifies the duplicate field in profile conflicts', async () => {
+    prisma.user.update.mockRejectedValue(
+      new PrismaClientKnownRequestError('duplicate', {
+        code: 'P2002',
+        clientVersion: '0.0.0',
+        meta: { target: ['username'] },
+      }),
+    );
+
+    const edit = service.editUser(1, { username: 'taken' });
+
+    await expect(edit).rejects.toBeInstanceOf(ConflictException);
+    await expect(edit).rejects.toMatchObject({
+      response: {
+        field: 'username',
+        message: 'Username is already in use.',
+      },
+    });
   });
 
   it('returns all users with only safe fields from getUsers', async () => {

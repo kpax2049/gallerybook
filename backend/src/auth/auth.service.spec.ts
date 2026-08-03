@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
@@ -90,23 +94,30 @@ describe('AuthService', () => {
       expect(result).toEqual({ status: 'pending' });
     });
 
-    it('translates Prisma unique violations into ForbiddenException', async () => {
+    it('identifies the duplicate field in signup conflicts', async () => {
       (argon.hash as jest.Mock).mockResolvedValue('hash');
       prisma.user.create.mockRejectedValue(
         new PrismaClientKnownRequestError('duplicate', {
           code: 'P2002',
           clientVersion: '0.0.0',
+          meta: { target: ['email'] },
         }),
       );
 
-      await expect(
-        service.signup({
-          email: 'taken@example.com',
-          password: 'pass',
-          fullName: 'User',
-          username: 'user',
-        }),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+      const signup = service.signup({
+        email: 'taken@example.com',
+        password: 'pass',
+        fullName: 'User',
+        username: 'user',
+      });
+
+      await expect(signup).rejects.toBeInstanceOf(ConflictException);
+      await expect(signup).rejects.toMatchObject({
+        response: {
+          field: 'email',
+          message: 'Email is already in use.',
+        },
+      });
     });
   });
 

@@ -18,20 +18,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AvatarUpload } from './AvatarUpload';
 import { useUserStore } from '@/stores/userStore';
 import { setAccessToken } from '@/lib/authSession';
-import { updateUser } from '@/api/user';
+import { getAccountConflict, updateUser } from '@/api/user';
 import {
   changePassword,
   ChangePasswordResponse,
   verifyCurrentPassword,
 } from '@/api/auth';
 import { toast } from '@/hooks/use-toast';
+import { accountProfileSchema } from '@/lib/accountValidation';
 
-const profileSchema = z.object({
-  fullName: z.string().min(1, { message: 'Name is required.' }),
-  username: z
-    .string()
-    .min(3, { message: 'Username must be at least 3 characters.' }),
-});
+const profileSchema = accountProfileSchema;
 
 // Keep server calls OUT of schema — validation should be synchronous/local only.
 const passwordSchema = z
@@ -76,6 +72,7 @@ export function UserProfileEditor() {
     handleSubmit: handleSubmitProfile,
     formState: { errors: profileErrors, isSubmitting: isSubmittingProfile },
     reset: resetProfile,
+    setError: setProfileError,
   } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
     defaultValues: { fullName: '', username: '' },
@@ -97,7 +94,7 @@ export function UserProfileEditor() {
     handleSubmit: handleSubmitPassword,
     formState: { errors: passwordErrors, isSubmitting: isSubmittingPassword },
     reset: resetPassword,
-    setError,
+    setError: setPasswordError,
   } = useForm<PasswordForm>({
     resolver: zodResolver(passwordSchema), // only local checks
     defaultValues: { current: '', next: '', confirmNext: '' },
@@ -126,7 +123,16 @@ export function UserProfileEditor() {
         title: 'Profile saved',
         description: 'Your profile changes have been saved.',
       });
-    } catch {
+    } catch (error) {
+      const conflict = getAccountConflict(error);
+      if (conflict?.field === 'username') {
+        setProfileError('username', {
+          type: 'server',
+          message: conflict.message,
+        });
+        return;
+      }
+
       toast({
         variant: 'destructive',
         title: 'Could not save profile',
@@ -143,7 +149,7 @@ export function UserProfileEditor() {
       })) as { valid: boolean };
 
       if (!valid) {
-        setError('current', {
+        setPasswordError('current', {
           type: 'manual',
           message: 'Current password is incorrect.',
         });
@@ -153,13 +159,13 @@ export function UserProfileEditor() {
     } catch (e: any) {
       const status = e?.status || e?.response?.status;
       if (status === 429) {
-        setError('current', {
+        setPasswordError('current', {
           type: 'manual',
           message: 'Too many attempts. Please wait and try again.',
         });
         return;
       }
-      setError('current', {
+      setPasswordError('current', {
         type: 'server',
         message: 'Could not verify password. Please try again.',
       });
@@ -185,7 +191,7 @@ export function UserProfileEditor() {
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
     } catch (e: any) {
-      setError('next', {
+      setPasswordError('next', {
         type: 'server',
         message: 'Could not update password. Please try again.',
       });

@@ -25,12 +25,10 @@ import {
   setAccessToken,
   startAuthSession,
 } from '@/lib/authSession';
+import { accountEmailSchema } from '@/lib/accountValidation';
 
 const formSchema = z.object({
-  email: z
-    .string()
-    .min(2, 'Email must be at least 2 characters.')
-    .email('This is not a valid email.'),
+  email: accountEmailSchema,
   password: z.string().min(2, 'Password must be at least 8 characters.'),
 });
 

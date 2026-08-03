@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EditUserDto } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { throwAccountConflict } from 'src/common/account-conflict';
 
 const SAFE_USER_SELECT = {
   id: true,
@@ -32,15 +33,17 @@ export class UserService {
   }
 
   async editUser(userId: number, dto: EditUserDto) {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...dto,
-      },
-      select: SAFE_USER_SELECT,
-    });
-
-    return user;
+    try {
+      return await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...dto,
+        },
+        select: SAFE_USER_SELECT,
+      });
+    } catch (error) {
+      throwAccountConflict(error);
+    }
   }
 
   async getUsers() {

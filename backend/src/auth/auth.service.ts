@@ -5,12 +5,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import * as argon from 'argon2';
 import { AuthDto, SignupDto } from '../../src/dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserService } from 'src/users/user.service';
 import { UserStatus } from '@prisma/client';
+import { throwAccountConflict } from 'src/common/account-conflict';
 
 @Injectable()
 export class AuthService {
@@ -43,12 +43,7 @@ export class AuthService {
 
       return { status: 'pending' as const };
     } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
-          throw new ForbiddenException('Credentials taken');
-        }
-      }
-      throw error;
+      throwAccountConflict(error);
     }
   }
   async signin(dto: AuthDto) {

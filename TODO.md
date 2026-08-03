@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0031 `bug` Align profile-edit validation with signup
-  - Context: Profile edits accept empty or unbounded names and usernames and do
-    not map uniqueness conflicts clearly.
-  - Expected: Share normalization and length rules and return useful conflict
-    errors for duplicate account fields.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0032 `chore` Add continuous integration workflows
   - Context: The repository has no project-level CI workflow.
   - Expected: Run backend and frontend lint, tests, builds, and backend e2e
@@ -96,6 +89,14 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0031 `bug` Align profile-edit validation with signup
+  - Completed: 2026-08-03
+  - Context: Profile edits accepted empty or unbounded names and usernames and
+    did not map uniqueness conflicts clearly.
+  - Outcome: Signup, sign-in, and profile editing now share normalized account
+    field rules, backend updates enforce matching bounds, and duplicate email or
+    username failures return field-specific conflicts shown inline when editing.
 
 - [x] TODO-0030 `bug` Synchronize auth-dependent stores on login and logout
   - Completed: 2026-08-02
