@@ -36,7 +36,7 @@ describe('App e2e', () => {
 
   describe('Auth', () => {
     const authDto: AuthDto = {
-      email: 'kpaxde3@getMaxListeners.com',
+      email: 'e2e@example.com',
       password: 'password123',
     };
     const signupDto: SignupDto = {
@@ -128,7 +128,7 @@ describe('App e2e', () => {
           .withBody(dto)
           .expectStatus(200)
           .expectBodyContains(dto.fullName)
-          .expectBodyContains(dto.email);
+          .expectBodyContains(dto.email.toLowerCase());
       });
     });
     describe('Change Password', () => {

@@ -27,12 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0032 `chore` Add continuous integration workflows
-  - Context: The repository has no project-level CI workflow.
-  - Expected: Run backend and frontend lint, tests, builds, and backend e2e
-    coverage for pull requests.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0033 `chore` Make test database resets deterministic
   - Context: Test startup uses a fixed sleep and does not remove the named
     PostgreSQL test volume.
@@ -89,6 +83,13 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0032 `chore` Add continuous integration workflows
+  - Completed: 2026-08-04
+  - Context: The repository had no project-level CI workflow.
+  - Outcome: Pull requests and main-branch pushes now run independent backend
+    and frontend lint, unit-test, and build jobs plus backend e2e coverage
+    against a health-checked PostgreSQL service with deployed migrations.
 
 - [x] TODO-0031 `bug` Align profile-edit validation with signup
   - Completed: 2026-08-03

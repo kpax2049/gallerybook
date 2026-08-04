@@ -28,6 +28,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "pretest:e2e": "npm run db:test:restart",
     "test:e2e": "node --env-file=.env.test ./node_modules/jest/bin/jest.js --runInBand --no-cache --config ./test/jest-e2e.json",
+    "test:e2e:ci": "node --env-file=.env.test ./node_modules/jest/bin/jest.js --runInBand --no-cache --config ./test/jest-e2e.json",
     "pretest:e2e:watch": "npm run db:test:restart",
     "test:e2e:watch": "node --env-file=.env.test ./node_modules/jest/bin/jest.js --watchAll --no-cache --config ./test/jest-e2e.json"
   },
