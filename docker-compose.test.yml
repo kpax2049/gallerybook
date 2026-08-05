@@ -1,0 +1,22 @@
+name: gallerybook-test
+
+services:
+  test_db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: nest_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+    ports:
+      - 5435:5432
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d nest_db']
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 2s
+
+volumes:
+  postgres_test_data:

@@ -133,7 +133,12 @@ These frontend variables are build-time values. When building the frontend Docke
 
 ### Test Env (Backend)
 
-Create `backend/.env.test` from `backend/.env.test.example` and set `DATABASE_URL` to match the `test_db` container in `docker-compose.yml` (defaults: host `localhost`, port `5435`, user `postgres`, password `secret`, db `nest_db`). Set `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `COOKIE_SECRET` to values with at least 16 characters.
+The committed `backend/.env.test` contains non-production defaults for the
+isolated `gallerybook-test` Compose project in `docker-compose.test.yml`. Running
+`npm run test:e2e` removes that test project's containers and volumes, waits for
+PostgreSQL to become healthy, applies every migration, and then starts the e2e
+suite. Development and production services are outside the test project and are
+not affected by the reset.
 
 ## Useful Scripts
 

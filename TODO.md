@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0033 `chore` Make test database resets deterministic
-  - Context: Test startup uses a fixed sleep and does not remove the named
-    PostgreSQL test volume.
-  - Expected: Wait for database readiness, reset state reliably, and keep
-    destructive cleanup out of production services.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0034 `chore` Align development and production PostgreSQL versions
   - Context: Development and test use PostgreSQL 13 while production uses 16.
   - Expected: Use one supported major version across environments and verify
@@ -83,6 +76,14 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0033 `chore` Make test database resets deterministic
+  - Completed: 2026-08-05
+  - Context: Test startup used a fixed sleep and did not remove the named
+    PostgreSQL test volume.
+  - Outcome: Backend e2e startup now recreates a dedicated test-only Compose
+    project and volume, waits for PostgreSQL health, and applies all migrations
+    without touching development or production services.
 
 - [x] TODO-0032 `chore` Add continuous integration workflows
   - Completed: 2026-08-04
