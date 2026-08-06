@@ -27,12 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0034 `chore` Align development and production PostgreSQL versions
-  - Context: Development and test use PostgreSQL 13 while production uses 16.
-  - Expected: Use one supported major version across environments and verify
-    existing migrations against it.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0035 `feature` Add application health checks and deploy verification
   - Context: Only PostgreSQL has a container health check and deployments do
     not wait for application readiness.
@@ -76,6 +70,13 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0034 `chore` Align development and production PostgreSQL versions
+  - Completed: 2026-08-06
+  - Context: Development and test used PostgreSQL 13 while production used 16.
+  - Outcome: Development, test, CI, and production now use PostgreSQL 16; all 21
+    migrations and the backend e2e suite pass on PostgreSQL 16.13, with safe
+    upgrade guidance documented for existing development volumes.
 
 - [x] TODO-0033 `chore` Make test database resets deterministic
   - Completed: 2026-08-05

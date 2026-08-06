@@ -67,7 +67,10 @@ $ npm run test:cov
 
 ### Test env note
 
-Before running e2e tests, create `backend/.env.test` from `backend/.env.test.example` and set `DATABASE_URL` to match the `test_db` container in `docker-compose.yml` (defaults: host `localhost`, port `5435`, user `postgres`, password `secret`, db `nest_db`). Set `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `COOKIE_SECRET` to non-empty values.
+The e2e scripts use the committed non-production defaults in `.env.test` and
+the isolated PostgreSQL 16 service in `../docker-compose.test.yml`. Running
+`npm run test:e2e` recreates the test-only volume, waits for database health,
+applies all migrations, and then runs the suite.
 
 ## Deployment
 

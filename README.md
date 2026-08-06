@@ -45,6 +45,11 @@ docker compose up -d postgres_db
 
 The dev database is exposed on `localhost:5434` with database `nest_db`, user `postgres`, and password `secret`.
 
+All environments use PostgreSQL 16. PostgreSQL data directories cannot be
+upgraded in place across major versions. Preserve an existing PostgreSQL 13
+development database with `pg_dump`/`pg_restore`; if the local data is
+disposable, run `docker compose down --volumes` once before starting PostgreSQL 16.
+
 ### 2) Backend
 
 ```

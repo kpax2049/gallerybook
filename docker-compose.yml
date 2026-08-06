@@ -19,7 +19,7 @@ services:
   #   networks:
   #     - gallerybook
   postgres_db:
-    image: postgres:13-alpine
+    image: postgres:16
     environment:
       POSTGRES_DB: nest_db
       POSTGRES_USER: postgres
