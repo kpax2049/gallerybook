@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0035 `feature` Add application health checks and deploy verification
-  - Context: Only PostgreSQL has a container health check and deployments do
-    not wait for application readiness.
-  - Expected: Add backend and frontend health checks and make deployment fail
-    clearly when updated services do not become healthy.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0036 `performance` Use the optimized login hero asset
   - Context: Login loads a multi-megabyte PNG despite an equivalent, much
     smaller WebP already being present.
@@ -70,6 +63,14 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0035 `feature` Add application health checks and deploy verification
+  - Completed: 2026-08-08
+  - Context: Only PostgreSQL had a container health check and deployments did
+    not wait for application readiness.
+  - Outcome: Backend readiness now verifies database connectivity, frontend and
+    backend images expose health checks, and production deployments wait for
+    healthy services while printing service status and logs on failure.
 
 - [x] TODO-0034 `chore` Align development and production PostgreSQL versions
   - Completed: 2026-08-06

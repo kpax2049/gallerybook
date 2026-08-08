@@ -188,6 +188,13 @@ Set production `DATABASE_URL`, `NODE_ENV=production`, `FRONTEND_URL`, `BACKEND_U
 
 `frontend/Dockerfile` builds the Vite app with Node 20 and serves the static output with nginx on port `80`. The nginx config includes SPA fallback for deep routes such as `/galleries/:slug`, `/terms`, `/privacy`, and `/auth/oauth/callback`, plus long-lived cache headers for static assets.
 
+Both application images define health checks. The frontend probes nginx at
+`/health`; the backend readiness endpoint at `/health` also verifies its
+PostgreSQL connection. `scripts/update-production.sh` waits up to 180 seconds by
+default for PostgreSQL, backend, and frontend health, and prints service status
+and recent logs before failing an unhealthy deployment. Set
+`GALLERYBOOK_DEPLOY_TIMEOUT_SECONDS` to adjust the timeout.
+
 Build with the deployed API and media values:
 
 ```
@@ -205,6 +212,7 @@ docker build \
 - Signup, signin, password verification, and OAuth start endpoints are rate-limited.
 - Public signup is protected by Cloudflare Turnstile in production. New email/password and OAuth users are created as inactive accounts, and protected API access is blocked until an admin marks the user active.
 - Gallery creation/editing and the admin user list are restricted to admin users in the frontend routes.
-- Docker Compose includes backend, dev Postgres, and test Postgres services. The frontend service is documented in compose but commented out.
+- Development Compose includes the backend and development PostgreSQL service;
+  the isolated e2e database is defined in `docker-compose.test.yml`.
 - In production, seed one admin user with `ADMIN_EMAIL` / `ADMIN_PASSWORD` after migrations are applied.
 - For split frontend/backend cloud domains, set `FRONTEND_URL`, `BACKEND_URL`, and `CORS_ORIGINS` to the deployed HTTPS origins.

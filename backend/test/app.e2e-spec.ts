@@ -34,6 +34,14 @@ describe('App e2e', () => {
 
   it.todo('should pass');
 
+  describe('Health', () => {
+    it('Should Report Application Readiness', () => {
+      return pactum.spec().get('/health').expectStatus(200).expectJson({
+        status: 'ok',
+      });
+    });
+  });
+
   describe('Auth', () => {
     const authDto: AuthDto = {
       email: 'e2e@example.com',

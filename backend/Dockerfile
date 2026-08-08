@@ -28,4 +28,7 @@ RUN npx prisma generate
 
 EXPOSE 3333
 
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=12 \
+  CMD node -e "fetch('http://127.0.0.1:3333/health').then(response => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+
 CMD ["sh", "-c", "npm run prisma:dev:deploy && npm run start:prod"]

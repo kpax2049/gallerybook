@@ -54,7 +54,8 @@ services:
     expose:
       - "80"
     depends_on:
-      - gallerybook-backend
+      gallerybook-backend:
+        condition: service_healthy
     networks:
       - gallerybook
       - loramapr_internal

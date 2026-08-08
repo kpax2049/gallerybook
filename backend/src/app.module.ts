@@ -11,6 +11,7 @@ import { ProfileModule } from './profile/profile.module';
 import { FollowModule } from './follow/follow.module';
 import { FolderModule } from './folder/folder.module';
 import { validateEnv } from './config/env.validation';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { validateEnv } from './config/env.validation';
     FollowModule,
     FolderModule,
   ],
+  controllers: [HealthController],
   providers: [
     {
       provide: APP_GUARD,
