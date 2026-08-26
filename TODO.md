@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0036 `performance` Use the optimized login hero asset
-  - Context: Login loads a multi-megabyte PNG despite an equivalent, much
-    smaller WebP already being present.
-  - Expected: Serve the optimized asset and remove unused starter and duplicate
-    frontend assets.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0037 `feature` Paginate public folders and gallery comments
   - Context: Public folders and gallery comment threads can return unbounded
     collections.
@@ -63,6 +56,13 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0036 `performance` Use the optimized login hero asset
+  - Completed: 2026-08-26
+  - Context: Login loaded a multi-megabyte PNG despite an equivalent, much
+    smaller WebP already being present.
+  - Outcome: The login screen now serves its 219 KB WebP hero, and unused Vite
+    and React starter assets plus unused numbered logo variants were removed.
 
 - [x] TODO-0035 `feature` Add application health checks and deploy verification
   - Completed: 2026-08-08

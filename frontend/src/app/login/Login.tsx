@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import heroArt from '@/assets/login-photo-albums-hero.png';
+import heroArt from '@/assets/login-photo-albums-hero.webp';
 import logoMint from '@/assets/GB-logo-mint.png';
 import logoTeal from '@/assets/GB-logo-teal.png';
 import { cn } from '@/lib/utils';
