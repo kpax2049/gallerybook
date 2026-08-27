@@ -11,9 +11,11 @@ export function PublicFolderPage() {
     username: string;
     folderSlug: string;
   }>();
-  const [data, setData] = React.useState<PublicFolderResponse | null>(null);
+const [data, setData] = React.useState<PublicFolderResponse | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [loadMoreError, setLoadMoreError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -21,8 +23,13 @@ export function PublicFolderPage() {
     async function loadFolder() {
       try {
         setLoading(true);
+        setData(null);
         setError(null);
-        const response = await getPublicFolder(username, folderSlug);
+        setLoadMoreError(null);
+        const response = await getPublicFolder(username, folderSlug, {
+          page: 1,
+          pageSize: 24,
+        });
         if (!cancelled) setData(response);
       } catch {
         if (!cancelled) {
@@ -43,6 +50,32 @@ export function PublicFolderPage() {
 
   const folder = data?.folder;
   const ownerName = folder?.owner.displayName || folder?.owner.username || '';
+  const hasMore = data ? data.galleries.length < data.total : false;
+
+  const loadMore = async () => {
+    if (!data || loadingMore || !hasMore) return;
+
+    try {
+      setLoadingMore(true);
+      setLoadMoreError(null);
+      const next = await getPublicFolder(username, folderSlug, {
+        page: data.page + 1,
+        pageSize: data.pageSize,
+      });
+      setData((current) => {
+        if (!current) return next;
+        return {
+          ...next,
+          galleries: [...current.galleries, ...next.galleries],
+          commentCounts: { ...current.commentCounts, ...next.commentCounts },
+        };
+      });
+    } catch {
+      setLoadMoreError('Unable to load more galleries. Please try again.');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   return (
     <main className="gb-page min-h-screen px-4 py-6 text-[var(--gb-ink)] sm:px-8">
@@ -128,6 +161,27 @@ export function PublicFolderPage() {
                 />
               ))}
             </section>
+
+            {hasMore && (
+              <div className="mt-8 text-center">
+                <div className="flex justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gb-chip rounded-[11px]"
+                    disabled={loadingMore}
+                    onClick={() => void loadMore()}
+                  >
+                    {loadingMore ? 'Loading…' : 'Load more galleries'}
+                  </Button>
+                </div>
+                {loadMoreError && (
+                  <p className="mt-2 text-sm text-destructive">
+                    {loadMoreError}
+                  </p>
+                )}
+              </div>
+            )}
 
             {data.galleries.length === 0 && (
               <div className="gb-panel mt-8 rounded-[14px] p-8 text-sm text-[var(--gb-ink-mute)]">

@@ -133,10 +133,21 @@ export const editComment = async (commentData: Comment): Promise<Comment> => {
   );
 };
 
+export type GalleryCommentsResponse = {
+  items: Comment[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 // Fetching comments
-export const getComments = async (galleryId: number): Promise<Comment[]> => {
-  return await apiRequest<Comment[]>('/comments', 'GET', undefined, {
-    galleryId: galleryId,
+export const getComments = async (
+  galleryId: number,
+  params: { page?: number; pageSize?: number } = {}
+): Promise<GalleryCommentsResponse> => {
+  return await apiRequest<GalleryCommentsResponse>('/comments', 'GET', undefined, {
+    galleryId,
+    ...params,
   });
 };
 

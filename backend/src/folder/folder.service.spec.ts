@@ -17,6 +17,7 @@ describe('FolderService', () => {
     };
     gallery: {
       findUnique: jest.Mock;
+      count: jest.Mock;
     };
   };
 
@@ -32,6 +33,7 @@ describe('FolderService', () => {
       },
       gallery: {
         findUnique: jest.fn(),
+        count: jest.fn(),
       },
     };
     assetUrl = {
@@ -161,7 +163,11 @@ describe('FolderService', () => {
       ],
     });
 
-    await expect(service.getPublicFolder('artist', 'travel')).resolves.toEqual({
+    prisma.gallery.count.mockResolvedValue(1);
+
+    await expect(
+      service.getPublicFolder('artist', 'travel', { page: 2, pageSize: 10 }),
+    ).resolves.toEqual({
       folder: {
         id: 1,
         createdAt: now,
@@ -214,6 +220,9 @@ describe('FolderService', () => {
         },
       ],
       commentCounts: { 11: 3 },
+      total: 1,
+      page: 2,
+      pageSize: 10,
     });
     expect(prisma.folder.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -228,6 +237,20 @@ describe('FolderService', () => {
     ).toEqual({
       status: 'PUBLISHED',
       visibility: { in: ['PUBLIC', 'UNLISTED'] },
+    });
+    expect(prisma.folder.findFirst.mock.calls[0][0].include.galleries).toEqual(
+      expect.objectContaining({
+        orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+        skip: 10,
+        take: 10,
+      }),
+    );
+    expect(prisma.gallery.count).toHaveBeenCalledWith({
+      where: {
+        folderId: 1,
+        status: 'PUBLISHED',
+        visibility: { in: ['PUBLIC', 'UNLISTED'] },
+      },
     });
   });
 

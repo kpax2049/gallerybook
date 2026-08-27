@@ -38,6 +38,9 @@ export interface PublicFolderResponse {
   folder: PublicFolder;
   galleries: Gallery[];
   commentCounts: Record<number, number>;
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface CreateFolderRequest {
@@ -72,12 +75,15 @@ export const deleteFolder = async (folderId: number): Promise<void> => {
 
 export const getPublicFolder = async (
   username: string,
-  folderSlug: string
+  folderSlug: string,
+  params: { page?: number; pageSize?: number } = {}
 ): Promise<PublicFolderResponse> => {
   return await apiRequest<PublicFolderResponse>(
     `/public/folders/${encodeURIComponent(username)}/${encodeURIComponent(
       folderSlug
     )}`,
-    'GET'
+    'GET',
+    undefined,
+    params
   );
 };

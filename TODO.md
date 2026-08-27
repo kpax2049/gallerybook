@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0037 `feature` Paginate public folders and gallery comments
-  - Context: Public folders and gallery comment threads can return unbounded
-    collections.
-  - Expected: Add bounded pagination or incremental loading without breaking
-    deterministic ordering.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0038 `security` Harden avatar upload lifecycle
   - Context: Avatar validation trusts the MIME header and replaced Cloudinary
     assets are not deleted.
@@ -56,6 +49,14 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0037 `feature` Paginate public folders and gallery comments
+  - Completed: 2026-08-27
+  - Context: Public folders and gallery comment threads could return unbounded
+    collections.
+  - Outcome: Public folder galleries and root comment threads now return
+    deterministic, capped pages with totals; both client views append pages on
+    demand through Load more controls.
 
 - [x] TODO-0036 `performance` Use the optimized login hero asset
   - Completed: 2026-08-26

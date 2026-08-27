@@ -87,11 +87,15 @@ describe('FolderController', () => {
     });
 
     await expect(
-      publicController.getPublicFolder('artist', 'summer-trips'),
+      publicController.getPublicFolder('artist', 'summer-trips', {
+        page: 2,
+        pageSize: 10,
+      }),
     ).resolves.toEqual({ folder: { id: 1 }, galleries: [] });
     expect(folderService.getPublicFolder).toHaveBeenCalledWith(
       'artist',
       'summer-trips',
+      { page: 2, pageSize: 10 },
     );
   });
 });

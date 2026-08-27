@@ -10,13 +10,18 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { Role, User } from '@prisma/client';
 import { GetUser } from 'src/auth/decorator';
 import { JwtGuard } from 'src/auth/guard';
-import { CreateFolderDto, UpdateFolderDto } from './dto';
+import {
+  CreateFolderDto,
+  ListPublicFolderGalleriesDto,
+  UpdateFolderDto,
+} from './dto';
 import { FolderService } from './folder.service';
 
 @UseGuards(JwtGuard)
@@ -78,7 +83,8 @@ export class PublicFolderController {
   getPublicFolder(
     @Param('username') username: string,
     @Param('slug') slug: string,
+    @Query() dto: ListPublicFolderGalleriesDto,
   ) {
-    return this.folderService.getPublicFolder(username, slug);
+    return this.folderService.getPublicFolder(username, slug, dto);
   }
 }

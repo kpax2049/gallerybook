@@ -14,6 +14,7 @@ import { GetUser } from 'src/auth/decorator';
 import { User } from '@prisma/client';
 import { JwtGuard } from 'src/auth/guard';
 import { ToggleReactionDto } from './dto/toggle-reaction.dto';
+import { ListGalleryCommentsDto } from './dto/list-gallery-comments.dto';
 
 @UseGuards(JwtGuard)
 @Controller('comments')
@@ -24,8 +25,9 @@ export class CommentController {
   getByGallery(
     @Query('galleryId', ParseIntPipe) galleryId: number,
     @GetUser() user?: User,
+    @Query() dto: ListGalleryCommentsDto = {},
   ) {
-    return this.commentService.getComments(galleryId, user);
+    return this.commentService.getComments(galleryId, user, dto);
   }
 
   @Post()

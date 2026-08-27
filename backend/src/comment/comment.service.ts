@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { ListCommentsDto } from './dto/list-comments.dto';
+import { ListGalleryCommentsDto } from './dto/list-gallery-comments.dto';
 import {
   ActionType,
   GalleryStatus,
@@ -38,7 +39,11 @@ export class CommentService {
     private assetUrl: AssetUrlService,
   ) {}
 
-  async getComments(galleryId: number, user?: Pick<User, 'id' | 'role'>) {
+  async getComments(
+    galleryId: number,
+    user?: Pick<User, 'id' | 'role'>,
+    dto: ListGalleryCommentsDto = {},
+  ) {
     const gallery = await this.prisma.gallery.findUnique({
       where: { id: galleryId },
       select: { status: true, visibility: true },
@@ -46,12 +51,15 @@ export class CommentService {
     this.assertGalleryReadable(gallery, user);
 
     const userId = user?.id;
+    const page = Math.max(1, dto.page ?? 1);
+    const pageSize = Math.min(50, Math.max(1, dto.pageSize ?? 24));
+    const skip = (page - 1) * pageSize;
+    const where = { galleryId, parentId: null };
     const comments = await this.prisma.comment.findMany({
-      where: {
-        galleryId,
-        parentId: null,
-      },
+      where,
       orderBy: COMMENT_THREAD_ORDER,
+      skip,
+      take: pageSize,
       include: {
         user: true,
         replies: this.buildRepliesArgs(COMMENT_REPLY_INCLUDE_DEPTH),
@@ -59,7 +67,8 @@ export class CommentService {
     });
 
     const ids = this.collectCommentIds(comments);
-    if (!ids.length) return comments;
+    const total = await this.prisma.comment.count({ where });
+    if (!ids.length) return { items: comments, total, page, pageSize };
 
     const [counts, myReactions] = await Promise.all([
       this.prisma.actionCount.findMany({
@@ -83,7 +92,12 @@ export class CommentService {
       selectedMap.set(r.commentId, list);
     }
 
-    return this.attachReactionData(comments, countMap, selectedMap);
+    return {
+      items: this.attachReactionData(comments, countMap, selectedMap),
+      total,
+      page,
+      pageSize,
+    };
   }
 
   async createComment(user: Pick<User, 'id' | 'role'>, dto: CreateCommentDto) {

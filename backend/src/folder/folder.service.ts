@@ -3,11 +3,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { GalleryStatus, Visibility } from '@prisma/client';
+import { GalleryStatus, Prisma, Visibility } from '@prisma/client';
 import { AssetUrlService } from 'src/common/asset-url.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { slugify } from 'src/utils/slug.util';
-import { CreateFolderDto, UpdateFolderDto } from './dto';
+import {
+  CreateFolderDto,
+  ListPublicFolderGalleriesDto,
+  UpdateFolderDto,
+} from './dto';
+
+const PUBLIC_FOLDER_GALLERY_ORDER: Prisma.GalleryOrderByWithRelationInput[] = [
+  { updatedAt: 'desc' },
+  { createdAt: 'desc' },
+  { id: 'desc' },
+];
 
 @Injectable()
 export class FolderService {
@@ -39,7 +49,18 @@ export class FolderService {
     return folders.map((folder) => this.mapFolder(folder));
   }
 
-  async getPublicFolder(username: string, folderSlug: string) {
+  async getPublicFolder(
+    username: string,
+    folderSlug: string,
+    dto: ListPublicFolderGalleriesDto = {},
+  ) {
+    const page = Math.max(1, dto.page ?? 1);
+    const pageSize = Math.min(50, Math.max(1, dto.pageSize ?? 24));
+    const skip = (page - 1) * pageSize;
+    const galleryWhere = {
+      status: GalleryStatus.PUBLISHED,
+      visibility: { in: [Visibility.PUBLIC, Visibility.UNLISTED] },
+    };
     const folder = await this.prisma.folder.findFirst({
       where: {
         slug: folderSlug,
@@ -64,11 +85,10 @@ export class FolderService {
           },
         },
         galleries: {
-          where: {
-            status: GalleryStatus.PUBLISHED,
-            visibility: { in: [Visibility.PUBLIC, Visibility.UNLISTED] },
-          },
-          orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+          where: galleryWhere,
+          orderBy: PUBLIC_FOLDER_GALLERY_ORDER,
+          skip,
+          take: pageSize,
           include: {
             tags: { include: { tag: { select: { name: true, slug: true } } } },
             _count: { select: { comments: true } },
@@ -87,11 +107,15 @@ export class FolderService {
 
     if (!folder) throw new NotFoundException('Folder not found');
 
+    const total = await this.prisma.gallery.count({
+      where: { folderId: folder.id, ...galleryWhere },
+    });
+
     return {
       folder: {
         ...this.mapFolder({
           ...folder,
-          _count: { galleries: folder.galleries.length },
+          _count: { galleries: total },
         }),
         owner: {
           id: folder.owner.id,
@@ -109,6 +133,9 @@ export class FolderService {
           gallery._count.comments,
         ]),
       ),
+      total,
+      page,
+      pageSize,
     };
   }
 

@@ -146,8 +146,13 @@ describe('CommentService', () => {
       { commentId: 1, type: ActionType.UPVOTE },
       { commentId: 3, type: ActionType.ROCKET },
     ]);
+    prisma.comment.count.mockResolvedValue(17);
 
-    const result = await service.getComments(10, { id: 5, role: Role.USER });
+    const result = await service.getComments(
+      10,
+      { id: 5, role: Role.USER },
+      { page: 2, pageSize: 10 },
+    );
     expect(prisma.comment.findMany).toHaveBeenCalledWith({
       where: {
         galleryId: 10,
@@ -172,15 +177,20 @@ describe('CommentService', () => {
           }),
         },
       },
+      skip: 10,
+      take: 10,
     });
-    expect(result[0].actions[ActionType.UPVOTE]).toBe(2);
-    expect(result[0].actions[ActionType.THUMB_UP]).toBe(1);
-    expect(result[0].selectedActions).toEqual([ActionType.UPVOTE]);
-    expect(result[0].replies[0].actions[ActionType.UPVOTE]).toBe(0);
-    expect(result[0].replies[0].replies[0].actions[ActionType.ROCKET]).toBe(1);
-    expect(result[0].replies[0].replies[0].selectedActions).toEqual([
+    expect(result.items[0].actions[ActionType.UPVOTE]).toBe(2);
+    expect(result.items[0].actions[ActionType.THUMB_UP]).toBe(1);
+    expect(result.items[0].selectedActions).toEqual([ActionType.UPVOTE]);
+    expect(result.items[0].replies[0].actions[ActionType.UPVOTE]).toBe(0);
+    expect(
+      result.items[0].replies[0].replies[0].actions[ActionType.ROCKET],
+    ).toBe(1);
+    expect(result.items[0].replies[0].replies[0].selectedActions).toEqual([
       ActionType.ROCKET,
     ]);
+    expect(result).toMatchObject({ total: 17, page: 2, pageSize: 10 });
   });
 
   it('does not constrain comment reads for admins', async () => {
@@ -205,6 +215,8 @@ describe('CommentService', () => {
           }),
         },
       },
+      skip: 0,
+      take: 24,
     });
   });
 

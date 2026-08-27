@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTheme } from '@/components/theme-provider';
+import { Button } from '@/components/ui/button';
 import { CommentSection } from 'shadcn-comments';
 import { CommentEditor } from './CommentEditor';
 import {
@@ -77,13 +78,53 @@ const updateCommentById = (
 export default function CommentList({ galleryId }: CommentProps) {
   const { theme } = useTheme();
   const [value, setValue] = useState<Comment[]>([]);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(24);
+  const [total, setTotal] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const currentUser = useUserStore((state) => state.user);
 
   useEffect(() => {
-    getComments(galleryId).then((data) => {
-      setValue(data.map(normalizeComment));
-    });
+    let cancelled = false;
+    setValue([]);
+    setPage(0);
+    setTotal(0);
+    getComments(galleryId, { page: 1, pageSize: 24 })
+      .then((data) => {
+        if (cancelled) return;
+        setValue(data.items.map(normalizeComment));
+        setPage(data.page);
+        setPageSize(data.pageSize);
+        setTotal(data.total);
+      })
+      .catch((error) => {
+        if (!cancelled) console.error('Failed to load comments', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [galleryId]);
+
+  const loadMore = async () => {
+    if (loadingMore || value.length >= total) return;
+
+    try {
+      setLoadingMore(true);
+      const data = await getComments(galleryId, {
+        page: page + 1,
+        pageSize,
+      });
+      setValue((current) => [...current, ...data.items.map(normalizeComment)]);
+      setPage(data.page);
+      setPageSize(data.pageSize);
+      setTotal(data.total);
+    } catch (error) {
+      console.error('Failed to load more comments', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const normalizeCreatedComment = (comment: Comment) =>
     normalizeComment({
@@ -101,6 +142,7 @@ export default function CommentList({ galleryId }: CommentProps) {
     createComment(val).then((data: Comment) => {
       const normalized = normalizeCreatedComment(data);
       setValue((prev) => [...prev, normalized]);
+      setTotal((current) => current + 1);
     });
   };
 
@@ -184,6 +226,17 @@ export default function CommentList({ galleryId }: CommentProps) {
           onReact={onReact}
           onChange={(comments) => setValue(comments.map(normalizeComment))}
         />
+        {value.length < total && (
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-2 self-start"
+            disabled={loadingMore}
+            onClick={() => void loadMore()}
+          >
+            {loadingMore ? 'Loading…' : 'Load more comments'}
+          </Button>
+        )}
       </div>
     </div>
   );
