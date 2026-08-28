@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0038 `security` Harden avatar upload lifecycle
-  - Context: Avatar validation trusts the MIME header and replaced Cloudinary
-    assets are not deleted.
-  - Expected: Validate image content, retain the provider asset ID, and clean up
-    replaced uploads.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0039 `chore` Migrate Prisma seed configuration
   - Context: Prisma reports that `package.json#prisma` configuration is
     deprecated.
@@ -49,6 +42,14 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0038 `security` Harden avatar upload lifecycle
+  - Completed: 2026-08-28
+  - Context: Avatar validation trusted the MIME header and replaced Cloudinary
+    assets were not deleted.
+  - Outcome: Avatar bytes are now checked for supported image signatures,
+    Cloudinary public IDs are retained, replaced assets are cleaned up, and
+    newly uploaded assets are removed if profile persistence fails.
 
 - [x] TODO-0037 `feature` Paginate public folders and gallery comments
   - Completed: 2026-08-27

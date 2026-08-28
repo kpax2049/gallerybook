@@ -104,9 +104,10 @@ model OauthAccount {
 }
 
 model Profile {
-  id            Int     @id @default(autoincrement())
-  configuration Json?
-  avatarUrl     String?
+  id             Int     @id @default(autoincrement())
+  configuration  Json?
+  avatarUrl      String?
+  avatarPublicId String?
 
   userId Int  @unique
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
