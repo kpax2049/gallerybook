@@ -52,6 +52,7 @@
     "class-validator": "^0.15.1",
     "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
+    "dotenv": "^17.4.1",
     "mime-types": "^3.0.2",
     "multer": "^2.0.1",
     "passport": "^0.7.0",
@@ -112,8 +113,5 @@
     ],
     "coverageDirectory": "coverage",
     "testEnvironment": "node"
-  },
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
   }
 }

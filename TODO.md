@@ -27,13 +27,6 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0039 `chore` Migrate Prisma seed configuration
-  - Context: Prisma reports that `package.json#prisma` configuration is
-    deprecated.
-  - Expected: Move seed configuration to `prisma.config.ts` before the next
-    major Prisma upgrade.
-  - Notes: From the 2026-07-28 codebase review.
-
 - [ ] TODO-0040 `chore` Consolidate stale project notes and test placeholders
   - Context: A legacy frontend TODO file, starter artifacts, dead commented
     routes, and an e2e placeholder remain in the repository.
@@ -42,6 +35,13 @@ No active items.
   - Notes: From the 2026-07-28 codebase review.
 
 ## Done
+
+- [x] TODO-0039 `chore` Migrate Prisma seed configuration
+  - Completed: 2026-09-10
+  - Context: Prisma reported that `package.json#prisma` configuration was
+    deprecated.
+  - Outcome: Seed, schema, and migration settings now live in
+    `prisma.config.ts`, removing the deprecated package configuration.
 
 - [x] TODO-0038 `security` Harden avatar upload lifecycle
   - Completed: 2026-08-28
