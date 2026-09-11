@@ -26,12 +26,7 @@ const transformFolderId = ({ value }: { value: unknown }) => {
 };
 
 export type SortKey =
-  | 'updatedAt'
-  | 'createdAt'
-  | 'title'
-  | 'views'
-  | 'likes'
-  | 'comments';
+  'updatedAt' | 'createdAt' | 'title' | 'views' | 'likes' | 'comments';
 export type SortDir = 'asc' | 'desc';
 
 export class ListGalleriesDto {

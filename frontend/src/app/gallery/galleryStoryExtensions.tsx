@@ -74,6 +74,9 @@ export const StoryImage = BaseImage.extend({
     return {
       ...IMAGE_DEFAULT_OPTIONS,
       ...this.parent?.(),
+      divider: this.parent?.()?.divider ?? false,
+      spacer: this.parent?.()?.spacer ?? false,
+      button: this.parent?.()?.button ?? (() => ({ componentProps: {} })),
       inline: false,
       allowBase64: true,
       HTMLAttributes: {},
