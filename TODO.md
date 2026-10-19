@@ -27,14 +27,16 @@ No active items.
 
 ## Backlog
 
-- [ ] TODO-0040 `chore` Consolidate stale project notes and test placeholders
-  - Context: A legacy frontend TODO file, starter artifacts, dead commented
-    routes, and an e2e placeholder remain in the repository.
-  - Expected: Preserve useful historical notes in appropriate documentation and
-    remove obsolete source and test placeholders.
-  - Notes: From the 2026-07-28 codebase review.
-
 ## Done
+
+- [x] TODO-0040 `chore` Consolidate stale project notes and test placeholders
+  - Completed: 2026-10-19
+  - Context: A legacy frontend TODO file, starter artifacts, dead commented
+    routes, and an e2e placeholder remained in the repository.
+  - Outcome: Replaced template documentation with project-specific guidance,
+    retained the gallery media workflow in the root documentation, and removed
+    retired route, source, fixture, default endpoint, and e2e placeholder code.
+  - Notes: From the 2026-07-28 codebase review.
 
 - [x] TODO-0039 `chore` Migrate Prisma seed configuration
   - Completed: 2026-09-10

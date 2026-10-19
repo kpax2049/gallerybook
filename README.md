@@ -207,7 +207,9 @@ docker build \
 
 ## Notes
 
-- The backend uses presigned S3 URLs for gallery uploads and rewrites image URLs for optimized CloudFront delivery.
+- The backend uses presigned S3 URLs for gallery uploads. Gallery documents keep
+  upload keys rather than temporary editor URLs; reads rewrite those keys to
+  optimized CloudFront URLs, while editing uses short-lived signed S3 URLs.
 - Refresh tokens are issued as HTTP-only cookies scoped to `/auth/refresh`; access tokens are stored on the client and automatically refreshed after a 401.
 - Signup, signin, password verification, and OAuth start endpoints are rate-limited.
 - Public signup is protected by Cloudflare Turnstile in production. New email/password and OAuth users are created as inactive accounts, and protected API access is blocked until an admin marks the user active.

@@ -9,7 +9,6 @@ import { LoginForm } from './app/login/LoginForm';
 import { OAuthCallback } from './app/login/OAuthCallback';
 import { SignupForm } from './app/signup/SignupForm';
 import { PendingActivation } from './app/signup/PendingActivation';
-// import GalleryList from './app/gallery/GalleryList';
 import { useUserStore } from '@/stores/userStore';
 import GalleriesPage from './app/gallery/GalleriesPage';
 import CommentsPage from './app/comment/CommentsPage';
@@ -52,29 +51,6 @@ function DeferredRoute({ children }: { children: ReactNode }) {
   );
 }
 
-const Home = () => {
-  return <h2>Home (Protected: authenticated user required)</h2>;
-};
-
-const Dashboard1 = () => {
-  return <h2>Dashboard (Protected: authenticated user required)</h2>;
-};
-
-const Analytics = () => {
-  return (
-    <h2>
-      Analytics (Protected: authenticated user with permission 'analyze'
-      required)
-    </h2>
-  );
-};
-
-const Admin = () => {
-  return (
-    <h2>Admin (Protected: authenticated user with role 'admin' required)</h2>
-  );
-};
-
 type ProtectedRouteProps = {
   isAllowed: boolean;
   isLoading?: boolean;
@@ -100,12 +76,6 @@ const ProtectedRoute = ({
 };
 
 const App = () => {
-  // const ProtectedRoutes = () => {
-  //   // TODO: Use authentication token
-  //   const localStorageToken = localStorage.getItem('ACCESS_TOKEN');
-
-  //   return localStorageToken ? <Dashboard /> : <Navigate to="/login" replace />;
-  // };
   const user = useUserStore((state) => state.user);
   const navigate = useNavigate();
   const [authReady, setAuthReady] = useState(false);
@@ -154,17 +124,6 @@ const App = () => {
       );
     };
   }, [navigate]);
-  // useEffect(() => {
-  //   getUser().then((user: User) => {
-  //     setGlobalUser(user);
-  //   })
-  // }, [setGlobalUser]);
-
-  // const loadFollow = useFollowStore((s) => s.load);
-  // useEffect(() => {
-  //   loadFollow();
-  // }, [loadFollow]);
-
   const handleLogout = async () => {
     try {
       await endAuthSession();
@@ -203,8 +162,6 @@ const App = () => {
               />
             }
           >
-            <Route path="home" element={<Home />} />
-            <Route path="dashboard" element={<Dashboard1 />} />
             <Route
               path="admin/users"
               element={
@@ -256,38 +213,9 @@ const App = () => {
                 }
               />
             </Route>
-            {/* <Route path="galleries" element={<GalleriesPage />} />
-            <Route path="galleries/:galleryId" element={<GalleryPage />} /> */}
-            {/* <Route path="comments" element={<GalleriesPage />} /> */}
             <Route path="/me/comments" element={<CommentsPage />} />
             <Route path="/me/following" element={<FollowingPage />} />
-            {/* <Route
-              path="gallery/minimal-tiptap"
-              element={<GalleryMinimalTiptapEditor />}
-            /> */}
           </Route>
-          <Route
-            path="analytics"
-            element={
-              <ProtectedRoute
-                redirectPath="/home"
-                isAllowed={!!user && user.role === UserRole.ADMIN} //!!user && user.permissions.includes('analyze')}
-              >
-                <Analytics />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="admin"
-            element={
-              <ProtectedRoute
-                redirectPath="/home"
-                isAllowed={!!user && user.role === UserRole.ADMIN}
-              >
-                <Admin />
-              </ProtectedRoute>
-            }
-          ></Route>
         </Route>
         <Route path="/login" element={<LoginForm />} />
         <Route
@@ -328,37 +256,6 @@ const App = () => {
       </Routes>
     </>
   );
-
-  // const router = createBrowserRouter([
-  //   {
-  //     path: '/',
-  //     element: <LoginForm />,
-  //     index: true,
-  //   },
-  //   {
-  //     // element: <ProtectedRoutes />,
-  //     element: <ProtectedRoute isAuthenticated={isAuthenticated()} />,
-  //     children: [
-  //       {
-  //         path: '/admin/users',
-  //         element: <UserList />,
-  //       },
-  //       {
-  //         path: '/galleries',
-  //         element: <Gallery />,
-  //       },
-  //       // {
-  //       //   path: '/route3',
-  //       //   element: <Screen3 />,
-  //       // },
-  //     ],
-  //   },
-  //   {
-  //     path: '*',
-  //     element: <NotFoundPage />,
-  //   },
-  // ]);
-  // return <RouterProvider router={router} />;
 };
 
 export default App;
